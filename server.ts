@@ -4,6 +4,7 @@ import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
+import Database from 'better-sqlite3';
 
 dotenv.config();
 
@@ -12,40 +13,78 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Set up server-side database path
-const DB_PATH = path.join(process.cwd(), 'data', 'db.json');
+// Set up server-side SQLite database
+const SQLITE_DB_PATH = path.join(process.cwd(), 'data', 'pharmacy.db');
 
-// Ensure db.json exists with blank schema
 function initDb() {
-  const dir = path.dirname(DB_PATH);
+  const dir = path.dirname(SQLITE_DB_PATH);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify({ users: [], orders: [] }, null, 2));
-  }
+  
+  const dbConnection = new Database(SQLITE_DB_PATH);
+  dbConnection.pragma('journal_mode = WAL');
+  
+  dbConnection.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      email TEXT PRIMARY KEY COLLATE NOCASE,
+      password TEXT NOT NULL,
+      fullName TEXT NOT NULL,
+      phone TEXT,
+      address TEXT
+    );
+    
+    CREATE TABLE IF NOT EXISTS orders (
+      id TEXT PRIMARY KEY,
+      date TEXT NOT NULL,
+      userEmail TEXT NOT NULL,
+      items TEXT NOT NULL,
+      totalPrice REAL NOT NULL,
+      address TEXT NOT NULL,
+      paymentMethod TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending'
+    );
+  `);
+  
+  return dbConnection;
 }
-initDb();
 
-function readDb() {
-  try {
-    initDb();
-    const data = fs.readFileSync(DB_PATH, 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Error reading DB:', error);
-    return { users: [], orders: [] };
-  }
-}
+const db = initDb();
 
-function writeDb(data: any) {
-  try {
-    initDb();
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error('Error writing DB:', error);
+// Run seamless migration from old json db if detected
+function migrateJsonToSqlite() {
+  const jsonPath = path.join(process.cwd(), 'data', 'db.json');
+  if (fs.existsSync(jsonPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+      if (data.users && Array.isArray(data.users)) {
+        const insertUser = db.prepare(`
+          INSERT OR IGNORE INTO users (email, password, fullName, phone, address)
+          VALUES (?, ?, ?, ?, ?)
+        `);
+        for (const u of data.users) {
+          insertUser.run(u.email.toLowerCase(), u.password, u.fullName, u.phone || '', u.address || '');
+        }
+      }
+      if (data.orders && Array.isArray(data.orders)) {
+        const insertOrder = db.prepare(`
+          INSERT OR IGNORE INTO orders (id, date, userEmail, items, totalPrice, address, paymentMethod, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        for (const o of data.orders) {
+          const itemsStr = typeof o.items === 'string' ? o.items : JSON.stringify(o.items);
+          const addrStr = typeof o.address === 'string' ? o.address : JSON.stringify(o.address);
+          insertOrder.run(o.id, o.date, o.userEmail.toLowerCase(), itemsStr, o.totalPrice, addrStr, o.paymentMethod, o.status || 'pending');
+        }
+      }
+      fs.renameSync(jsonPath, jsonPath + '.migrated');
+      console.log('Successfully migrated json database to SQLite!');
+    } catch (e) {
+      console.error('Error migrating JSON db to SQLite:', e);
+    }
   }
 }
+migrateJsonToSqlite();
 
 // Unified REST API Routes
 // 1. Auth: Register
@@ -55,30 +94,28 @@ app.post('/api/auth/register', (req, res) => {
     return res.status(400).json({ error: 'Missing required registration info' });
   }
 
-  const db = readDb();
-  const existing = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
-  if (existing) {
-    return res.status(400).json({ error: 'User with this email already exists' });
+  try {
+    const existing = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase());
+    if (existing) {
+      return res.status(400).json({ error: 'User with this email already exists' });
+    }
+
+    db.prepare(`
+      INSERT INTO users (email, password, fullName, phone, address)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(email.toLowerCase(), password, fullName, phone || '', address || '');
+
+    res.json({
+      email: email.toLowerCase(),
+      fullName,
+      phone: phone || '',
+      address: address || '',
+      isAuthenticated: true,
+    });
+  } catch (err: any) {
+    console.error('Register error:', err);
+    res.status(500).json({ error: 'Database error occurred' });
   }
-
-  const newUser = {
-    email: email.toLowerCase(),
-    password, 
-    fullName,
-    phone: phone || '',
-    address: address || '',
-  };
-
-  db.users.push(newUser);
-  writeDb(db);
-
-  res.json({
-    email: newUser.email,
-    fullName: newUser.fullName,
-    phone: newUser.phone,
-    address: newUser.address,
-    isAuthenticated: true,
-  });
 });
 
 // 2. Auth: Login
@@ -88,22 +125,23 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(400).json({ error: 'Missing email or password credentials' });
   }
 
-  const db = readDb();
-  const user = db.users.find(
-    (u: any) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-  );
+  try {
+    const user = db.prepare('SELECT * FROM users WHERE email = ? AND password = ?').get(email.toLowerCase(), password) as any;
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
 
-  if (!user) {
-    return res.status(401).json({ error: 'Invalid email or password' });
+    res.json({
+      email: user.email,
+      fullName: user.fullName,
+      phone: user.phone,
+      address: user.address,
+      isAuthenticated: true,
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Database error occurred' });
   }
-
-  res.json({
-    email: user.email,
-    fullName: user.fullName,
-    phone: user.phone,
-    address: user.address,
-    isAuthenticated: true,
-  });
 });
 
 // 3. Update Profile Data
@@ -113,28 +151,33 @@ app.post('/api/profile', (req, res) => {
     return res.status(400).json({ error: 'Email parameter is required' });
   }
 
-  const db = readDb();
-  const userIdx = db.users.findIndex((u: any) => u.email.toLowerCase() === email.toLowerCase());
-  if (userIdx === -1) {
-    return res.status(404).json({ error: 'User profile not found' });
+  try {
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase()) as any;
+    if (!user) {
+      return res.status(404).json({ error: 'User profile not found' });
+    }
+
+    const updatedName = fullName || user.fullName;
+    const updatedPhone = phone || user.phone;
+    const updatedAddress = address || user.address;
+
+    db.prepare(`
+      UPDATE users 
+      SET fullName = ?, phone = ?, address = ?
+      WHERE email = ?
+    `).run(updatedName, updatedPhone, updatedAddress, email.toLowerCase());
+
+    res.json({
+      email: email.toLowerCase(),
+      fullName: updatedName,
+      phone: updatedPhone,
+      address: updatedAddress,
+      isAuthenticated: true,
+    });
+  } catch (err) {
+    console.error('Profile update error:', err);
+    res.status(500).json({ error: 'Database error occurred' });
   }
-
-  db.users[userIdx] = {
-    ...db.users[userIdx],
-    fullName: fullName || db.users[userIdx].fullName,
-    phone: phone || db.users[userIdx].phone,
-    address: address || db.users[userIdx].address,
-  };
-
-  writeDb(db);
-
-  res.json({
-    email: db.users[userIdx].email,
-    fullName: db.users[userIdx].fullName,
-    phone: db.users[userIdx].phone,
-    address: db.users[userIdx].address,
-    isAuthenticated: true,
-  });
 });
 
 // 4. Place New Order
@@ -144,23 +187,32 @@ app.post('/api/orders', (req, res) => {
     return res.status(400).json({ error: 'Invalid cart or address details' });
   }
 
-  const db = readDb();
-  const trackingNumber = 'PP-' + Math.floor(100000 + Math.random() * 900000);
-  const newOrder = {
-    id: trackingNumber,
-    date: new Date().toLocaleDateString('ru-RU'),
-    userEmail: email ? email.toLowerCase() : 'guest',
-    items,
-    totalPrice,
-    address,
-    paymentMethod,
-    status: 'pending',
-  };
+  try {
+    const trackingNumber = 'PP-' + Math.floor(100000 + Math.random() * 900000);
+    const dateStr = new Date().toLocaleDateString('ru-RU');
+    const userEmailVal = email ? email.toLowerCase() : 'guest';
+    const itemsStr = JSON.stringify(items);
+    const addressStr = JSON.stringify(address);
 
-  db.orders.unshift(newOrder);
-  writeDb(db);
+    db.prepare(`
+      INSERT INTO orders (id, date, userEmail, items, totalPrice, address, paymentMethod, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+    `).run(trackingNumber, dateStr, userEmailVal, itemsStr, totalPrice, addressStr, paymentMethod);
 
-  res.json(newOrder);
+    res.json({
+      id: trackingNumber,
+      date: dateStr,
+      userEmail: userEmailVal,
+      items,
+      totalPrice,
+      address,
+      paymentMethod,
+      status: 'pending',
+    });
+  } catch (err) {
+    console.error('Place order error:', err);
+    res.status(500).json({ error: 'Database error occurred' });
+  }
 });
 
 // 5. Get User Orders
@@ -170,12 +222,24 @@ app.get('/api/orders/:email', (req, res) => {
     return res.status(400).json({ error: 'User email is required' });
   }
 
-  const db = readDb();
-  const userOrders = db.orders.filter(
-    (o: any) => o.userEmail.toLowerCase() === email.toLowerCase()
-  );
+  try {
+    const rows = db.prepare('SELECT * FROM orders WHERE userEmail = ? ORDER BY rowid DESC').all(email.toLowerCase()) as any[];
+    
+    const formattedOrders = rows.map((o) => ({
+      id: o.id,
+      date: o.date,
+      items: JSON.parse(o.items),
+      totalPrice: o.totalPrice,
+      address: JSON.parse(o.address),
+      paymentMethod: o.paymentMethod,
+      status: o.status,
+    }));
 
-  res.json(userOrders);
+    res.json(formattedOrders);
+  } catch (err) {
+    console.error('Get orders error:', err);
+    res.status(500).json({ error: 'Database error occurred' });
+  }
 });
 
 // Initialize server-side Gemini client utility lazily
