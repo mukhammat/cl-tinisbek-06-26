@@ -1,0 +1,6 @@
+{
+  "name": "Online Pharmacy and Dosage Calculator",
+  "description": "An online pharmacy medicine catalog with detailed descriptions, a dosage calculator, multilingual support (3 languages: English, Russian, Kazakh), a shopping cart, mock checkout with address details and payment modal, and mock user login/registration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
