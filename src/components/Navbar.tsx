@@ -10,8 +10,8 @@ import { ShoppingCart, Calculator, User as UserIcon, LogIn, Search, Heart, Plus 
 interface NavbarProps {
   currentLang: Language;
   setLang: (lang: Language) => void;
-  activeTab: 'catalog' | 'calculator' | 'orders';
-  setActiveTab: (tab: 'catalog' | 'calculator' | 'orders') => void;
+  activeTab: 'catalog' | 'calculator' | 'cart' | 'orders' | 'admin';
+  setActiveTab: (tab: 'catalog' | 'calculator' | 'cart' | 'orders' | 'admin') => void;
   user: User;
   setAuthModalOpen: (open: boolean) => void;
   cart: CartItem[];
@@ -79,13 +79,12 @@ export default function Navbar({
             <button
               id="tab-calculator"
               onClick={() => setActiveTab('calculator')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                 activeTab === 'calculator'
                   ? 'bg-white text-teal-700 shadow-sm font-bold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
               }`}
             >
-              <Calculator className="w-4 h-4 text-teal-600" />
               {t('calcTab')}
             </button>
             <button
@@ -99,10 +98,24 @@ export default function Navbar({
             >
               {t('ordersTab')}
             </button>
+            {user.isAuthenticated && (user.email.toLowerCase() === 'dosnet2200@gmail.com' || user.email.toLowerCase() === 'admin@example.com' || user.email.toLowerCase().endsWith('@admin.com')) && (
+              <button
+                id="tab-admin"
+                onClick={() => setActiveTab('admin')}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-1.5 ${
+                  activeTab === 'admin'
+                    ? 'bg-amber-50 text-amber-700 shadow-sm font-bold border border-amber-200'
+                    : 'text-amber-600 hover:text-amber-800 hover:bg-amber-50/50'
+                }`}
+              >
+                <span>⚙</span>
+                <span>{currentLang === 'ru' ? 'Админка' : 'Admin'}</span>
+              </button>
+            )}
           </nav>
 
           {/* Search Bar - hidden on mobile, responsive inside header */}
-          {activeTab === 'catalog' && (
+          {['catalog', 'calculator', 'orders'].includes(activeTab) && (
             <div className="hidden sm:flex items-center flex-1 max-w-sm relative" id="search-box">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
               <input
@@ -139,8 +152,12 @@ export default function Navbar({
             {/* Shopping Cart Trigger */}
             <button
               id="btn-cart-trigger"
-              onClick={() => setCartOpen(true)}
-              className="relative p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200/50 transition-all duration-200 group"
+              onClick={() => setActiveTab('cart')}
+              className={`relative p-2.5 rounded-xl border transition-all duration-200 group ${
+                activeTab === 'cart'
+                  ? 'bg-teal-50 border-teal-300 text-teal-700'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200/50'
+              }`}
             >
               <ShoppingCart className="w-5 h-5 group-hover:scale-105 transition-transform" />
               {cartCount > 0 && (
@@ -174,7 +191,7 @@ export default function Navbar({
           <button
             id="mobile-tab-catalog"
             onClick={() => { setActiveTab('catalog'); }}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${
+            className={`text-xs font-semibold px-2 py-1.5 rounded-lg ${
               activeTab === 'catalog' ? 'text-teal-600 bg-teal-50' : 'text-slate-500'
             }`}
           >
@@ -183,26 +200,37 @@ export default function Navbar({
           <button
             id="mobile-tab-calculator"
             onClick={() => { setActiveTab('calculator'); }}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 ${
+            className={`text-xs font-semibold px-2 py-1.5 rounded-lg ${
               activeTab === 'calculator' ? 'text-teal-600 bg-teal-50' : 'text-slate-500'
             }`}
           >
-            <Calculator className="w-3.5 h-3.5" />
             {t('calcTab')}
           </button>
           <button
             id="mobile-tab-orders"
             onClick={() => { setActiveTab('orders'); }}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${
+            className={`text-xs font-semibold px-2 py-1.5 rounded-lg ${
               activeTab === 'orders' ? 'text-teal-600 bg-teal-50' : 'text-slate-500'
             }`}
           >
             {t('ordersTab')}
           </button>
+          {user.isAuthenticated && (user.email.toLowerCase() === 'dosnet2200@gmail.com' || user.email.toLowerCase() === 'admin@example.com' || user.email.toLowerCase().endsWith('@admin.com')) && (
+            <button
+              id="mobile-tab-admin"
+              onClick={() => { setActiveTab('admin'); }}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 ${
+                activeTab === 'admin' ? 'text-amber-700 bg-amber-50 border border-amber-200' : 'text-amber-600'
+              }`}
+            >
+              <span>⚙</span>
+              <span>{currentLang === 'ru' ? 'Админка' : 'Admin'}</span>
+            </button>
+          )}
         </div>
 
-        {/* Search bar on small mobile screens if on catalog */}
-        {activeTab === 'catalog' && (
+        {/* Search bar on small mobile screens if on catalog, calculator, orders */}
+        {['catalog', 'calculator', 'orders'].includes(activeTab) && (
           <div className="block sm:hidden pb-3 relative" id="mobile-search-box">
             <Search className="absolute left-3 top-2.5 text-slate-400 w-3.5 h-3.5" />
             <input

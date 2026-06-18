@@ -37,6 +37,7 @@ export interface Medicine {
     mgPerKgPerDay: number; // Dosage factor
     defaultDailyDoses: number; // times per day
   };
+  inStock?: boolean;
 }
 
 export interface CartItem {

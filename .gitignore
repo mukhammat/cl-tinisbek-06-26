@@ -8,6 +8,6 @@ coverage/
 !.env.example
 
 # SQLite Database
-data/*.db
-data/*.db-*
-data/*.migrated
+backend/data/*.db
+backend/data/*.db-*
+backend/data/*.migrated

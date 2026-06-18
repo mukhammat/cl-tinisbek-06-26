@@ -448,9 +448,9 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     ar: 'الكتالوج'
   },
   calcTab: {
-    ru: 'Калькулятор разведения',
-    en: 'Dilution Calculator',
-    ar: 'حاسبة التخفيف'
+    ru: 'Калькулятор',
+    en: 'Calculator',
+    ar: 'الحاسبة'
   },
   ordersTab: {
     ru: 'Мои заказы',

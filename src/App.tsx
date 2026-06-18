@@ -14,6 +14,7 @@ import CartView from './components/CartView';
 import OrderHistory from './components/OrderHistory';
 import AuthModal from './components/AuthModal';
 import AIPeptideAdvisor from './components/AIPeptideAdvisor';
+import AdminPanel from './components/AdminPanel';
 import { ShoppingCart, Calculator, MapPin, Heart, Clock, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -25,10 +26,33 @@ export default function App() {
   });
 
   // Active navigation tab
-  const [activeTab, setActiveTab] = useState<'catalog' | 'calculator' | 'orders'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'calculator' | 'cart' | 'orders' | 'admin'>('catalog');
   
   // Selected single medicine for details
   const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
+
+  // Load medicines list from database, default to empty to allow loading inside Grid
+  const [medicinesList, setMedicinesList] = useState<Medicine[]>([]);
+
+  const fetchMedicinesList = () => {
+    fetch('/api/medicines')
+      .then((res) => {
+        if (!res.ok) throw new Error('Database loading failed');
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setMedicinesList(data);
+        }
+      })
+      .catch((err) => {
+        console.error('Error loading medicines from db, using fallback list:', err);
+      });
+  };
+
+  useEffect(() => {
+    fetchMedicinesList();
+  }, []);
 
   // Search input query
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -59,7 +83,10 @@ export default function App() {
 
   // Dialog modals toggling state
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [cartOpen, setCartOpen] = useState(false);
+  const cartOpen = activeTab === 'cart';
+  const setCartOpen = (open: boolean) => {
+    setActiveTab(open ? 'cart' : 'catalog');
+  };
 
   // Sync to local storage
   useEffect(() => {
@@ -152,7 +179,6 @@ export default function App() {
     setOrders((prev) => [newOrder, ...prev]);
     // Set view to orders to see progress
     setActiveTab('orders');
-    setCartOpen(false);
   };
 
   const handleLogout = () => {
@@ -183,7 +209,6 @@ export default function App() {
         setActiveTab={(tab) => {
           setActiveTab(tab);
           setSelectedMedicine(null); // Return to default list of drugs
-          setCartOpen(false);
         }}
         user={user}
         setAuthModalOpen={setAuthModalOpen}
@@ -195,29 +220,7 @@ export default function App() {
 
       {/* Primary Dynamic Content Frame */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10" id="main-content-flow">
-        
-        {/* If cart utility is open, display primary cart screen with high focus */}
-        {cartOpen ? (
-          <div className="space-y-6" id="cart-drawer-view">
-            <button
-              id="back-cart-link"
-              onClick={() => setCartOpen(false)}
-              className="text-slate-500 hover:text-slate-800 text-xs sm:text-sm font-semibold flex items-center gap-1 transition-colors"
-            >
-              ← {currentLang === 'ru' ? 'Вернуться к покупкам' : 'Continue Shopping'}
-            </button>
-            <CartView
-              currentLang={currentLang}
-              cart={cart}
-              onRemoveFromCart={handleRemoveFromCart}
-              onUpdateQty={handleUpdateQty}
-              user={user}
-              onPlaceOrder={handlePlaceOrder}
-              onClearCart={() => setCart([])}
-            />
-          </div>
-        ) : (
-          /* Normal app views tabs */
+          
           <div className="space-y-8" id="tab-views-container">
             
             {/* Visual Hero Banner: show only on landing Catalog with NO query filters */}
@@ -316,6 +319,7 @@ export default function App() {
                       cart={cart}
                       onAddToCart={handleAddToCart}
                       searchQuery={searchQuery}
+                      allMedicines={medicinesList}
                     />
                   </div>
                 )
@@ -332,6 +336,34 @@ export default function App() {
                     currentLang={currentLang}
                     onAddToCart={handleAddToCart}
                     cart={cart}
+                    allMedicines={medicinesList}
+                    searchQuery={searchQuery}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'cart' && (
+                <div className="space-y-6" id="cart-drawer-view">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                      {currentLang === 'ru' ? 'Ваша Корзина' : currentLang === 'ar' ? 'سلة المشتريات' : 'Your Shopping Cart'}
+                    </h3>
+                    <button
+                      id="back-cart-link"
+                      onClick={() => setActiveTab('catalog')}
+                      className="text-teal-600 hover:text-teal-800 text-xs sm:text-sm font-semibold flex items-center gap-1 transition-colors"
+                    >
+                      ← {currentLang === 'ru' ? 'Вернуться к покупкам' : 'Continue Shopping'}
+                    </button>
+                  </div>
+                  <CartView
+                    currentLang={currentLang}
+                    cart={cart}
+                    onRemoveFromCart={handleRemoveFromCart}
+                    onUpdateQty={handleUpdateQty}
+                    user={user}
+                    onPlaceOrder={handlePlaceOrder}
+                    onClearCart={() => setCart([])}
                   />
                 </div>
               )}
@@ -340,12 +372,20 @@ export default function App() {
                 <OrderHistory
                   currentLang={currentLang}
                   orders={orders}
+                  searchQuery={searchQuery}
+                />
+              )}
+
+              {activeTab === 'admin' && (
+                <AdminPanel
+                  currentLang={currentLang}
+                  onRefreshMedicines={fetchMedicinesList}
+                  allMedicines={medicinesList}
                 />
               )}
             </div>
 
           </div>
-        )}
 
       </main>
 

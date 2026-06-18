@@ -15,6 +15,7 @@ interface MedicineGridProps {
   cart: CartItem[];
   onAddToCart: (medicine: Medicine, quantity?: number) => void;
   searchQuery: string;
+  allMedicines?: Medicine[];
 }
 
 export default function MedicineGrid({
@@ -22,7 +23,8 @@ export default function MedicineGrid({
   onSelectMedicine,
   cart,
   onAddToCart,
-  searchQuery
+  searchQuery,
+  allMedicines
 }: MedicineGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -38,8 +40,10 @@ export default function MedicineGrid({
     { id: 'digestive', label: t('catDigestive') }
   ];
 
+  const activeMedicines = allMedicines && allMedicines.length > 0 ? allMedicines : MEDICINES_DATA;
+
   // Filter medicines based on category AND search input
-  const filteredMedicines = MEDICINES_DATA.filter((med) => {
+  const filteredMedicines = activeMedicines.filter((med) => {
     const matchesCategory = selectedCategory === 'all' || med.category === selectedCategory;
     
     const query = searchQuery.toLowerCase();

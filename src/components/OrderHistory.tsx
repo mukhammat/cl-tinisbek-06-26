@@ -11,11 +11,13 @@ import { motion } from 'motion/react';
 interface OrderHistoryProps {
   currentLang: Language;
   orders: Order[];
+  searchQuery?: string;
 }
 
 export default function OrderHistory({
   currentLang,
-  orders
+  orders,
+  searchQuery = ''
 }: OrderHistoryProps) {
 
   const t = (key: string) => {
@@ -44,12 +46,46 @@ export default function OrderHistory({
     }
   };
 
+  const filteredOrders = searchQuery.trim()
+    ? orders.filter((order) => {
+        const query = searchQuery.toLowerCase();
+        
+        const idMatch = (order.id || '').toLowerCase().includes(query);
+        const dateMatch = (order.date || '').toLowerCase().includes(query);
+        const payMatch = (order.paymentMethod || '').toLowerCase().includes(query);
+        const statusMatch = (order.status || '').toLowerCase().includes(query) || 
+                            (getStatusLabel(order.status) || '').toLowerCase().includes(query);
+        
+        const addr = order.address;
+        const addrMatch = (addr?.city || '').toLowerCase().includes(query) ||
+                          (addr?.street || '').toLowerCase().includes(query) ||
+                          (addr?.apartment || '').toLowerCase().includes(query) ||
+                          (addr?.postalCode || '').toLowerCase().includes(query);
+                          
+        const itemsMatch = (order.items || []).some((item) => {
+          const nameMap = item.medicineName || {};
+          return (nameMap[currentLang] || '').toLowerCase().includes(query) ||
+                 (nameMap['ru'] || '').toLowerCase().includes(query) ||
+                 (nameMap['en'] || '').toLowerCase().includes(query);
+        });
+        
+        return idMatch || dateMatch || payMatch || statusMatch || addrMatch || itemsMatch;
+      })
+    : orders;
+
   return (
     <div className="space-y-6" id="order-history-section">
       
-      <div className="space-y-1" id="history-header">
-        <h2 id="history-title" className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{t('historyHeader')}</h2>
-        <p className="text-xs text-slate-500">Отслеживайте свои заказы и просматривайте прошлые покупки.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4" id="history-header">
+        <div className="space-y-1">
+          <h2 id="history-title" className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{t('historyHeader')}</h2>
+          <p className="text-xs text-slate-500">Отслеживайте свои заказы и просматривайте прошлые покупки.</p>
+        </div>
+        {searchQuery.trim() && (
+          <div className="bg-teal-50 text-teal-700 text-xs font-black px-3 py-1.5 rounded-xl border border-teal-100 self-start sm:self-center">
+            {currentLang === 'ru' ? `Найдено заказов: ${filteredOrders.length}` : `Orders found: ${filteredOrders.length}`}
+          </div>
+        )}
       </div>
 
       {orders.length === 0 ? (
@@ -57,9 +93,16 @@ export default function OrderHistory({
           <ShoppingBag className="w-12 h-12 text-slate-400 mx-auto mb-3" />
           <p className="text-xs sm:text-sm font-semibold text-slate-600">{t('historyEmpty')}</p>
         </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="py-16 text-center bg-white rounded-3xl border border-slate-100 shadow-sm p-8" id="history-search-empty">
+          <AlertCircle className="w-12 h-12 text-rose-400 mx-auto mb-3" />
+          <p className="text-xs sm:text-sm font-semibold text-slate-600">
+            {currentLang === 'ru' ? 'Заказы не найдены по вашему запросу' : 'No orders matched your search query'}
+          </p>
+        </div>
       ) : (
         <div className="space-y-4" id="orders-list-box">
-          {orders.map((order) => (
+          {filteredOrders.map((order) => (
             <div 
               key={order.id} 
               id={`order-history-item-${order.id}`}

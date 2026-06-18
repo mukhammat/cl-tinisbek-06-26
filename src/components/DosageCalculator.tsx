@@ -27,15 +27,44 @@ interface DosageCalculatorProps {
   currentLang: Language;
   onAddToCart: (medicine: Medicine, quantity: number) => void;
   cart: CartItem[];
+  allMedicines?: Medicine[];
+  searchQuery?: string;
 }
 
 export default function DosageCalculator({
   currentLang,
   onAddToCart,
-  cart
+  cart,
+  allMedicines,
+  searchQuery = ''
 }: DosageCalculatorProps) {
+  const activeMedicines = allMedicines && allMedicines.length > 0 ? allMedicines : MEDICINES_DATA;
+
+  const filteredMedicines = searchQuery.trim()
+    ? activeMedicines.filter((med) => {
+        const query = searchQuery.toLowerCase();
+        const nameMatch = (med.name[currentLang] || '').toLowerCase().includes(query) || 
+                          (med.name['ru'] || '').toLowerCase().includes(query) || 
+                          (med.name['en'] || '').toLowerCase().includes(query);
+        const subMatch = (med.activeSubstance[currentLang] || '').toLowerCase().includes(query) || 
+                         (med.activeSubstance['ru'] || '').toLowerCase().includes(query) || 
+                         (med.activeSubstance['en'] || '').toLowerCase().includes(query);
+        const catMatch = (med.category || '').toLowerCase().includes(query);
+        return nameMatch || subMatch || catMatch;
+      })
+    : activeMedicines;
   
-  const [selectedMedId, setSelectedMedId] = useState<string>(MEDICINES_DATA[0].id);
+  const [selectedMedId, setSelectedMedId] = useState<string>(() => filteredMedicines[0]?.id || activeMedicines[0].id);
+
+  // Auto-select first filtered item if current selection is filtered out
+  useEffect(() => {
+    if (searchQuery.trim() && filteredMedicines.length > 0) {
+      const exists = filteredMedicines.some((m) => m.id === selectedMedId);
+      if (!exists) {
+        setSelectedMedId(filteredMedicines[0].id);
+      }
+    }
+  }, [searchQuery, filteredMedicines, selectedMedId]);
   
   // Peptide Dilution Planner inputs
   const [vialMg, setVialMg] = useState<number>(5);
@@ -53,7 +82,7 @@ export default function DosageCalculator({
     return TRANSLATIONS[key]?.[currentLang] || key;
   };
 
-  const selectedMed = MEDICINES_DATA.find((m) => m.id === selectedMedId) || MEDICINES_DATA[0];
+  const selectedMed = activeMedicines.find((m) => m.id === selectedMedId) || activeMedicines[0];
 
   // Sync default vial weight (mg) and optimal frequency when selected medicine changes
   useEffect(() => {
@@ -336,23 +365,38 @@ export default function DosageCalculator({
 
           {/* 1. Target Peptide Selection */}
           <div className="space-y-1.5" id="calc-med-select-box">
-            <label className="text-[11px] font-black text-slate-600 uppercase tracking-wider">{t('selectMedicineLabel')}</label>
+            <div className="flex justify-between items-center">
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-wider">{t('selectMedicineLabel')}</label>
+              {searchQuery.trim() && (
+                <span className="text-[10px] text-teal-600 font-bold bg-teal-50 px-2 py-0.5 rounded-full">
+                  {currentLang === 'ru' ? `Найдено: ${filteredMedicines.length}` : `Found: ${filteredMedicines.length}`}
+                </span>
+              )}
+            </div>
             <div className="relative">
-              <select
-                id="calc-med-select"
-                value={selectedMedId}
-                onChange={(e) => setSelectedMedId(e.target.value)}
-                className="w-full appearance-none bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:border-teal-500 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:outline-none transition cursor-pointer pr-10"
-              >
-                {MEDICINES_DATA.map((med) => (
-                  <option key={med.id} value={med.id}>
-                    {med.name[currentLang]} — {med.mgPerUnit} мг ({t(`cat${med.category.charAt(0).toUpperCase() + med.category.slice(1)}`)})
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                <ChevronDown className="w-4 h-4" />
-              </div>
+              {filteredMedicines.length === 0 ? (
+                <div className="w-full bg-rose-50 border border-rose-100 rounded-xl px-4 py-3.5 text-xs font-bold text-rose-700">
+                  {currentLang === 'ru' ? 'Ничего не найдено по вашему запросу' : 'No peptides matching your search'}
+                </div>
+              ) : (
+                <>
+                  <select
+                    id="calc-med-select"
+                    value={selectedMedId}
+                    onChange={(e) => setSelectedMedId(e.target.value)}
+                    className="w-full appearance-none bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:border-teal-500 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:outline-none transition cursor-pointer pr-10"
+                  >
+                    {filteredMedicines.map((med) => (
+                      <option key={med.id} value={med.id}>
+                        {med.name[currentLang]} — {med.mgPerUnit} мг ({t(`cat${med.category.charAt(0).toUpperCase() + med.category.slice(1)}`)})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
