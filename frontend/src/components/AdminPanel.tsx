@@ -58,6 +58,9 @@ export default function AdminPanel({
   const [locInds, setLocInds] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' }); // comma or newline separated
   const [locContras, setLocContras] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' }); // comma or newline
 
+  // Custom modal state for delete confirmation
+  const [productToDelete, setProductToDelete] = useState<{ id: string; name: string } | null>(null);
+
   // Fetch orders
   const fetchAllOrders = () => {
     setOrdersLoading(true);
@@ -123,9 +126,14 @@ export default function AdminPanel({
 
   // Delete Medicine
   const handleDeleteProduct = (medId: string, nameen: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${nameen}"?`)) return;
+    setProductToDelete({ id: medId, name: nameen });
+  };
 
-    fetch(`/api/medicines/${medId}`, {
+  const confirmDeleteProduct = () => {
+    if (!productToDelete) return;
+    const { id, name } = productToDelete;
+
+    fetch(`/api/medicines/${id}`, {
       method: 'DELETE'
     })
       .then((res) => {
@@ -134,11 +142,13 @@ export default function AdminPanel({
       })
       .then(() => {
         onRefreshMedicines();
-        showFeedback('success', 'Product deleted successfully!');
+        showFeedback('success', currentLang === 'ru' ? `Товар "${name}" успешно удален!` : `Product "${name}" deleted successfully!`);
+        setProductToDelete(null);
       })
       .catch((err) => {
         console.error(err);
-        showFeedback('error', 'Error deleting product');
+        showFeedback('error', currentLang === 'ru' ? 'Ошибка при удалении товара' : 'Error deleting product');
+        setProductToDelete(null);
       });
   };
 
@@ -561,7 +571,7 @@ export default function AdminPanel({
                               </button>
                               <button
                                 id={`delete-prod-${med.id}`}
-                                onClick={() => handleDeleteProduct(med.id, med.name.en)}
+                                onClick={() => handleDeleteProduct(med.id, med.name[currentLang] || med.name.en)}
                                 className="p-1.5 bg-rose-50 hover:bg-rose-100 rounded-lg text-rose-600 transition-colors"
                                 title="Delete from catalog"
                               >
@@ -942,7 +952,7 @@ export default function AdminPanel({
                       className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 resize-none animate-height"
                     />
                   </div>
-                  <td className="md:col-span-1">
+                  <div className="md:col-span-1">
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">Инструкция применения (RU)</label>
                     <textarea
                       id="form-ru-usage"
@@ -952,7 +962,7 @@ export default function AdminPanel({
                       onChange={(e) => setLocUsages({ ...locUsages, ru: e.target.value })}
                       className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 resize-none"
                     />
-                  </td>
+                  </div>
                   <div className="md:col-span-1">
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">Полная аннотация клиническая (RU)</label>
                     <textarea
@@ -1177,6 +1187,53 @@ export default function AdminPanel({
           </motion.div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal Overlay */}
+      <AnimatePresence>
+        {productToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" id="delete-confirmation-modal">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full border border-slate-100 shadow-2xl"
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-rose-50 rounded-2xl text-rose-600 shrink-0">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">
+                    {currentLang === 'ru' ? 'Подтверждение удаления' : 'Confirm Deletion'}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                    {currentLang === 'ru'
+                      ? `Вы действительно хотите безвозвратно удалить товар "${productToDelete.name}" из каталога?`
+                      : `Are you sure you want to permanently delete the product "${productToDelete.name}" from the catalog?`}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-end gap-2.5 mt-6 pt-4 border-t border-slate-50">
+                <button
+                  type="button"
+                  onClick={() => setProductToDelete(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition-colors"
+                >
+                  {currentLang === 'ru' ? 'Отмена' : 'Cancel'}
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteProduct}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-colors"
+                >
+                  {currentLang === 'ru' ? 'Удалить' : 'Delete'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

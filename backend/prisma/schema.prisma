@@ -1,0 +1,49 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../data/pharmacy.db"
+}
+
+model User {
+  email    String @id
+  password String
+  fullName String
+  phone    String @default("")
+  address  String @default("")
+}
+
+model Medicine {
+  id                String @id
+  name              String
+  category          String
+  activeSubstance   String
+  description       String
+  fullDescription   String
+  indications       String
+  contraindications String
+  usage             String
+  price             Float
+  image             String
+  rating            Float
+  form              String
+  mgPerUnit         Float
+  dosageRules       String
+  inStock           Int
+}
+
+model Order {
+  id            String @id
+  date          String
+  userEmail     String
+  items         String
+  totalPrice    Float
+  address       String
+  paymentMethod String
+  status        String @default("pending")
+}
