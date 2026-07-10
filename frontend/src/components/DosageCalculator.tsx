@@ -129,7 +129,7 @@ export default function DosageCalculator({
 
   // Lasting duration estimation based on chosen active frequency
   const calculateDuration = () => {
-    if (totalInjectionsPerVial <= 0) return { count: 0, text: '' };
+    if (totalInjectionsPerVial <= 0) return { count: 0, key: 'daysLabel' };
     
     switch (frequencyMode) {
       case 'daily':
@@ -408,7 +408,7 @@ export default function DosageCalculator({
                 <input
                   type="number"
                   min="0.1"
-                  max="100"
+                  max="70"
                   step="0.1"
                   value={vialMg || ''}
                   onChange={(e) => setVialMg(Number(e.target.value) || 0)}
@@ -437,7 +437,7 @@ export default function DosageCalculator({
               id="calc-vial-range"
               type="range"
               min="1"
-              max="30"
+              max="70"
               step="1"
               value={vialMg}
               onChange={(e) => setVialMg(Number(e.target.value))}
@@ -524,17 +524,17 @@ export default function DosageCalculator({
               <div className="flex items-center gap-1">
                 <input
                   type="number"
-                  min="1"
-                  max="10000"
-                  step="10"
-                  value={desiredMcg || ''}
-                  onChange={(e) => setDesiredMcg(Number(e.target.value) || 0)}
+                  min="0.001"
+                  max="10"
+                  step="0.01"
+                  value={desiredMcg ? Number((desiredMcg / 1000).toFixed(3)) : ''}
+                  onChange={(e) => setDesiredMcg(Math.round((Number(e.target.value) || 0) * 1000))}
                   className="w-16 px-1 py-0.5 bg-teal-50 focus:bg-white text-teal-700 rounded border border-teal-100 focus:outline-none focus:ring-1 focus:ring-teal-500 text-xs font-black text-center"
                 />
-                <span className="text-[10px] text-teal-700 font-bold lowercase">мкг</span>
+                <span className="text-[10px] text-teal-700 font-bold lowercase">мг</span>
               </div>
             </div>
-            
+
             <div className="flex flex-wrap gap-1.5">
               {[100, 250, 500, 750, 1000, 1500].map((dosage) => (
                 <button
@@ -547,7 +547,7 @@ export default function DosageCalculator({
                       : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100/70'
                   }`}
                 >
-                  {dosage} mcg
+                  {dosage / 1000} mg
                 </button>
               ))}
             </div>
@@ -563,9 +563,9 @@ export default function DosageCalculator({
               className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-teal-600 focus:outline-none"
             />
             <div className="flex justify-between text-[10px] text-slate-400 font-bold tracking-tight select-none px-0.5">
-              <span>20 мкг</span>
-              <span>1000 мкг</span>
-              <span>2500 мкг</span>
+              <span>0.02 мг</span>
+              <span>1 мг</span>
+              <span>2.5 мг</span>
             </div>
           </div>
 
@@ -760,72 +760,34 @@ export default function DosageCalculator({
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                
-                {/* A. Animated Peptide Vial representation (Custom CSS & SVG) */}
-                <div className="md:col-span-3 flex flex-col items-center justify-center p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2">
-                  <span className="text-[9px] text-slate-400 font-extrabold uppercase">
-                    {getLocalText('vialVisualHeader')}
-                  </span>
-                  
-                  {/* Vial graphics container */}
-                  <div className="relative w-16 h-28 bg-transparent flex flex-col items-center">
-                    
-                    {/* Metal cap and plastic flip top lid */}
-                    <div className="w-8 h-2 bg-teal-500 rounded-sm z-10" />
-                    <div className="w-6 h-1.5 bg-slate-500 border border-slate-400" />
-                    <div className="w-4 h-3 bg-slate-600/50" />
-                    
-                    {/* Main Glass neck and body */}
-                    <div className="w-12 h-20 bg-slate-950 border-2 border-slate-500 rounded-xl relative overflow-hidden flex flex-col justify-end">
-                      
-                      {/* Interactive Fluid Layer */}
-                      {/* Fluid level depends on the diluted volume (ml). Max 10ml, let's represent height based on diluentMl / 10 */}
-                      <div 
-                        className="w-full bg-gradient-to-t from-teal-500/80 to-teal-400/40 border-t border-teal-300 transition-all duration-500 ease-out"
-                        style={{ height: `${Math.min(95, Math.max(15, (diluentMl / 10) * 100))}%` }}
-                      >
-                        {/* Shimmering fluid bubbles */}
-                        <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.05)_25%,transparent_25%)] bg-[size:10px_10px] opacity-20 animate-pulse" />
-                      </div>
-                      
-                      {/* Floating sterile powder label when dry vs liquid */}
-                      <div className="absolute inset-0 flex items-center justify-center p-1 text-center">
-                        <span className="text-[8px] font-black tracking-tighter text-slate-100 uppercase bg-slate-950/80 px-1 py-0.5 rounded-sm line-clamp-2 select-none">
-                          {selectedMed.name[currentLang]}
-                          <br />
-                          {vialMg} mg
-                        </span>
-                      </div>
+              <div className="grid grid-cols-1 gap-6 items-center">
 
+                {/* Syringe Drawing Volume Scale (The dynamically-drawn Insulin Syringe) */}
+                <div className="space-y-3">
+                  {/* Float units indicator, placed above the graphic so it never covers the drawing on narrow screens */}
+                  {unitsToDraw > 0 && (
+                    <div className="inline-flex bg-teal-500 text-slate-950 text-xs sm:text-base font-black px-2.5 py-1 rounded-md shadow-xs animate-pulse">
+                      FLOW BARREL: {unitsToDraw} Units (U)
                     </div>
-                  </div>
+                  )}
+                  <div className="relative w-full min-h-[100px] overflow-hidden bg-slate-900/40 rounded-xl p-3 flex items-center justify-center">
+                    <svg viewBox="0 0 540 130" className="w-full h-auto select-none" fill="none" xmlns="http://www.w3.org/2000/svg">
 
-                  <span className="text-[9px] text-slate-500 font-semibold uppercase text-center">
-                    {diluentMl > 0 ? getLocalText('vialLiquidStateDissolved') : getLocalText('vialLiquidStatePowder')}
-                  </span>
-                </div>
-
-                {/* B. Syringe Drawing Volume Scale (The dynamically-drawn Insulin Syringe) */}
-                <div className="md:col-span-9 space-y-3">
-                  <div className="relative w-full overflow-hidden bg-slate-900/40 rounded-xl p-3 flex items-center justify-center">
-                    <svg viewBox="0 0 540 85" className="w-full h-auto select-none" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      
                       {/* Needle tip connector assembly */}
-                      <rect x="15" y="38" width="12" height="10" fill="#f8fafc" rx="1.5" />
-                      <line x1="0" y1="43" x2="15" y2="43" stroke="#cbd5e1" strokeWidth="2.5" />
+                      <rect x="15" y="57" width="12" height="16" fill="#f8fafc" rx="1.5" />
+                      <line x1="0" y1="65" x2="15" y2="65" stroke="#cbd5e1" strokeWidth="3" />
 
                       {/* Syringe Outer Glass Barrel Body */}
-                      <rect x="27" y="20" width="460" height="46" rx="4" fill="#0f172a" stroke="#475569" strokeWidth="2.5" />
+                      <rect x="27" y="35" width="460" height="60" rx="6" fill="#0f172a" stroke="#475569" strokeWidth="3" />
 
                       {/* Shaded/Colored Liquid Fill Area inside Syringe */}
                       {/* The volume is proportioned dynamically using target units draw over total units (syringeType) */}
                       {unitsToDraw > 0 && (
                         <rect
                           x="29"
-                          y="22.5"
+                          y="37.5"
                           width={Math.min(456, (Math.min(unitsToDraw, syringeType) / syringeType) * 456)}
-                          height="41"
+                          height="55"
                           fill="url(#liquid-gradient)"
                           opacity="0.85"
                         />
@@ -839,12 +801,12 @@ export default function DosageCalculator({
                         return (
                           <>
                             {/* Stopper rubber head seal */}
-                            <rect x={stopperX - 8} y="22.5" width="8" height="41" fill="#ea580c" rx="1" />
-                            <rect x={stopperX - 12} y="22.5" width="4" height="41" fill="#334155" />
+                            <rect x={stopperX - 8} y="37.5" width="8" height="55" fill="#ea580c" rx="1" />
+                            <rect x={stopperX - 12} y="37.5" width="4" height="55" fill="#334155" />
                             {/* Metal Plunger Rod stretching out on the right */}
-                            <rect x={stopperX} y="38.5" width={500 - stopperX} height="9" fill="#94a3b8" />
+                            <rect x={stopperX} y="60" width={500 - stopperX} height="10" fill="#94a3b8" />
                             {/* Plunger thumb-press base */}
-                            <rect x="500" y="16" width="10" height="54" fill="#cbd5e1" rx="2" />
+                            <rect x="500" y="33" width="10" height="64" fill="#cbd5e1" rx="2" />
                           </>
                         );
                       })()}
@@ -858,9 +820,9 @@ export default function DosageCalculator({
                         return (
                           <g key={idx}>
                             {/* Main ticks every 10% interval */}
-                            <line x1={xCoord} y1="22" x2={xCoord} y2="34" stroke="#475569" strokeWidth="2" />
+                            <line x1={xCoord} y1="35" x2={xCoord} y2="50" stroke="#475569" strokeWidth="2.5" />
                             {/* Label text under ticks */}
-                            <text x={xCoord} y="53" fill="#94a3b8" fontSize="10" fontWeight="bold" textAnchor="middle">
+                            <text x={xCoord} y="72" fill="#94a3b8" fontSize="16" fontWeight="bold" textAnchor="middle">
                               {unitVal}
                             </text>
                           </g>
@@ -873,7 +835,7 @@ export default function DosageCalculator({
                         const percentX = idx / 50;
                         const xCoord = 29 + percentX * 456;
                         return (
-                          <line key={idx} x1={xCoord} y1="22" x2={xCoord} y2="28" stroke="#334155" strokeWidth="1" />
+                          <line key={idx} x1={xCoord} y1="35" x2={xCoord} y2="43" stroke="#334155" strokeWidth="1.5" />
                         );
                       })}
 
@@ -885,13 +847,6 @@ export default function DosageCalculator({
                         </linearGradient>
                       </defs>
                     </svg>
-                    
-                    {/* Float units indicator above graphic */}
-                    {unitsToDraw > 0 && (
-                      <div className="absolute top-1 left-1.5 bg-teal-500 text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-xs animate-pulse">
-                        FLOW BARREL: {unitsToDraw} Units (U)
-                      </div>
-                    )}
                   </div>
                   
                   <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold px-2">

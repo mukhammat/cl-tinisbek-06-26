@@ -4,9 +4,9 @@
  */
 
 import { useState } from 'react';
-import { Medicine, Language, CartItem } from '../types';
+import { Medicine, Language, CartItem, User } from '../types';
 import { TRANSLATIONS } from '../data';
-import { Star, ArrowLeft, Plus, Minus, ShoppingCart, ShieldAlert, Award, FileText, Check } from 'lucide-react';
+import { Star, ArrowLeft, Plus, Minus, ShoppingCart, ShieldAlert, Award, FileText, Check, BellRing, BellOff } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface MedicineDetailProps {
@@ -15,6 +15,10 @@ interface MedicineDetailProps {
   onBack: () => void;
   cart: CartItem[];
   onAddToCart: (medicine: Medicine, quantity: number) => void;
+  user: User;
+  setAuthModalOpen: (open: boolean) => void;
+  subscribedIds: string[];
+  onSubscribeNotify: (medicineId: string) => void;
 }
 
 export default function MedicineDetail({
@@ -22,7 +26,11 @@ export default function MedicineDetail({
   medicine,
   onBack,
   cart,
-  onAddToCart
+  onAddToCart,
+  user,
+  setAuthModalOpen,
+  subscribedIds,
+  onSubscribeNotify
 }: MedicineDetailProps) {
   const [qty, setQty] = useState<number>(1);
 
@@ -35,10 +43,20 @@ export default function MedicineDetail({
 
   const cartQty = cart.find(item => item.medicine.id === medicine.id)?.quantity || 0;
   const isAdded = cartQty > 0;
+  const isOutOfStock = medicine.inStock === false;
+  const isSubscribed = subscribedIds.includes(medicine.id);
 
   const handleAddToCart = () => {
     onAddToCart(medicine, qty);
     setQty(1); // Reset local quantity
+  };
+
+  const handleNotifyClick = () => {
+    if (!user.isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+    onSubscribeNotify(medicine.id);
   };
 
   return (
@@ -92,6 +110,12 @@ export default function MedicineDetail({
               {medicine.name[currentLang]}
             </h2>
 
+            {isOutOfStock && (
+              <span className="inline-block px-3 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-100 rounded-full">
+                {t('outOfStock')}
+              </span>
+            )}
+
             <div className="flex flex-col gap-1 text-xs text-slate-500 font-medium">
               <p>
                 <span className="text-slate-400 font-semibold">{t('activeSubstanceLabel')}:</span>{' '}
@@ -132,37 +156,62 @@ export default function MedicineDetail({
               </div>
             </div>
 
-            {/* Qty and Add buttons */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center border border-slate-200 rounded-xl p-1 bg-slate-50/50">
+            {/* Qty and Add buttons, or Notify Me when unavailable */}
+            {isOutOfStock ? (
+              <button
+                id="btn-detail-notify"
+                onClick={handleNotifyClick}
+                disabled={isSubscribed}
+                className={`flex-1 sm:flex-none px-6 py-3 font-bold text-sm rounded-xl flex items-center justify-center gap-2 transition ${
+                  isSubscribed
+                    ? 'bg-slate-50 text-slate-500 border border-slate-200 cursor-default'
+                    : 'bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-100 active:scale-95'
+                }`}
+              >
+                {isSubscribed ? (
+                  <>
+                    <BellOff className="w-4 h-4" />
+                    <span>{t('notifySubscribedBtn')}</span>
+                  </>
+                ) : (
+                  <>
+                    <BellRing className="w-4 h-4" />
+                    <span>{t('notifyMeBtn')}</span>
+                  </>
+                )}
+              </button>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center border border-slate-200 rounded-xl p-1 bg-slate-50/50">
+                  <button
+                    id="btn-decrement-qty"
+                    onClick={decrement}
+                    className="p-2 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 active:scale-90 transition"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <span id="detail-qty-indicator" className="w-8 text-center text-sm font-bold text-slate-800 select-none">
+                    {qty}
+                  </span>
+                  <button
+                    id="btn-increment-qty"
+                    onClick={increment}
+                    className="p-2 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 active:scale-90 transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
                 <button
-                  id="btn-decrement-qty"
-                  onClick={decrement}
-                  className="p-2 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 active:scale-90 transition"
+                  id="btn-detail-add-to-cart"
+                  onClick={handleAddToCart}
+                  className="flex-1 sm:flex-none px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md shadow-teal-100 active:scale-95 transition"
                 >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <span id="detail-qty-indicator" className="w-8 text-center text-sm font-bold text-slate-800 select-none">
-                  {qty}
-                </span>
-                <button
-                  id="btn-increment-qty"
-                  onClick={increment}
-                  className="p-2 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 active:scale-90 transition"
-                >
-                  <Plus className="w-3.5 h-3.5" />
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>{t('addToCart')} ({qty})</span>
                 </button>
               </div>
-
-              <button
-                id="btn-detail-add-to-cart"
-                onClick={handleAddToCart}
-                className="flex-1 sm:flex-none px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md shadow-teal-100 active:scale-95 transition"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                <span>{t('addToCart')} ({qty})</span>
-              </button>
-            </div>
+            )}
 
           </div>
 

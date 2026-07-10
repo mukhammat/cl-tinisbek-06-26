@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Language, Medicine, CartItem, User, Order, SUPPORTED_LANGUAGES } from './types';
+import { Language, Medicine, CartItem, User, Order, AppNotification, SUPPORTED_LANGUAGES } from './types';
 import { TRANSLATIONS } from './data';
 import Navbar from './components/Navbar';
 import MedicineGrid from './components/MedicineGrid';
@@ -81,6 +81,12 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Stock-notification subscriptions (medicineIds the logged-in user is waiting on)
+  const [subscribedIds, setSubscribedIds] = useState<string[]>([]);
+
+  // In-app notifications (e.g. restock alerts) for the logged-in user
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+
   // Dialog modals toggling state
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const cartOpen = activeTab === 'cart';
@@ -139,6 +145,71 @@ export default function App() {
         .catch((err) => console.error('Error fetching orders:', err));
     }
   }, [user.isAuthenticated, user.email]);
+
+  // Fetch the user's pending restock subscriptions
+  const fetchSubscriptions = () => {
+    if (!user.isAuthenticated || !user.email) {
+      setSubscribedIds([]);
+      return;
+    }
+    fetch(`/api/notifications/subscriptions/${encodeURIComponent(user.email)}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setSubscribedIds(Array.isArray(data) ? data : []))
+      .catch((err) => console.error('Error fetching subscriptions:', err));
+  };
+
+  // Fetch the user's notification feed
+  const fetchNotifications = () => {
+    if (!user.isAuthenticated || !user.email) {
+      setNotifications([]);
+      return;
+    }
+    fetch(`/api/notifications/${encodeURIComponent(user.email)}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setNotifications(Array.isArray(data) ? data : []))
+      .catch((err) => console.error('Error fetching notifications:', err));
+  };
+
+  useEffect(() => {
+    fetchSubscriptions();
+    fetchNotifications();
+    if (!user.isAuthenticated) return;
+    // Poll periodically so restock alerts show up without a manual refresh
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [user.isAuthenticated, user.email]);
+
+  // Subscribe the logged-in user to a "back in stock" alert for a product
+  const handleSubscribeNotify = (medicineId: string) => {
+    if (!user.isAuthenticated || !user.email) return;
+    fetch('/api/notifications/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email, medicineId }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && !data.alreadyInStock) {
+          setSubscribedIds((prev) => (prev.includes(medicineId) ? prev : [...prev, medicineId]));
+        }
+      })
+      .catch((err) => console.error('Error subscribing to notifications:', err));
+  };
+
+  const handleMarkNotificationRead = (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    fetch(`/api/notifications/${id}/read`, { method: 'POST' }).catch((err) =>
+      console.error('Error marking notification read:', err)
+    );
+  };
+
+  const handleMarkAllNotificationsRead = () => {
+    if (!user.email) return;
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    fetch(`/api/notifications/read-all/${encodeURIComponent(user.email)}`, { method: 'POST' }).catch((err) =>
+      console.error('Error marking all notifications read:', err)
+    );
+  };
 
   const t = (key: string) => {
     return TRANSLATIONS[key]?.[currentLang] || key;
@@ -216,6 +287,9 @@ export default function App() {
         setCartOpen={setCartOpen}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        notifications={notifications}
+        onMarkNotificationRead={handleMarkNotificationRead}
+        onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
       />
 
       {/* Primary Dynamic Content Frame */}
@@ -303,6 +377,10 @@ export default function App() {
                     onBack={() => setSelectedMedicine(null)}
                     cart={cart}
                     onAddToCart={handleAddToCart}
+                    user={user}
+                    setAuthModalOpen={setAuthModalOpen}
+                    subscribedIds={subscribedIds}
+                    onSubscribeNotify={handleSubscribeNotify}
                   />
                 ) : (
                   /* Cards Catalog screen */
@@ -320,6 +398,10 @@ export default function App() {
                       onAddToCart={handleAddToCart}
                       searchQuery={searchQuery}
                       allMedicines={medicinesList}
+                      user={user}
+                      setAuthModalOpen={setAuthModalOpen}
+                      subscribedIds={subscribedIds}
+                      onSubscribeNotify={handleSubscribeNotify}
                     />
                   </div>
                 )

@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Language, User, CartItem, SUPPORTED_LANGUAGES } from '../types';
+import { useState } from 'react';
+import { Language, User, CartItem, AppNotification, SUPPORTED_LANGUAGES } from '../types';
 import { TRANSLATIONS } from '../data';
-import { ShoppingCart, Calculator, User as UserIcon, LogIn, Search, Heart, Plus } from 'lucide-react';
+import { ShoppingCart, Calculator, User as UserIcon, LogIn, Search, Heart, Plus, Bell } from 'lucide-react';
 
 interface NavbarProps {
   currentLang: Language;
@@ -18,6 +19,9 @@ interface NavbarProps {
   setCartOpen: (open: boolean) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  notifications: AppNotification[];
+  onMarkNotificationRead: (id: string) => void;
+  onMarkAllNotificationsRead: () => void;
 }
 
 export default function Navbar({
@@ -30,10 +34,15 @@ export default function Navbar({
   cart,
   setCartOpen,
   searchQuery,
-  setSearchQuery
+  setSearchQuery,
+  notifications,
+  onMarkNotificationRead,
+  onMarkAllNotificationsRead
 }: NavbarProps) {
-  
+
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const [notifPanelOpen, setNotifPanelOpen] = useState(false);
 
   const t = (key: string) => {
     return TRANSLATIONS[key]?.[currentLang] || key;
@@ -148,6 +157,65 @@ export default function Navbar({
               </select>
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] pointer-events-none text-slate-400">▼</span>
             </div>
+
+            {/* Notifications Bell Trigger */}
+            {user.isAuthenticated && (
+              <div className="relative" id="notif-bell-wrapper">
+                <button
+                  id="btn-notif-trigger"
+                  onClick={() => setNotifPanelOpen((prev) => !prev)}
+                  className={`relative p-2.5 rounded-xl border transition-all duration-200 group ${
+                    notifPanelOpen
+                      ? 'bg-teal-50 border-teal-300 text-teal-700'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200/50'
+                  }`}
+                >
+                  <Bell className="w-5 h-5 group-hover:scale-105 transition-transform" />
+                  {unreadCount > 0 && (
+                    <span id="notif-badge" className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center animate-pulse border-2 border-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {notifPanelOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setNotifPanelOpen(false)} />
+                    <div id="notif-dropdown-panel" className="absolute right-0 top-full mt-2 w-80 max-w-[90vw] bg-white rounded-2xl border border-slate-100 shadow-xl z-50 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">{t('notificationsTitle')}</h4>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={onMarkAllNotificationsRead}
+                            className="text-[10px] font-bold text-teal-600 hover:text-teal-800"
+                          >
+                            {t('markAllReadBtn')}
+                          </button>
+                        )}
+                      </div>
+                      <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
+                        {notifications.length === 0 ? (
+                          <p className="text-xs text-slate-400 text-center py-8 px-4">{t('notificationsEmpty')}</p>
+                        ) : (
+                          notifications.map((n) => (
+                            <button
+                              key={n.id}
+                              onClick={() => !n.read && onMarkNotificationRead(n.id)}
+                              className={`w-full text-left px-4 py-3 text-xs flex items-start gap-2.5 transition ${
+                                n.read ? 'bg-white text-slate-500' : 'bg-teal-50/40 text-slate-800 font-semibold hover:bg-teal-50/70'
+                              }`}
+                            >
+                              {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-1.5 shrink-0" />}
+                              <span className="leading-relaxed">{n.message[currentLang] || n.message.en}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Shopping Cart Trigger */}
             <button

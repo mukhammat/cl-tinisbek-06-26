@@ -40,6 +40,14 @@ export interface Medicine {
   inStock?: boolean;
 }
 
+export interface AppNotification {
+  id: string;
+  medicineId: string;
+  message: Record<Language, string>;
+  createdAt: string;
+  read: boolean;
+}
+
 export interface CartItem {
   medicine: Medicine;
   quantity: number;

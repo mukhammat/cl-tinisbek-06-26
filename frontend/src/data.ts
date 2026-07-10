@@ -841,5 +841,40 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     ru: 'Пожалуйста, выберите целевой пептид.',
     en: 'Select the targeted peptide first.',
     ar: 'يرجى اختيار الببتيد المستهدف أولاً.'
+  },
+  notifyMeBtn: {
+    ru: 'Уведомить о поступлении',
+    en: 'Notify Me',
+    ar: 'أعلمني عند التوفر'
+  },
+  notifySubscribedBtn: {
+    ru: 'Вы подписаны',
+    en: 'Subscribed',
+    ar: 'تم الاشتراك'
+  },
+  notifySubscribedToast: {
+    ru: 'Мы сообщим вам, как только товар появится в наличии!',
+    en: 'We will notify you as soon as this item is back in stock!',
+    ar: 'سنُعلمك بمجرد توفر هذا المنتج مرة أخرى!'
+  },
+  notifyLoginRequired: {
+    ru: 'Войдите в аккаунт, чтобы подписаться на уведомления.',
+    en: 'Please log in to subscribe for stock notifications.',
+    ar: 'يرجى تسجيل الدخول للاشتراك في إشعارات التوفر.'
+  },
+  notificationsTitle: {
+    ru: 'Уведомления',
+    en: 'Notifications',
+    ar: 'الإشعارات'
+  },
+  notificationsEmpty: {
+    ru: 'Пока нет уведомлений',
+    en: 'No notifications yet',
+    ar: 'لا توجد إشعارات بعد'
+  },
+  markAllReadBtn: {
+    ru: 'Прочитать все',
+    en: 'Mark all read',
+    ar: 'تعليم الكل كمقروء'
   }
 };

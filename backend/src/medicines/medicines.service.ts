@@ -5,10 +5,14 @@
 
 import { Inject, Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class MedicinesService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(NotificationsService) private readonly notificationsService: NotificationsService,
+  ) {}
 
   async getAll() {
     try {
@@ -82,6 +86,9 @@ export class MedicinesService {
     } = body;
 
     try {
+      const before = await this.prisma.medicine.findUnique({ where: { id } });
+      const newInStock = inStock ? 1 : 0;
+
       await this.prisma.medicine.update({
         where: { id },
         data: {
@@ -99,9 +106,14 @@ export class MedicinesService {
           form,
           mgPerUnit: Number(mgPerUnit),
           dosageRules: JSON.stringify(dosageRules),
-          inStock: inStock ? 1 : 0,
+          inStock: newInStock,
         }
       });
+
+      if (before && before.inStock === 0 && newInStock === 1) {
+        await this.notificationsService.notifyRestock(id, name);
+      }
+
       return { success: true };
     } catch (err: any) {
       console.error('Error updating medicine:', err);

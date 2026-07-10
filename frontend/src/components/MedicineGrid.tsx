@@ -4,9 +4,9 @@
  */
 
 import { useState } from 'react';
-import { Medicine, Language, CartItem } from '../types';
+import { Medicine, Language, CartItem, User } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
-import { Star, Check, Plus, ShoppingCart, HelpCircle } from 'lucide-react';
+import { Star, Check, Plus, ShoppingCart, HelpCircle, BellRing, BellOff } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface MedicineGridProps {
@@ -16,6 +16,10 @@ interface MedicineGridProps {
   onAddToCart: (medicine: Medicine, quantity?: number) => void;
   searchQuery: string;
   allMedicines?: Medicine[];
+  user: User;
+  setAuthModalOpen: (open: boolean) => void;
+  subscribedIds: string[];
+  onSubscribeNotify: (medicineId: string) => void;
 }
 
 export default function MedicineGrid({
@@ -24,7 +28,11 @@ export default function MedicineGrid({
   cart,
   onAddToCart,
   searchQuery,
-  allMedicines
+  allMedicines,
+  user,
+  setAuthModalOpen,
+  subscribedIds,
+  onSubscribeNotify
 }: MedicineGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -91,6 +99,16 @@ export default function MedicineGrid({
           {filteredMedicines.map((med, index) => {
             const inCart = isItemInCart(med.id);
             const cartQty = cart.find(item => item.medicine.id === med.id)?.quantity || 0;
+            const isOutOfStock = med.inStock === false;
+            const isSubscribed = subscribedIds.includes(med.id);
+
+            const handleNotifyClick = () => {
+              if (!user.isAuthenticated) {
+                setAuthModalOpen(true);
+                return;
+              }
+              onSubscribeNotify(med.id);
+            };
 
             return (
               <motion.div
@@ -123,6 +141,14 @@ export default function MedicineGrid({
                     <Star className="w-3.5 h-3.5 fill-current" />
                     <span className="text-slate-800 text-[10.5px]">{med.rating}</span>
                   </div>
+                  {/* Out of stock overlay */}
+                  {isOutOfStock && (
+                    <div className="absolute inset-0 bg-slate-950/55 flex items-center justify-center">
+                      <span className="px-3 py-1.5 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider">
+                        {t('outOfStock')}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Body details */}
@@ -158,28 +184,53 @@ export default function MedicineGrid({
                       </span>
                     </div>
 
-                    {/* Cart operations */}
-                    <button
-                      id={`add-to-cart-btn-${med.id}`}
-                      onClick={() => onAddToCart(med, 1)}
-                      className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-1.5 transition-all duration-300 ${
-                        inCart
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100/60'
-                          : 'bg-teal-600 text-white hover:bg-teal-700 active:scale-95 shadow-md shadow-teal-50'
-                      }`}
-                    >
-                      {inCart ? (
-                        <>
-                          <Check className="w-3.5 h-3.5" />
-                          <span>{t('itemAdded')} ({cartQty})</span>
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>{t('addToCart')}</span>
-                        </>
-                      )}
-                    </button>
+                    {/* Cart operations / Notify Me when unavailable */}
+                    {isOutOfStock ? (
+                      <button
+                        id={`notify-btn-${med.id}`}
+                        onClick={handleNotifyClick}
+                        disabled={isSubscribed}
+                        className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-1.5 transition-all duration-300 ${
+                          isSubscribed
+                            ? 'bg-slate-50 text-slate-500 border border-slate-200 cursor-default'
+                            : 'bg-amber-500 text-white hover:bg-amber-600 active:scale-95 shadow-md shadow-amber-50'
+                        }`}
+                      >
+                        {isSubscribed ? (
+                          <>
+                            <BellOff className="w-3.5 h-3.5" />
+                            <span>{t('notifySubscribedBtn')}</span>
+                          </>
+                        ) : (
+                          <>
+                            <BellRing className="w-3.5 h-3.5" />
+                            <span>{t('notifyMeBtn')}</span>
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        id={`add-to-cart-btn-${med.id}`}
+                        onClick={() => onAddToCart(med, 1)}
+                        className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-1.5 transition-all duration-300 ${
+                          inCart
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100/60'
+                            : 'bg-teal-600 text-white hover:bg-teal-700 active:scale-95 shadow-md shadow-teal-50'
+                        }`}
+                      >
+                        {inCart ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{t('itemAdded')} ({cartQty})</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>{t('addToCart')}</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
 

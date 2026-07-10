@@ -1,13 +1,8 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import path from 'path';
-import fs from 'fs';
-import { MEDICINES_DATA } from '../../../src/data';
+import * as path from 'path';
+import * as fs from 'fs';
+import { MEDICINES_DATA } from '../seeds/medicines.data';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -15,7 +10,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     super({
       datasources: {
         db: {
-          url: `file:${path.join(process.cwd(), 'backend', 'data', 'pharmacy.db')}`,
+          url: `file:${path.join(__dirname, '../../data/pharmacy.db')}`,
         },
       },
     });
@@ -32,7 +27,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   private async migrateJsonToSqlite() {
-    const jsonPath = path.join(process.cwd(), 'backend', 'data', 'db.json');
+    const jsonPath = path.join(__dirname, '../../data/db.json');
     if (fs.existsSync(jsonPath)) {
       try {
         const data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
@@ -72,19 +67,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           }
         }
         fs.renameSync(jsonPath, jsonPath + '.migrated');
-        console.log('Successfully migrated json database to SQLite using Prisma!');
+        console.log('Migrated JSON database to SQLite.');
       } catch (e) {
-        console.error('Error migrating JSON db using Prisma:', e);
+        console.error('Error migrating JSON db:', e);
       }
     }
   }
 
   private async seedMedicines() {
     try {
-      const medCount = await this.medicine.count();
-      if (medCount === 0) {
-        console.log('Seeding medicines table from MEDICINES_DATA using Prisma...');
-        
+      const count = await this.medicine.count();
+      if (count === 0) {
+        console.log('Seeding medicines...');
         for (const med of MEDICINES_DATA) {
           await this.medicine.create({
             data: {
@@ -104,13 +98,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
               mgPerUnit: Number(med.mgPerUnit),
               dosageRules: JSON.stringify(med.dosageRules),
               inStock: 1,
-            }
+            },
           });
         }
-        console.log('Successfully seeded medicines count using Prisma:', MEDICINES_DATA.length);
+        console.log(`Seeded ${MEDICINES_DATA.length} medicines.`);
       }
     } catch (err) {
-      console.error('Error seeding medicines with Prisma:', err);
+      console.error('Error seeding medicines:', err);
     }
   }
 }
