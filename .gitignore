@@ -7,7 +7,5 @@ coverage/
 .env*
 !.env.example
 
-# SQLite Database
-backend/data/*.db
-backend/data/*.db-*
-backend/data/*.migrated
+# SQLite database data (contains the runtime DB, mounted as a volume in Docker)
+backend/data/
