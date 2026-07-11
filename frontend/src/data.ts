@@ -697,35 +697,20 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     en: 'Payment Method',
     ar: 'اختر طريقة الدفع'
   },
-  payCardOnline: {
-    ru: 'Копирование реквизитов или Картой онлайн',
-    en: 'Credit Card (Stripe/Online)',
-    ar: 'بطاقة ائتمان عبر الإنترنت'
+  payViaWhatsApp: {
+    ru: 'Оформление через WhatsApp',
+    en: 'Order via WhatsApp',
+    ar: 'الطلب عبر واتساب'
   },
-  payCashOnDelivery: {
-    ru: 'Оплата курьеру при получении',
-    en: 'Cash on Delivery (Courier)',
-    ar: 'الدفع نقداً عند الاستلام'
+  payViaWhatsAppNote: {
+    ru: 'После оформления заказа мы откроем WhatsApp с готовым сообщением — менеджер подтвердит наличие и способ оплаты.',
+    en: 'After placing the order we will open WhatsApp with a ready message — our manager will confirm availability and payment.',
+    ar: 'بعد تأكيد الطلب سنفتح واتساب مع رسالة جاهزة، وسيقوم المدير بتأكيد التوفر وطريقة الدفع.'
   },
-  cardHolderLabel: {
-    ru: 'Имя владельца карты',
-    en: 'Cardholder Name',
-    ar: 'اسم صاحب البطاقة'
-  },
-  cardNumberLabel: {
-    ru: 'Номер карты (16 цифр)',
-    en: 'Card Number',
-    ar: 'رقم البطاقة (16 رقماً)'
-  },
-  cardExpiryLabel: {
-    ru: 'Срок действия (ММ/ГГ)',
-    en: 'Expiry Date',
-    ar: 'تاريخ انتهاء الصلاحية (MM/YY)'
-  },
-  cardCvvLabel: {
-    ru: 'Код CVV / CVC',
-    en: 'CVV / CVC Code',
-    ar: 'رمز التحقق الرقمي CVV / CVC'
+  payViaWhatsAppFooterNote: {
+    ru: 'Подтверждение и оплата — через WhatsApp',
+    en: 'Confirmation & payment — via WhatsApp',
+    ar: 'التأكيد والدفع عبر واتساب'
   },
   placeOrderBtn: {
     ru: 'Подтвердить заказ и перейти к оплате',

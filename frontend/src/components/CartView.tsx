@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { Medicine, Language, CartItem, User, Order } from '../types';
 import { TRANSLATIONS } from '../data';
-import { Trash2, Phone, MapPin, CreditCard, ShoppingBag, Plus, Minus, ArrowRight, ShieldCheck, CheckCircle2, Ticket } from 'lucide-react';
+import { Trash2, Phone, ShoppingBag, Plus, Minus, ArrowRight, MessageCircle, CheckCircle2, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface CartViewProps {
@@ -36,12 +36,9 @@ export default function CartView({
   const [postalCode, setPostalCode] = useState('');
   const [phoneNumber, setPhoneNumber] = useState(user.phone || '');
 
-  // Payment states
-  const [payMethod, setPayMethod] = useState<'card' | 'cash'>('card');
-  const [cardName, setCardName] = useState('');
-  const [cardNum, setCardNum] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
+  // WhatsApp number that receives the order template (payment gateway integration
+  // requires a live site for callbacks, so orders are confirmed/paid via WhatsApp for now)
+  const WHATSAPP_NUMBER = '77273214567';
 
   // Confirmation state
   const [loading, setLoading] = useState(false);
@@ -67,32 +64,21 @@ export default function CartView({
 
   const grandTotal = calculateSubtotal() + getDeliveryCost();
 
-  const handleCardNumberChange = (value: string) => {
-    // Format card number as xxxx xxxx xxxx xxxx
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    const matches = v.match(/\d{4,16}/g);
-    const match = (matches && matches[0]) || '';
-    const parts = [];
+  const buildWhatsAppMessage = () => {
+    const heading = currentLang === 'ru' ? 'Новый заказ с сайта Nadeck' : currentLang === 'ar' ? 'طلب جديد من موقع Nadeck' : 'New order from Nadeck website';
+    const lines = [heading, ''];
 
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4));
-    }
+    cart.forEach((item) => {
+      lines.push(`• ${item.medicine.name[currentLang]} x${item.quantity} — ${(item.medicine.price * item.quantity).toLocaleString()} ${t('currencySymbol')}`);
+    });
 
-    if (parts.length > 0) {
-      setCardNum(parts.join(' '));
-    } else {
-      setCardNum(v);
-    }
-  };
+    lines.push('');
+    lines.push(`${t('totalToPay')}: ${grandTotal.toLocaleString()} ${t('currencySymbol')}`);
+    lines.push('');
+    lines.push(`${t('deliveryAddressLabel')}: ${city}, ${street}${apartment ? ', ' + apartment : ''}`);
+    lines.push(`${t('phoneLabel')}: ${phoneNumber}`);
 
-  const handleExpiryChange = (value: string) => {
-    // Format MM/YY
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    if (v.length >= 2) {
-      setCardExpiry(`${v.substring(0, 2)}/${v.substring(2, 4)}`);
-    } else {
-      setCardExpiry(v);
-    }
+    return lines.join('\n');
   };
 
   const handleBuy = (e: React.FormEvent) => {
@@ -107,15 +93,12 @@ export default function CartView({
       return;
     }
 
-    // Card validation if chosen
-    if (payMethod === 'card') {
-      if (!cardName || cardNum.length < 15 || cardExpiry.length < 5 || cardCvv.length < 3) {
-        setFormError(currentLang === 'ru' ? 'Заполните корректные платежные данные карты!' : currentLang === 'ar' ? 'يرجى ملء بيانات بطاقة الائتمان الصحيحة!' : 'Please fill correct credit card fields.');
-        return;
-      }
-    }
-
     setLoading(true);
+
+    const whatsAppMessage = buildWhatsAppMessage();
+    // Open the tab synchronously (within the click's event handler) so browsers don't
+    // treat the later redirect as a blocked popup once the async order request resolves.
+    const whatsAppTab = window.open('', '_blank');
 
     const orderPayload = {
       email: user.email || 'guest',
@@ -131,7 +114,7 @@ export default function CartView({
         apartment: apartment || '',
         postalCode: postalCode || '050000'
       },
-      paymentMethod: payMethod === 'card' ? t('payCardOnline') : t('payCashOnDelivery')
+      paymentMethod: t('payViaWhatsApp')
     };
 
     fetch('/api/orders', {
@@ -147,9 +130,16 @@ export default function CartView({
       onPlaceOrder(newCreatedOrder);
       setOrderConfirmed(newCreatedOrder);
       onClearCart();
+      const whatsAppUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsAppMessage)}`;
+      if (whatsAppTab) {
+        whatsAppTab.location.href = whatsAppUrl;
+      } else {
+        window.open(whatsAppUrl, '_blank');
+      }
     })
     .catch(err => {
       console.error(err);
+      whatsAppTab?.close();
       setFormError(currentLang === 'ru' ? 'Ошибка при создании заказа!' : currentLang === 'ar' ? 'حدث خطأ أثناء إتمام الطلب!' : 'Error creating order!');
     })
     .finally(() => {
@@ -411,143 +401,11 @@ export default function CartView({
 
           </div>
 
-          {/* Payment Method selectors */}
-          <div className="space-y-3" id="payment-selection-box">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">{t('paymentMethodLabel')}</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                id="payment-method-card"
-                type="button"
-                onClick={() => setPayMethod('card')}
-                className={`p-3 rounded-xl border text-xs font-semibold text-center flex flex-col items-center justify-center gap-1.5 transition ${
-                  payMethod === 'card'
-                    ? 'border-nadeck-500 bg-nadeck-50/50 text-nadeck-800 font-bold'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <CreditCard className="w-5 h-5 text-nadeck-600" />
-                <span>{t('payCardOnline')}</span>
-              </button>
-              <button
-                id="payment-method-cash"
-                type="button"
-                onClick={() => setPayMethod('cash')}
-                className={`p-3 rounded-xl border text-xs font-semibold text-center flex flex-col items-center justify-center gap-1.5 transition ${
-                  payMethod === 'cash'
-                    ? 'border-nadeck-500 bg-nadeck-50/50 text-nadeck-800 font-bold'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <MapPin className="w-5 h-5 text-nadeck-600" />
-                <span>{t('payCashOnDelivery')}</span>
-              </button>
-            </div>
+          {/* Payment note: order is confirmed and paid via WhatsApp with the store manager */}
+          <div className="flex items-start gap-3 p-3.5 rounded-xl border border-emerald-100 bg-emerald-50/60" id="payment-whatsapp-note">
+            <MessageCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-emerald-800 font-semibold leading-relaxed">{t('payViaWhatsAppNote')}</p>
           </div>
-
-          {/* Live Virtual Credit Card Mirror UI */}
-          {payMethod === 'card' && (
-            <div className="space-y-4 pt-2" id="credit-card-details">
-              
-              {/* Animated Plastic Card visual */}
-              <div 
-                className="w-full aspect-[1.58/1] bg-gradient-to-tr from-nadeck-700 to-slate-900 rounded-2xl p-5 text-white flex flex-col justify-between shadow-lg relative overflow-hidden border border-nadeck-800" 
-                id="digital-card"
-              >
-                {/* Chip illustration mock */}
-                <div className="flex justify-between items-start">
-                  <div className="w-9 h-7 bg-amber-400/90 rounded-md shadow-inner border border-amber-300 relative overflow-hidden">
-                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0.5 opacity-20">
-                      {[...Array(9)].map((_, i) => <div key={i} className="border border-black" />)}
-                    </div>
-                  </div>
-                  <span className="text-sm font-black italic tracking-wider opacity-90">VISA</span>
-                </div>
-
-                {/* Card Number */}
-                <div id="card-num-mirror" className="text-base sm:text-lg font-mono font-bold tracking-widest text-center py-2 text-slate-100 select-none">
-                  {cardNum || '•••• •••• •••• ••••'}
-                </div>
-
-                {/* Card Footer Holder / Exp */}
-                <div className="flex justify-between items-end text-[10px] font-mono select-none">
-                  <div className="truncate max-w-[170px]">
-                    <span className="block opacity-65 text-[7px] uppercase font-sans">Cardholder</span>
-                    <span id="card-holder-mirror" className="font-semibold uppercase tracking-wide truncate block">
-                      {cardName || 'YOUR FULL NAME'}
-                    </span>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <span className="block opacity-65 text-[7px] uppercase font-sans">Expires</span>
-                    <span id="card-exp-mirror" className="font-semibold tracking-wider">
-                      {cardExpiry || 'MM/YY'}
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Physical credit card inputs */}
-              <div className="space-y-3 text-xs" id="card-inputs-fields">
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-600">{t('cardNumberLabel')}</label>
-                  <input
-                    id="input-card-number"
-                    type="text"
-                    required={payMethod === 'card'}
-                    maxLength={19}
-                    placeholder="4000 1234 5678 9010"
-                    value={cardNum}
-                    onChange={(e) => handleCardNumberChange(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-nadeck-500 focus:bg-white rounded-xl focus:outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="font-semibold text-slate-600">{t('cardExpiryLabel')}</label>
-                    <input
-                      id="input-card-expiry"
-                      type="text"
-                      required={payMethod === 'card'}
-                      maxLength={5}
-                      placeholder="MM/YY"
-                      value={cardExpiry}
-                      onChange={(e) => handleExpiryChange(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-nadeck-500 focus:bg-white rounded-xl focus:outline-none text-center"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="font-semibold text-slate-600">{t('cardCvvLabel')}</label>
-                    <input
-                      id="input-card-cvv"
-                      type="password"
-                      required={payMethod === 'card'}
-                      maxLength={3}
-                      placeholder="123"
-                      value={cardCvv}
-                      onChange={(e) => setCardCvv(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-nadeck-500 focus:bg-white rounded-xl focus:outline-none text-center"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-600">{t('cardHolderLabel')}</label>
-                  <input
-                    id="input-card-fullname"
-                    type="text"
-                    required={payMethod === 'card'}
-                    placeholder="ALIKHANOV ERZHAN"
-                    value={cardName}
-                    onChange={(e) => setCardName(e.target.value.toUpperCase().replace(/[^a-zA-Z\s]/g, ''))}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-nadeck-500 focus:bg-white rounded-xl focus:outline-none"
-                  />
-                </div>
-              </div>
-
-            </div>
-          )}
 
         </div>
 
@@ -598,8 +456,8 @@ export default function CartView({
           </button>
 
           <div className="flex items-center justify-center gap-2 text-[10px] text-slate-500 font-semibold select-none">
-            <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            <span>Шифрование SSL • Безопасный платеж</span>
+            <MessageCircle className="w-4 h-4 text-emerald-500" />
+            <span>{t('payViaWhatsAppFooterNote')}</span>
           </div>
 
         </div>
