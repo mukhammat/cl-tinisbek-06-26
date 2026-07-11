@@ -433,9 +433,9 @@ export const MEDICINES_DATA: Medicine[] = [
 
 export const TRANSLATIONS: Record<string, Record<Language, string>> = {
   appName: {
-    ru: 'Peptide Pharma',
-    en: 'Peptide Pharma',
-    ar: 'ببتيد فارما'
+    ru: 'Nadeck',
+    en: 'Nadeck',
+    ar: 'ناديك'
   },
   appSubtitle: {
     ru: 'Премиальные сертифицированные пептиды и точный калькулятор разведения',
@@ -798,8 +798,8 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     ar: 'الملف الشخصي للعميل'
   },
   userWelcome: {
-    ru: 'Приветствуем в Peptide Pharma,',
-    en: 'Welcome to Peptide Pharma,',
+    ru: 'Приветствуем в Nadeck,',
+    en: 'Welcome to Nadeck,',
     ar: 'مرحباً بك في ببتيد فارما،'
   },
   savedAddressLabel: {

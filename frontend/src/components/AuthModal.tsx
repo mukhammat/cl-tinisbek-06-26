@@ -142,8 +142,8 @@ export default function AuthModal({
             {user.isAuthenticated ? (
               /* Authenticated User state */
               <div className="space-y-6" id="auth-logged-in-profile">
-                <div className="flex items-center gap-4 bg-teal-50/50 p-4 rounded-2xl border border-teal-100/30">
-                  <div className="w-12 h-12 bg-teal-600 text-white font-bold text-lg rounded-full flex items-center justify-center">
+                <div className="flex items-center gap-4 bg-nadeck-50/50 p-4 rounded-2xl border border-nadeck-100/30">
+                  <div className="w-12 h-12 bg-nadeck-600 text-white font-bold text-lg rounded-full flex items-center justify-center">
                     {user.fullName.charAt(0).toUpperCase()}
                   </div>
                   <div>
@@ -177,7 +177,7 @@ export default function AuthModal({
                         value={user.address}
                         onChange={(e) => onUpdateUser({ ...user, address: e.target.value })}
                         placeholder={currentLang === 'ru' ? 'Введите адрес...' : 'Enter address...'}
-                        className="w-full font-semibold text-slate-800 bg-slate-50 focus:bg-white border-none py-1 px-1.5 rounded focus:ring-1 focus:ring-teal-500 text-sm"
+                        className="w-full font-semibold text-slate-800 bg-slate-50 focus:bg-white border-none py-1 px-1.5 rounded focus:ring-1 focus:ring-nadeck-500 text-sm"
                       />
                     </div>
                   </div>
@@ -222,7 +222,7 @@ export default function AuthModal({
                         placeholder="Алиханов Ержан"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-xl focus:outline-none focus:bg-white"
+                        className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 focus:border-nadeck-500 rounded-xl focus:outline-none focus:bg-white"
                       />
                     </div>
                   </div>
@@ -239,7 +239,7 @@ export default function AuthModal({
                       placeholder="example@mail.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-xl focus:outline-none focus:bg-white"
+                      className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 focus:border-nadeck-500 rounded-xl focus:outline-none focus:bg-white"
                     />
                   </div>
                 </div>
@@ -256,7 +256,7 @@ export default function AuthModal({
                         placeholder="+7 (777) 123-45-67"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-xl focus:outline-none focus:bg-white"
+                        className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 focus:border-nadeck-500 rounded-xl focus:outline-none focus:bg-white"
                       />
                     </div>
                   </div>
@@ -273,7 +273,7 @@ export default function AuthModal({
                         placeholder="Алматы, пр. Аль-Фараби 77, кв 12"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-xl focus:outline-none focus:bg-white"
+                        className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 focus:border-nadeck-500 rounded-xl focus:outline-none focus:bg-white"
                       />
                     </div>
                   </div>
@@ -290,7 +290,7 @@ export default function AuthModal({
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2 text-sm bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-xl focus:outline-none focus:bg-white"
+                      className="w-full pl-10 pr-10 py-2 text-sm bg-slate-50 border border-slate-200 focus:border-nadeck-500 rounded-xl focus:outline-none focus:bg-white"
                     />
                     <button
                       id="btn-toggle-password"
@@ -308,7 +308,7 @@ export default function AuthModal({
                     id="btn-submit-auth"
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 text-white font-bold text-sm rounded-xl tracking-wide shadow-md shadow-teal-100 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-nadeck-600 hover:bg-nadeck-700 disabled:bg-nadeck-400 text-white font-bold text-sm rounded-xl tracking-wide shadow-md shadow-nadeck-100 transition-colors flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -325,7 +325,7 @@ export default function AuthModal({
                       setIsRegistering(!isRegistering);
                       setErrorMsg('');
                     }}
-                    className="text-xs font-semibold text-teal-600 hover:text-teal-700 hover:underline"
+                    className="text-xs font-semibold text-nadeck-600 hover:text-nadeck-700 hover:underline"
                   >
                     {isRegistering ? t('authToggleLoginMsg') : t('authToggleRegMsg')}
                   </button>

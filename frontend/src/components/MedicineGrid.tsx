@@ -81,7 +81,7 @@ export default function MedicineGrid({
             onClick={() => setSelectedCategory(cat.id)}
             className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap snap-start transition-all duration-200 ${
               selectedCategory === cat.id
-                ? 'bg-teal-600 border border-teal-600 text-white shadow-md shadow-teal-50'
+                ? 'bg-nadeck-600 border border-nadeck-600 text-white shadow-md shadow-nadeck-50'
                 : 'bg-white border border-slate-200/50 text-slate-600 hover:border-slate-300 hover:text-slate-900 shadow-sm'
             }`}
           >
@@ -133,7 +133,7 @@ export default function MedicineGrid({
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   {/* Category Badge overlay */}
-                  <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] uppercase font-bold text-teal-800 bg-teal-50/90 rounded-full border border-teal-100/50">
+                  <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] uppercase font-bold text-nadeck-800 bg-nadeck-50/90 rounded-full border border-nadeck-100/50">
                     {t(`cat${med.category.charAt(0).toUpperCase() + med.category.slice(1)}`)}
                   </span>
                   {/* Score */}
@@ -155,13 +155,13 @@ export default function MedicineGrid({
                 <div className="p-5 flex-1 flex flex-col justify-between">
                   <div className="space-y-2">
                     {/* Active Substance tagline */}
-                    <span className="text-[10px] text-teal-600 font-bold tracking-wider uppercase">
+                    <span className="text-[10px] text-nadeck-600 font-bold tracking-wider uppercase">
                       {med.activeSubstance[currentLang]}
                     </span>
                     
                     {/* Medicine Name */}
                     <h3 
-                      className="text-base font-extrabold text-slate-950 group-hover:text-teal-600 cursor-pointer transition-colors leading-snug line-clamp-1"
+                      className="text-base font-extrabold text-slate-950 group-hover:text-nadeck-600 cursor-pointer transition-colors leading-snug line-clamp-1"
                       onClick={() => onSelectMedicine(med)}
                       id={`title-${med.id}`}
                     >
@@ -215,7 +215,7 @@ export default function MedicineGrid({
                         className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-1.5 transition-all duration-300 ${
                           inCart
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100/60'
-                            : 'bg-teal-600 text-white hover:bg-teal-700 active:scale-95 shadow-md shadow-teal-50'
+                            : 'bg-nadeck-600 text-white hover:bg-nadeck-700 active:scale-95 shadow-md shadow-nadeck-50'
                         }`}
                       >
                         {inCart ? (

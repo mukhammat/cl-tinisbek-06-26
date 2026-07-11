@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+@theme {
+  --color-nadeck-50: #f1f9fe;
+  --color-nadeck-100: #def0fc;
+  --color-nadeck-200: #b9dff8;
+  --color-nadeck-300: #88c7f2;
+  --color-nadeck-400: #42aaf0;
+  --color-nadeck-500: #0692ef;
+  --color-nadeck-600: #0071bc;
+  --color-nadeck-700: #005c99;
+  --color-nadeck-800: #034c7c;
+  --color-nadeck-900: #053c61;
+  --color-nadeck-950: #052439;
+}

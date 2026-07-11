@@ -16,9 +16,9 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     const welcomeMsgs: Record<Language, string> = {
-      ru: 'Привет! Я ваш персональный AI-консультант Peptide Pharma. Я могу помочь вам рассчитать дозировку, подсказать схемы разведения (разбавления) пептидов или порекомендовать препараты для восстановления, суставов или контроля веса. О чем вы хотите узнать?',
-      en: 'Hello! I am your Peptide Pharma AI Consultant. I can help you calculate dosages, understand reconstitution patterns, or recommend the best peptides for healing, weight loss, or anti-aging. What would you like to discuss?',
-      ar: 'مرحباً! أنا مستشارك الطبي الذكي لشركة Peptide Pharma. يمكنني مساعدتك في حساب الجرعات، وتوضيح كيفية تمديد الببتيدات، أو تقديم توصيات حول الببتيدات المناسبة للاستشفاء، فقدان الوزن، أو تجديد الخلايا. كيف يمكنني مساعدتك اليوم؟'
+      ru: 'Привет! Я ваш персональный AI-консультант Nadeck. Я могу помочь вам рассчитать дозировку, подсказать схемы разведения (разбавления) пептидов или порекомендовать препараты для восстановления, суставов или контроля веса. О чем вы хотите узнать?',
+      en: 'Hello! I am your Nadeck AI Consultant. I can help you calculate dosages, understand reconstitution patterns, or recommend the best peptides for healing, weight loss, or anti-aging. What would you like to discuss?',
+      ar: 'مرحباً! أنا مستشارك الطبي الذكي لشركة Nadeck. يمكنني مساعدتك في حساب الجرعات، وتوضيح كيفية تمديد الببتيدات، أو تقديم توصيات حول الببتيدات المناسبة للاستشفاء، فقدان الوزن، أو تجديد الخلايا. كيف يمكنني مساعدتك اليوم؟'
     };
     return [
       {
@@ -119,9 +119,9 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
             className="w-80 sm:w-96 h-[500px] bg-white rounded-3xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden mb-4"
           >
             {/* Header */}
-            <div className="px-5 py-4 bg-gradient-to-r from-teal-700 to-slate-900 text-white flex items-center justify-between shadow-md relative shrink-0">
+            <div className="px-5 py-4 bg-gradient-to-r from-nadeck-700 to-slate-900 text-white flex items-center justify-between shadow-md relative shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 bg-teal-500/10 border border-teal-400/25 rounded-xl flex items-center justify-center text-teal-300">
+                <div className="w-9 h-9 bg-nadeck-500/10 border border-nadeck-400/25 rounded-xl flex items-center justify-center text-nadeck-300">
                   <Sparkles className="w-5 h-5 animate-pulse" />
                 </div>
                 <div>
@@ -130,7 +130,7 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
                   </h4>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[10px] text-teal-300 font-bold uppercase tracking-wider">Online</span>
+                    <span className="text-[10px] text-nadeck-300 font-bold uppercase tracking-wider">Online</span>
                   </div>
                 </div>
               </div>
@@ -154,7 +154,7 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
                   <div
                     className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm shadow-sm leading-relaxed ${
                       m.role === 'user'
-                        ? 'bg-teal-600 text-white rounded-br-none'
+                        ? 'bg-nadeck-600 text-white rounded-br-none'
                         : 'bg-white text-slate-800 border border-slate-100 rounded-bl-none'
                     }`}
                   >
@@ -166,7 +166,7 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
               {loading && (
                 <div className="flex justify-start" id="ai-chat-loader">
                   <div className="bg-white text-slate-500 border border-slate-100 rounded-2xl rounded-bl-none px-4 py-2.5 shadow-sm text-xs flex items-center gap-2">
-                    <Loader className="w-4 h-4 animate-spin text-teal-500" />
+                    <Loader className="w-4 h-4 animate-spin text-nadeck-500" />
                     <span>{currentLang === 'ru' ? 'AI печатает...' : currentLang === 'ar' ? 'المستشار يكتب...' : 'AI is thinking...'}</span>
                   </div>
                 </div>
@@ -209,13 +209,13 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
                     ? 'اسأل المستشار الذكي...' 
                     : 'Ask our AI Peptide Advisor...'
                 }
-                className="flex-1 px-4 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 focus:bg-white text-slate-800"
+                className="flex-1 px-4 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-nadeck-500 focus:bg-white text-slate-800"
               />
               <button
                 id="btn-send-ai-chat"
                 type="submit"
                 disabled={!input.trim() || loading}
-                className="p-2.5 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-200 text-white disabled:text-slate-400 rounded-xl transition"
+                className="p-2.5 bg-nadeck-600 hover:bg-nadeck-700 disabled:bg-slate-200 text-white disabled:text-slate-400 rounded-xl transition"
               >
                 <Send className="w-4.5 h-4.5" />
               </button>
@@ -230,9 +230,9 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-gradient-to-tr from-teal-600 to-slate-900 hover:from-teal-500 hover:to-slate-800 text-white rounded-full shadow-2xl border border-teal-500/20 flex items-center justify-center relative cursor-pointer"
+        className="w-14 h-14 bg-gradient-to-tr from-nadeck-600 to-slate-900 hover:from-nadeck-500 hover:to-slate-800 text-white rounded-full shadow-2xl border border-nadeck-500/20 flex items-center justify-center relative cursor-pointer"
       >
-        <div className="absolute inset-0 rounded-full bg-teal-400/10 animate-ping pointer-events-none" />
+        <div className="absolute inset-0 rounded-full bg-nadeck-400/10 animate-ping pointer-events-none" />
         {isOpen ? <X className="w-6 h-6" /> : <Bot className="w-6 h-6" />}
       </motion.button>
     </div>

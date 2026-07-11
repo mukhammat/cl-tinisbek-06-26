@@ -82,7 +82,7 @@ export default function OrderHistory({
           <p className="text-xs text-slate-500">Отслеживайте свои заказы и просматривайте прошлые покупки.</p>
         </div>
         {searchQuery.trim() && (
-          <div className="bg-teal-50 text-teal-700 text-xs font-black px-3 py-1.5 rounded-xl border border-teal-100 self-start sm:self-center">
+          <div className="bg-nadeck-50 text-nadeck-700 text-xs font-black px-3 py-1.5 rounded-xl border border-nadeck-100 self-start sm:self-center">
             {currentLang === 'ru' ? `Найдено заказов: ${filteredOrders.length}` : `Orders found: ${filteredOrders.length}`}
           </div>
         )}
@@ -149,7 +149,7 @@ export default function OrderHistory({
                 <div className="text-left sm:text-right shrink-0 pt-3 sm:pt-0 sm:border-l sm:border-slate-50 sm:pl-6 flex flex-col justify-between">
                   <div>
                     <span className="block text-[10px] text-slate-400 font-semibold uppercase">{t('totalToPay')}</span>
-                    <span id={`order-total-${order.id}`} className="text-base sm:text-lg font-black text-teal-800">
+                    <span id={`order-total-${order.id}`} className="text-base sm:text-lg font-black text-nadeck-800">
                       {order.totalPrice.toLocaleString()} {t('currencySymbol')}
                     </span>
                   </div>

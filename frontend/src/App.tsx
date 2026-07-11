@@ -17,6 +17,7 @@ import AIPeptideAdvisor from './components/AIPeptideAdvisor';
 import AdminPanel from './components/AdminPanel';
 import { ShoppingCart, Calculator, MapPin, Heart, Clock, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import nadeckIconWhite from './assets/nadeck-icon-white.png';
 
 export default function App() {
   // Lang state (initializes from localStorage if available, fallback to Russian 'ru')
@@ -270,7 +271,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans selection:bg-teal-500 selection:text-white" id="main-frame">
+    <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans selection:bg-nadeck-500 selection:text-white" id="main-frame">
       
       {/* Universal Sticky Header Navigation */}
       <Navbar
@@ -300,7 +301,7 @@ export default function App() {
             {/* Visual Hero Banner: show only on landing Catalog with NO query filters */}
             {activeTab === 'catalog' && !selectedMedicine && !searchQuery && (
               <div 
-                className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-teal-700 to-slate-900 text-white p-6 sm:p-10 lg:p-12 shadow-xl border border-teal-800 flex flex-col md:flex-row items-center justify-between gap-6" 
+                className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-nadeck-700 to-slate-900 text-white p-6 sm:p-10 lg:p-12 shadow-xl border border-nadeck-800 flex flex-col md:flex-row items-center justify-between gap-6" 
                 id="hero-banner"
               >
                 {/* Visual back glow */}
@@ -329,7 +330,7 @@ export default function App() {
                     <button
                       id="hero-btn-calc"
                       onClick={handleHeroGoToCalculator}
-                      className="px-5 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-lg shadow-teal-500/10 active:scale-95 transition-all"
+                      className="px-5 py-2.5 bg-nadeck-500 hover:bg-nadeck-400 text-slate-950 font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-lg shadow-nadeck-500/10 active:scale-95 transition-all"
                     >
                       <Calculator className="w-4 h-4" />
                       <span>{t('calcTab')}</span>
@@ -354,10 +355,10 @@ export default function App() {
 
                 {/* Conceptual vector image showcase */}
                 <div className="relative shrink-0 hidden md:block w-48 lg:w-56" id="hero-graphics">
-                  <div className="w-full aspect-square bg-white/5 rounded-full border border-teal-500/20 flex items-center justify-center p-6 animate-spin-slow">
-                    <div className="w-full h-full rounded-full bg-teal-400/10 flex items-center justify-center">
-                      <div className="w-14 h-14 bg-teal-500 text-slate-950 text-3xl font-bold flex items-center justify-center rounded-3xl shadow-lg">
-                        ✚
+                  <div className="w-full aspect-square bg-white/5 rounded-full border border-nadeck-500/20 flex items-center justify-center p-6 animate-spin-slow">
+                    <div className="w-full h-full rounded-full bg-nadeck-400/10 flex items-center justify-center">
+                      <div className="w-14 h-14 bg-nadeck-500 flex items-center justify-center rounded-3xl shadow-lg p-2.5">
+                        <img src={nadeckIconWhite} alt="Nadeck" className="w-full h-full object-contain" />
                       </div>
                     </div>
                   </div>
@@ -433,7 +434,7 @@ export default function App() {
                     <button
                       id="back-cart-link"
                       onClick={() => setActiveTab('catalog')}
-                      className="text-teal-600 hover:text-teal-800 text-xs sm:text-sm font-semibold flex items-center gap-1 transition-colors"
+                      className="text-nadeck-600 hover:text-nadeck-800 text-xs sm:text-sm font-semibold flex items-center gap-1 transition-colors"
                     >
                       ← {currentLang === 'ru' ? 'Вернуться к покупкам' : 'Continue Shopping'}
                     </button>
@@ -478,8 +479,8 @@ export default function App() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center text-slate-950 font-black text-sm">
-                  ✚
+                <div className="w-8 h-8 rounded-lg bg-nadeck-500 flex items-center justify-center p-1.5">
+                  <img src={nadeckIconWhite} alt="Nadeck" className="w-full h-full object-contain" />
                 </div>
                 <h4 className="text-white font-bold text-sm tracking-tight">{t('appName')}</h4>
               </div>

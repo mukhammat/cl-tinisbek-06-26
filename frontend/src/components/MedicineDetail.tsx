@@ -86,7 +86,7 @@ export default function MedicineDetail({
             />
           </div>
           <div className="flex items-center gap-2 justify-center py-2 px-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-500 text-xs text-center font-medium">
-            <Award className="w-4 h-4 text-teal-600 shrink-0" />
+            <Award className="w-4 h-4 text-nadeck-600 shrink-0" />
             <span>Сертифицированный оригинальный препарат</span>
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function MedicineDetail({
           {/* Header titles */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-teal-800 bg-teal-50 rounded-full">
+              <span className="px-3 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-nadeck-800 bg-nadeck-50 rounded-full">
                 {t(`cat${medicine.category.charAt(0).toUpperCase() + medicine.category.slice(1)}`)}
               </span>
               <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
@@ -119,7 +119,7 @@ export default function MedicineDetail({
             <div className="flex flex-col gap-1 text-xs text-slate-500 font-medium">
               <p>
                 <span className="text-slate-400 font-semibold">{t('activeSubstanceLabel')}:</span>{' '}
-                <span className="text-teal-700 font-bold">{medicine.activeSubstance[currentLang]}</span>
+                <span className="text-nadeck-700 font-bold">{medicine.activeSubstance[currentLang]}</span>
               </p>
               <p>
                 <span className="text-slate-400 font-semibold">
@@ -205,7 +205,7 @@ export default function MedicineDetail({
                 <button
                   id="btn-detail-add-to-cart"
                   onClick={handleAddToCart}
-                  className="flex-1 sm:flex-none px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md shadow-teal-100 active:scale-95 transition"
+                  className="flex-1 sm:flex-none px-6 py-3 bg-nadeck-600 hover:bg-nadeck-700 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md shadow-nadeck-100 active:scale-95 transition"
                 >
                   <ShoppingCart className="w-4 h-4" />
                   <span>{t('addToCart')} ({qty})</span>
@@ -236,14 +236,14 @@ export default function MedicineDetail({
         
         {/* Indications */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 space-y-4" id="indications-panel">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-50 text-teal-800">
-            <FileText className="w-5 h-5 text-teal-600" />
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-50 text-nadeck-800">
+            <FileText className="w-5 h-5 text-nadeck-600" />
             <h3 className="text-base font-bold">{t('indicationsTitle')}</h3>
           </div>
           <ul className="space-y-2.5">
             {medicine.indications[currentLang]?.map((ind, idx) => (
               <li key={idx} className="flex gap-2.5 text-xs sm:text-sm text-slate-600">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-2 shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-nadeck-500 mt-2 shrink-0" />
                 <span>{ind}</span>
               </li>
             ))}

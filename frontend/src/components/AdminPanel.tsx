@@ -325,7 +325,7 @@ export default function AdminPanel({
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(20,184,166,0.1),transparent)] pointer-events-none" />
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 z-10 relative">
           <div>
-            <span className="px-3 py-1 text-[10px] font-bold tracking-wider text-teal-400 bg-teal-500/10 border border-teal-500/25 rounded-full uppercase">
+            <span className="px-3 py-1 text-[10px] font-bold tracking-wider text-nadeck-400 bg-nadeck-500/10 border border-nadeck-500/25 rounded-full uppercase">
               ⚙ Admin control panel
             </span>
             <h2 className="text-xl sm:text-2xl font-black mt-2 tracking-tight">
@@ -341,7 +341,7 @@ export default function AdminPanel({
           <button
             id="admin-btn-new-product"
             onClick={startAddProduct}
-            className="px-4 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-lg shadow-teal-500/10 active:scale-95 transition-all self-stretch sm:self-auto justify-center"
+            className="px-4 py-2.5 bg-nadeck-500 hover:bg-nadeck-400 text-slate-950 font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-lg shadow-nadeck-500/10 active:scale-95 transition-all self-stretch sm:self-auto justify-center"
           >
             <Plus className="w-4 h-4" />
             <span>{currentLang === 'ru' ? 'Добавить товар' : 'Add Product'}</span>
@@ -383,7 +383,7 @@ export default function AdminPanel({
           </div>
 
           <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
-            <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center text-teal-600">
+            <div className="w-10 h-10 bg-nadeck-50 rounded-xl flex items-center justify-center text-nadeck-600">
               <Layers className="w-5 h-5" />
             </div>
             <div>
@@ -427,7 +427,7 @@ export default function AdminPanel({
           onClick={() => { setActiveSubTab('products'); setIsEditing(false); setIsAdding(false); }}
           className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
             activeSubTab === 'products' && !isEditing && !isAdding
-              ? 'border-teal-600 text-teal-600'
+              ? 'border-nadeck-600 text-nadeck-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -439,7 +439,7 @@ export default function AdminPanel({
           onClick={() => { setActiveSubTab('orders'); setIsEditing(false); setIsAdding(false); }}
           className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
             activeSubTab === 'orders' && !isEditing && !isAdding
-              ? 'border-teal-600 text-teal-600'
+              ? 'border-nadeck-600 text-nadeck-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -447,7 +447,7 @@ export default function AdminPanel({
           <span>{currentLang === 'ru' ? 'Заказы клиентов' : 'Customer Orders'}</span>
         </button>
         {(isEditing || isAdding) && (
-          <div className="px-5 py-3 text-xs sm:text-sm font-bold text-teal-600 border-b-2 border-teal-600 flex items-center gap-1">
+          <div className="px-5 py-3 text-xs sm:text-sm font-bold text-nadeck-600 border-b-2 border-nadeck-600 flex items-center gap-1">
             <Edit2 className="w-4 h-4 animate-bounce" />
             <span>{isAdding ? (currentLang === 'ru' ? 'Новый продукт' : 'Create Product') : (currentLang === 'ru' ? 'Редактирование' : 'Editing Product')}</span>
           </div>
@@ -467,7 +467,7 @@ export default function AdminPanel({
                 placeholder={currentLang === 'ru' ? 'Поиск товара по названию, категории или ID...' : 'Filter products by keyword or handle...'}
                 value={prodSearch}
                 onChange={(e) => setProdSearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 text-xs sm:text-sm bg-white rounded-2xl border border-slate-200/60 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition-all duration-200"
+                className="w-full pl-11 pr-4 py-3 text-xs sm:text-sm bg-white rounded-2xl border border-slate-200/60 focus:border-nadeck-500 focus:outline-none focus:ring-1 focus:ring-nadeck-500 transition-all duration-200"
               />
             </div>
 
@@ -597,14 +597,14 @@ export default function AdminPanel({
                 placeholder={currentLang === 'ru' ? 'Поиск заказа по Email покупателя, ID, статусу доставки...' : 'Filter orders by email, ID, or payment format...'}
                 value={orderSearch}
                 onChange={(e) => setOrderSearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 text-xs sm:text-sm bg-white rounded-2xl border border-slate-200/60 focus:border-teal-500 focus:outline-none transition-all duration-200"
+                className="w-full pl-11 pr-4 py-3 text-xs sm:text-sm bg-white rounded-2xl border border-slate-200/60 focus:border-nadeck-500 focus:outline-none transition-all duration-200"
               />
             </div>
 
             {/* List of customer orders */}
             {ordersLoading ? (
               <div className="py-16 text-center text-slate-400 text-xs font-semibold" id="orders-loading-state">
-                <div className="w-8 h-8 rounded-full border-2 border-teal-600 border-t-transparent animate-spin mx-auto mb-3" />
+                <div className="w-8 h-8 rounded-full border-2 border-nadeck-600 border-t-transparent animate-spin mx-auto mb-3" />
                 {currentLang === 'ru' ? 'Загрузка заказов...' : 'Reading service orders...'}
               </div>
             ) : filteredOrders.length > 0 ? (
@@ -633,7 +633,7 @@ export default function AdminPanel({
                             {order.date}
                           </span>
                           <span className="text-slate-300">|</span>
-                          <span className="text-xs font-bold text-teal-800 bg-teal-50 px-2.5 py-0.5 rounded-lg border border-teal-100/50">
+                          <span className="text-xs font-bold text-nadeck-800 bg-nadeck-50 px-2.5 py-0.5 rounded-lg border border-nadeck-100/50">
                             {order.userEmail}
                           </span>
                         </div>
@@ -648,7 +648,7 @@ export default function AdminPanel({
                                 className="inline-block text-[11px] font-semibold text-slate-800 px-2.5 py-1 bg-slate-50 rounded-xl border border-slate-100"
                               >
                                 {item.medicineName[currentLang] || item.medicineName.en || 'Peptide Item'} 
-                                <span className="text-teal-600 font-black ml-1">x{item.quantity}</span>
+                                <span className="text-nadeck-600 font-black ml-1">x{item.quantity}</span>
                               </span>
                             ))}
                           </div>
@@ -671,7 +671,7 @@ export default function AdminPanel({
                         <div className="text-right">
                           <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{currentLang === 'ru' ? 'ИТОГО К ОПЛАТЕ' : 'ORDER GRAND TOTAL'}</span>
                           <span className="text-base sm:text-lg font-black text-slate-900">{order.totalPrice.toLocaleString()} ₸</span>
-                          <span className="block text-[9px] text-teal-600 font-bold uppercase mt-0.5">{order.paymentMethod}</span>
+                          <span className="block text-[9px] text-nadeck-600 font-bold uppercase mt-0.5">{order.paymentMethod}</span>
                         </div>
 
                         {/* Status updating Selector dropdown */}
@@ -746,7 +746,7 @@ export default function AdminPanel({
                     placeholder="e.g. semaglutide"
                     value={formData.id || ''}
                     onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-teal-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400 font-mono"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400 font-mono"
                   />
                   {isAdding && <span className="text-[10px] text-slate-400 mt-1 block">Only letters and hyphens, no spaces.</span>}
                 </div>
@@ -759,7 +759,7 @@ export default function AdminPanel({
                     id="form-select-category"
                     value={formData.category || 'weightloss'}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-teal-500 focus:outline-none"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
                   >
                     <option value="weightloss">Weight Loss (Похудение)</option>
                     <option value="painkiller">Healing & Repair (Заживление)</option>
@@ -781,7 +781,7 @@ export default function AdminPanel({
                     placeholder="18500"
                     value={formData.price || ''}
                     onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-teal-500 focus:outline-none text-slate-900 font-extrabold"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none text-slate-900 font-extrabold"
                   />
                 </div>
               </div>
@@ -798,7 +798,7 @@ export default function AdminPanel({
                     placeholder="https://..."
                     value={formData.image || ''}
                     onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-teal-500 focus:outline-none font-mono"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none font-mono"
                   />
                 </div>
 
@@ -810,7 +810,7 @@ export default function AdminPanel({
                     id="form-select-form"
                     value={formData.form || 'vial'}
                     onChange={(e) => setFormData({ ...formData, form: e.target.value as any })}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-teal-500 focus:outline-none"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
                   >
                     <option value="vial">Vial (Ампула/Флакон)</option>
                     <option value="tablet">Tablet (Таблированный)</option>
@@ -831,14 +831,14 @@ export default function AdminPanel({
                     max="5"
                     value={formData.rating || 5.0}
                     onChange={(e) => setFormData({ ...formData, rating: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-teal-500 focus:outline-none"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Grid 3 Block: Medicine Dose Parameters for precise calculation engine support */}
-              <div className="bg-teal-500/5 p-4 rounded-2xl border border-teal-500/10 space-y-4" id="form-dosage-rules-box">
-                <span className="text-[10px] uppercase font-bold text-teal-800 tracking-wider">
+              <div className="bg-nadeck-500/5 p-4 rounded-2xl border border-nadeck-500/10 space-y-4" id="form-dosage-rules-box">
+                <span className="text-[10px] uppercase font-bold text-nadeck-800 tracking-wider">
                   🧪 Настройки расчёта дозировок (Dosage Calculation Parameters)
                 </span>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -852,7 +852,7 @@ export default function AdminPanel({
                       placeholder="5"
                       value={formData.mgPerUnit || ''}
                       onChange={(e) => setFormData({ ...formData, mgPerUnit: Number(e.target.value) })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-teal-500 focus:outline-none"
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
                     />
                   </div>
 
@@ -873,7 +873,7 @@ export default function AdminPanel({
                           defaultDailyDoses: formData.dosageRules?.defaultDailyDoses || 1
                         }
                       })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-teal-500 focus:outline-none"
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
                     />
                   </div>
 
@@ -893,7 +893,7 @@ export default function AdminPanel({
                           defaultDailyDoses: Number(e.target.value)
                         }
                       })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-teal-500 focus:outline-none"
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -914,7 +914,7 @@ export default function AdminPanel({
                       placeholder="Напр. Семаглутид 5мг"
                       value={locNames.ru}
                       onChange={(e) => setLocNames({ ...locNames, ru: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500"
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500"
                     />
                   </div>
                   <div>
@@ -925,7 +925,7 @@ export default function AdminPanel({
                       placeholder="Напр. Semaglutide (Семаглутид)"
                       value={locSubs.ru}
                       onChange={(e) => setLocSubs({ ...locSubs, ru: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500"
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500"
                     />
                   </div>
                 </div>
@@ -939,7 +939,7 @@ export default function AdminPanel({
                       placeholder="Революционный пептид для снижения аппетита..."
                       value={locDescs.ru}
                       onChange={(e) => setLocDescs({ ...locDescs, ru: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 resize-none animate-height"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none animate-height"
                     />
                   </div>
                   <td className="md:col-span-1">
@@ -950,7 +950,7 @@ export default function AdminPanel({
                       placeholder="Вводить подкожно 1 раз в неделю..."
                       value={locUsages.ru}
                       onChange={(e) => setLocUsages({ ...locUsages, ru: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 resize-none"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
                   </td>
                   <div className="md:col-span-1">
@@ -961,7 +961,7 @@ export default function AdminPanel({
                       placeholder="Семаглутид — это селективный агонист рецепторов ГПП-1..."
                       value={locFullDescs.ru}
                       onChange={(e) => setLocFullDescs({ ...locFullDescs, ru: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 resize-none"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
                   </div>
                 </div>
@@ -975,7 +975,7 @@ export default function AdminPanel({
                       placeholder="Избыточная масса тела&#10;Инсулинорезистентность"
                       value={locInds.ru}
                       onChange={(e) => setLocInds({ ...locInds, ru: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 font-mono"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 font-mono"
                     />
                   </div>
                   <div>
@@ -986,7 +986,7 @@ export default function AdminPanel({
                       placeholder="Период беременности&#10;Медуллярный рак"
                       value={locContras.ru}
                       onChange={(e) => setLocContras({ ...locContras, ru: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 font-mono"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 font-mono"
                     />
                   </div>
                 </div>
@@ -1008,7 +1008,7 @@ export default function AdminPanel({
                       placeholder="e.g. Semaglutide 5mg"
                       value={locNames.en}
                       onChange={(e) => setLocNames({ ...locNames, en: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500"
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500"
                     />
                   </div>
                   <div>
@@ -1019,7 +1019,7 @@ export default function AdminPanel({
                       placeholder="e.g. Semaglutide"
                       value={locSubs.en}
                       onChange={(e) => setLocSubs({ ...locSubs, en: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500"
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500"
                     />
                   </div>
                 </div>
@@ -1033,7 +1033,7 @@ export default function AdminPanel({
                       placeholder="Revolutionary peptide for weight management..."
                       value={locDescs.en}
                       onChange={(e) => setLocDescs({ ...locDescs, en: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 resize-none"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
                   </div>
                   <div>
@@ -1044,7 +1044,7 @@ export default function AdminPanel({
                       placeholder="Subcutaneous injection once weekly..."
                       value={locUsages.en}
                       onChange={(e) => setLocUsages({ ...locUsages, en: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 resize-none"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
                   </div>
                   <div>
@@ -1055,7 +1055,7 @@ export default function AdminPanel({
                       placeholder="Semaglutide is a selective GLP-1 receptor agonist..."
                       value={locFullDescs.en}
                       onChange={(e) => setLocFullDescs({ ...locFullDescs, en: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 resize-none"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
                   </div>
                 </div>
@@ -1069,7 +1069,7 @@ export default function AdminPanel({
                       placeholder="Excess body weight&#10;Insulin resistance"
                       value={locInds.en}
                       onChange={(e) => setLocInds({ ...locInds, en: e.target.value })}
-                      className="w-full px-3 py-1.5 text-[11px] border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 font-mono"
+                      className="w-full px-3 py-1.5 text-[11px] border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 font-mono"
                     />
                   </div>
                   <div>
@@ -1080,7 +1080,7 @@ export default function AdminPanel({
                       placeholder="Hypersensitivity to Semaglutide&#10;Pregnancy"
                       value={locContras.en}
                       onChange={(e) => setLocContras({ ...locContras, en: e.target.value })}
-                      className="w-full px-3 py-1.5 text-[11px] border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 font-mono"
+                      className="w-full px-3 py-1.5 text-[11px] border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 font-mono"
                     />
                   </div>
                 </div>
@@ -1101,7 +1101,7 @@ export default function AdminPanel({
                       placeholder="مثال: سيماجلوتايد 5 ملغ"
                       value={locNames.ar}
                       onChange={(e) => setLocNames({ ...locNames, ar: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 text-right"
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 text-right"
                     />
                   </div>
                   <div>
@@ -1112,7 +1112,7 @@ export default function AdminPanel({
                       placeholder="مثال: سيماجلوتايد"
                       value={locSubs.ar}
                       onChange={(e) => setLocSubs({ ...locSubs, ar: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 text-right"
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 text-right"
                     />
                   </div>
                 </div>
@@ -1126,7 +1126,7 @@ export default function AdminPanel({
                       placeholder="ببتيد ثوري لكبح الشهية..."
                       value={locDescs.ar}
                       onChange={(e) => setLocDescs({ ...locDescs, ar: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs text-right border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 resize-none"
+                      className="w-full px-3 py-1.5 text-xs text-right border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
                   </div>
                   <div>
@@ -1137,7 +1137,7 @@ export default function AdminPanel({
                       placeholder="حقن تحت الجلد مرة واحدة في الأسبوع..."
                       value={locUsages.ar}
                       onChange={(e) => setLocUsages({ ...locUsages, ar: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs text-right border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 resize-none"
+                      className="w-full px-3 py-1.5 text-xs text-right border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
                   </div>
                   <div>
@@ -1148,7 +1148,7 @@ export default function AdminPanel({
                       placeholder="سيماجلوتايد هو منبه لنبضات الغدد..."
                       value={locFullDescs.ar}
                       onChange={(e) => setLocFullDescs({ ...locFullDescs, ar: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs text-right border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 resize-none"
+                      className="w-full px-3 py-1.5 text-xs text-right border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
                   </div>
                 </div>
@@ -1167,7 +1167,7 @@ export default function AdminPanel({
                 <button
                   id="form-submit-actions"
                   type="submit"
-                  className="px-6 py-2.5 bg-slice-950 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer transition-all active:scale-95"
+                  className="px-6 py-2.5 bg-slice-950 bg-nadeck-600 hover:bg-nadeck-700 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer transition-all active:scale-95"
                 >
                   {currentLang === 'ru' ? 'Сохранить изменения' : 'Save Changes'}
                 </button>

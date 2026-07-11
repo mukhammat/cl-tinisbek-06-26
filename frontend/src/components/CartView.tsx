@@ -181,7 +181,7 @@ export default function CartView({
         <div className="bg-slate-50 rounded-2xl p-5 text-left text-xs gap-3 flex flex-col border border-slate-100" id="receipt-box">
           <div className="flex justify-between font-bold text-slate-800 border-b border-slate-200 pb-2">
             <span>{t('orderTrackNumber')}:</span>
-            <span id="receipt-id" className="text-teal-700">{orderConfirmed.id}</span>
+            <span id="receipt-id" className="text-nadeck-700">{orderConfirmed.id}</span>
           </div>
           <div className="flex justify-between font-semibold text-slate-600">
             <span>{currentLang === 'ru' ? 'Дата оформления' : 'Order Date'}:</span>
@@ -207,7 +207,7 @@ export default function CartView({
           <button
             id="btn-return-catalog"
             onClick={() => setOrderConfirmed(null)}
-            className="w-full sm:w-auto px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl inline-flex items-center justify-center gap-2 transition"
+            className="w-full sm:w-auto px-6 py-3 bg-nadeck-600 hover:bg-nadeck-700 text-white font-bold text-sm rounded-xl inline-flex items-center justify-center gap-2 transition"
           >
             {t('backToCatalog')}
           </button>
@@ -239,7 +239,7 @@ export default function CartView({
         
         <div className="bg-white rounded-3xl border border-slate-100 p-5 sm:p-6 space-y-5 shadow-sm">
           <h2 id="cart-items-title" className="text-lg font-extrabold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2.5">
-            <ShoppingBag className="w-5 h-5 text-teal-600" />
+            <ShoppingBag className="w-5 h-5 text-nadeck-600" />
             <span>{t('cartTitle')}</span>
           </h2>
 
@@ -263,7 +263,7 @@ export default function CartView({
                 {/* Info details */}
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-bold text-slate-900 truncate">{item.medicine.name[currentLang]}</h4>
-                  <span className="text-[10px] text-teal-600 font-semibold">{item.medicine.activeSubstance[currentLang]}</span>
+                  <span className="text-[10px] text-nadeck-600 font-semibold">{item.medicine.activeSubstance[currentLang]}</span>
                   <div className="text-[10.5px] text-slate-400 font-extrabold mt-0.5">
                     {item.medicine.price.toLocaleString()} {t('currencySymbol')}
                   </div>
@@ -352,7 +352,7 @@ export default function CartView({
                   required
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-teal-500 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500 focus:bg-white"
                 />
               </div>
 
@@ -364,7 +364,7 @@ export default function CartView({
                   placeholder="050000"
                   value={postalCode}
                   onChange={(e) => setPostalCode(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-teal-500 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500 focus:bg-white"
                 />
               </div>
             </div>
@@ -378,7 +378,7 @@ export default function CartView({
                 placeholder="пр. Аль-Фараби, д. 21"
                 value={street}
                 onChange={(e) => setStreet(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-teal-500 focus:bg-white"
+                className="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500 focus:bg-white"
               />
             </div>
 
@@ -391,7 +391,7 @@ export default function CartView({
                   placeholder="кв. 12"
                   value={apartment}
                   onChange={(e) => setApartment(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-teal-500 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500 focus:bg-white"
                 />
               </div>
 
@@ -404,7 +404,7 @@ export default function CartView({
                   placeholder="+7 (777) 123-45-67"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-teal-500 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500 focus:bg-white"
                 />
               </div>
             </div>
@@ -421,11 +421,11 @@ export default function CartView({
                 onClick={() => setPayMethod('card')}
                 className={`p-3 rounded-xl border text-xs font-semibold text-center flex flex-col items-center justify-center gap-1.5 transition ${
                   payMethod === 'card'
-                    ? 'border-teal-500 bg-teal-50/50 text-teal-800 font-bold'
+                    ? 'border-nadeck-500 bg-nadeck-50/50 text-nadeck-800 font-bold'
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                <CreditCard className="w-5 h-5 text-teal-600" />
+                <CreditCard className="w-5 h-5 text-nadeck-600" />
                 <span>{t('payCardOnline')}</span>
               </button>
               <button
@@ -434,11 +434,11 @@ export default function CartView({
                 onClick={() => setPayMethod('cash')}
                 className={`p-3 rounded-xl border text-xs font-semibold text-center flex flex-col items-center justify-center gap-1.5 transition ${
                   payMethod === 'cash'
-                    ? 'border-teal-500 bg-teal-50/50 text-teal-800 font-bold'
+                    ? 'border-nadeck-500 bg-nadeck-50/50 text-nadeck-800 font-bold'
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                <MapPin className="w-5 h-5 text-teal-600" />
+                <MapPin className="w-5 h-5 text-nadeck-600" />
                 <span>{t('payCashOnDelivery')}</span>
               </button>
             </div>
@@ -450,7 +450,7 @@ export default function CartView({
               
               {/* Animated Plastic Card visual */}
               <div 
-                className="w-full aspect-[1.58/1] bg-gradient-to-tr from-teal-700 to-slate-900 rounded-2xl p-5 text-white flex flex-col justify-between shadow-lg relative overflow-hidden border border-teal-800" 
+                className="w-full aspect-[1.58/1] bg-gradient-to-tr from-nadeck-700 to-slate-900 rounded-2xl p-5 text-white flex flex-col justify-between shadow-lg relative overflow-hidden border border-nadeck-800" 
                 id="digital-card"
               >
                 {/* Chip illustration mock */}
@@ -498,7 +498,7 @@ export default function CartView({
                     placeholder="4000 1234 5678 9010"
                     value={cardNum}
                     onChange={(e) => handleCardNumberChange(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-teal-500 focus:bg-white rounded-xl focus:outline-none"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-nadeck-500 focus:bg-white rounded-xl focus:outline-none"
                   />
                 </div>
 
@@ -513,7 +513,7 @@ export default function CartView({
                       placeholder="MM/YY"
                       value={cardExpiry}
                       onChange={(e) => handleExpiryChange(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-teal-500 focus:bg-white rounded-xl focus:outline-none text-center"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-nadeck-500 focus:bg-white rounded-xl focus:outline-none text-center"
                     />
                   </div>
 
@@ -527,7 +527,7 @@ export default function CartView({
                       placeholder="123"
                       value={cardCvv}
                       onChange={(e) => setCardCvv(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-teal-500 focus:bg-white rounded-xl focus:outline-none text-center"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-nadeck-500 focus:bg-white rounded-xl focus:outline-none text-center"
                     />
                   </div>
                 </div>
@@ -541,7 +541,7 @@ export default function CartView({
                     placeholder="ALIKHANOV ERZHAN"
                     value={cardName}
                     onChange={(e) => setCardName(e.target.value.toUpperCase().replace(/[^a-zA-Z\s]/g, ''))}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-teal-500 focus:bg-white rounded-xl focus:outline-none"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-nadeck-500 focus:bg-white rounded-xl focus:outline-none"
                   />
                 </div>
               </div>
@@ -585,7 +585,7 @@ export default function CartView({
             id="btn-confirm-checkout"
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-sm tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-2 transition duration-200 disabled:opacity-50"
+            className="w-full py-4 bg-nadeck-500 hover:bg-nadeck-400 text-slate-950 font-black text-sm tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-2 transition duration-200 disabled:opacity-50"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
