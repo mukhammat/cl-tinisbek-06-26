@@ -2,7 +2,7 @@
   "name": "pharmacy-monorepo",
   "private": true,
   "version": "0.0.0",
-  "workspaces": ["frontend", "backend", "nadeck-bot"],
+  "workspaces": ["apps/nadeck-frontend", "apps/nadeck-backend", "apps/nadeck-bot"],
   "scripts": {
     "dev": "concurrently -n backend,frontend,bot -c cyan,magenta,yellow \"npm run dev -w @pharmacy/backend\" \"npm run dev -w @pharmacy/frontend\" \"npm run dev -w nadeck-bot\"",
     "dev:backend": "npm run dev -w @pharmacy/backend",

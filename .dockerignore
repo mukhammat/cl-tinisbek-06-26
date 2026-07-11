@@ -1,7 +1,7 @@
 **/node_modules
 **/dist
-backend/data
-nadeck-bot/data/logs
+apps/nadeck-backend/data
+apps/nadeck-bot/data/logs
 .git
 .env
 .env.*

@@ -3,12 +3,12 @@ FROM node:20-bookworm-slim
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-COPY backend/package.json ./backend/package.json
-COPY frontend/package.json ./frontend/package.json
-COPY nadeck-bot/package.json ./nadeck-bot/package.json
+COPY apps/nadeck-backend/package.json ./backend/package.json
+COPY apps/nadeck-frontend/package.json ./frontend/package.json
+COPY apps/nadeck-bot/package.json ./nadeck-bot/package.json
 RUN npm ci
 
-COPY nadeck-bot ./nadeck-bot
+COPY apps/nadeck-bot ./nadeck-bot
 
 WORKDIR /app/nadeck-bot
 ENV NODE_ENV=production

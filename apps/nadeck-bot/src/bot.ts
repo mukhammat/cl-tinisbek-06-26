@@ -1,14 +1,25 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { Bot } from "grammy";
-import { openai, CHAT_MODEL } from "./lib/openai.js";
-import { buildSystemPrompt } from "./lib/systemPrompt.js";
+
+// Single shared .env at the repo root (same file backend reads), not a per-app copy.
+loadEnv({ path: join(import.meta.dirname, "..", "..", "..", ".env") });
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 if (!TOKEN) throw new Error("TELEGRAM_BOT_TOKEN не задан в .env");
 
-const SYSTEM_PROMPT = buildSystemPrompt();
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
+
+// How many prior turns (user+assistant pairs) to keep per chat as context for the backend.
+const HISTORY_LIMIT = 10;
+
+interface ChatMessage {
+  role: "user" | "assistant";
+  text: string;
+}
+
+const chatHistories = new Map<number, ChatMessage[]>();
 
 const LOGS_DIR = join(import.meta.dirname, "..", "data", "logs");
 mkdirSync(LOGS_DIR, { recursive: true });
@@ -28,22 +39,31 @@ bot.command("start", (ctx) =>
 
 bot.on("message:text", async (ctx) => {
   const question = ctx.message.text;
+  const chatId = ctx.chat.id;
+  const history = chatHistories.get(chatId) ?? [];
 
   await ctx.replyWithChatAction("typing");
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: CHAT_MODEL,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: question },
-      ],
-      temperature: 0.3,
+    const res = await fetch(`${BACKEND_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: question, history }),
     });
 
-    const answer = completion.choices[0].message.content ?? "Извините, не получилось сформировать ответ.";
+    if (!res.ok) throw new Error(`Backend chat API returned ${res.status}`);
+
+    const data = (await res.json()) as { reply?: string };
+    const answer = data.reply || "Извините, не получилось сформировать ответ.";
 
     await ctx.reply(answer);
+
+    const updatedHistory = [
+      ...history,
+      { role: "user" as const, text: question },
+      { role: "assistant" as const, text: answer },
+    ].slice(-HISTORY_LIMIT * 2);
+    chatHistories.set(chatId, updatedHistory);
 
     logInteraction({
       userId: ctx.from?.id,
@@ -61,4 +81,4 @@ bot.on("message:text", async (ctx) => {
 bot.catch((err) => console.error("Bot error:", err));
 
 bot.start();
-console.log("Nadeck bot запущен");
+console.log(`Nadeck bot запущен (backend: ${BACKEND_URL})`);

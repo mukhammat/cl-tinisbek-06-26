@@ -2,8 +2,8 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, basename } from "node:path";
 import * as cheerio from "cheerio";
 
-const FAQ_DIR = join(import.meta.dirname, "..", "..", "data", "faq");
-const OUT_FILE = join(import.meta.dirname, "..", "..", "data", "faq.json");
+const FAQ_DIR = join(__dirname, "..", "faq-sources");
+const OUT_FILE = join(__dirname, "..", "src", "chat", "faq.json");
 
 export interface FaqCard {
   id: string;

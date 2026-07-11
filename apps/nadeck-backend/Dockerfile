@@ -8,11 +8,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
-COPY backend/package.json ./backend/package.json
-COPY frontend/package.json ./frontend/package.json
+COPY apps/nadeck-backend/package.json ./backend/package.json
+COPY apps/nadeck-frontend/package.json ./frontend/package.json
 RUN npm ci
 
-COPY backend ./backend
+COPY apps/nadeck-backend ./backend
 
 RUN cd backend && npx prisma generate
 RUN npm run build -w @pharmacy/backend

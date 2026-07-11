@@ -11,6 +11,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "parse-faq": "ts-node scripts/parseFaq.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -20,13 +21,14 @@
     "schema": "prisma/schema.prisma"
   },
   "dependencies": {
-    "@google/genai": "^2.4.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@prisma/client": "^5.22.0",
     "better-sqlite3": "^12.11.1",
+    "cheerio": "^1.0.0",
     "dotenv": "^17.2.3",
+    "openai": "^4.68.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

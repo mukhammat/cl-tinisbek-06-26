@@ -15,6 +15,6 @@ View your app in AI Studio: https://ai.studio/apps/05a222b9-6546-4d89-8eae-c288b
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Copy [.env.example](.env.example) to `.env` and set `OPENAI_API_KEY` (powers the AI Peptide Advisor chat widget and the Nadeck Telegram bot)
 3. Run the app:
    `npm run dev`
