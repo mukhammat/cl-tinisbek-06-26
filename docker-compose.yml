@@ -10,6 +10,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     expose:
       - "5432"
+    ports:
+      # Loopback-only, for running the backend locally outside Docker (nest start --watch).
+      # Not 5432/5433 — those are already taken by other projects' Postgres containers
+      # on this host. Not reachable from the network, only from this machine itself.
+      - "127.0.0.1:5434:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nadeck}"]
       interval: 5s
