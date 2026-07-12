@@ -13,6 +13,7 @@ import DosageCalculator from './components/DosageCalculator';
 import CartView from './components/CartView';
 import OrderHistory from './components/OrderHistory';
 import AuthModal from './components/AuthModal';
+import ResearchDisclaimerModal from './components/ResearchDisclaimerModal';
 import AIPeptideAdvisor from './components/AIPeptideAdvisor';
 import AdminPanel from './components/AdminPanel';
 import { ShoppingCart, Calculator, MapPin, Heart, Clock, ChevronRight } from 'lucide-react';
@@ -535,6 +536,9 @@ export default function App() {
 
       {/* Floating AI Consultant Chatbot layer */}
       <AIPeptideAdvisor currentLang={currentLang} />
+
+      {/* Research-use-only legal disclaimer, shown once per browser session */}
+      <ResearchDisclaimerModal currentLang={currentLang} />
 
     </div>
   );
