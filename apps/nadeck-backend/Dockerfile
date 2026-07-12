@@ -2,25 +2,27 @@
 FROM node:20-bookworm-slim
 WORKDIR /app
 
-# python3/make/g++ are needed to compile the better-sqlite3 native addon
+# openssl is required by Prisma's query engine binary at runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 make g++ openssl \
+    openssl \
     && rm -rf /var/lib/apt/lists/*
 
+# Intermediate package.json copies must land at the same paths as root package.json's
+# "workspaces" globs (apps/nadeck-*), otherwise npm ci silently skips workspace deps.
 COPY package.json package-lock.json ./
-COPY apps/nadeck-backend/package.json ./backend/package.json
-COPY apps/nadeck-frontend/package.json ./frontend/package.json
+COPY apps/nadeck-backend/package.json ./apps/nadeck-backend/package.json
+COPY apps/nadeck-frontend/package.json ./apps/nadeck-frontend/package.json
 RUN npm ci
 
-COPY apps/nadeck-backend ./backend
+COPY apps/nadeck-backend ./apps/nadeck-backend
 
-RUN cd backend && npx prisma generate
+# `prisma generate` only parses the schema (no live DB connection needed), but it does
+# require DATABASE_URL to resolve to something — the real value is injected at runtime.
+RUN cd apps/nadeck-backend && DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder" npx prisma generate
 RUN npm run build -w @pharmacy/backend
 RUN npm prune --omit=dev
 
-RUN mkdir -p /app/backend/data
-
-WORKDIR /app/backend
+WORKDIR /app/apps/nadeck-backend
 ENV NODE_ENV=production
 EXPOSE 3001
-CMD ["node", "dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]

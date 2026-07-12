@@ -6,6 +6,3 @@ coverage/
 *.log
 .env*
 !.env.example
-
-# SQLite database data (contains the runtime DB, mounted as a volume in Docker)
-apps/nadeck-backend/data/
