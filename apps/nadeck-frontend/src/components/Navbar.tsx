@@ -56,18 +56,18 @@ export default function Navbar({
           
           {/* Brand Logo and Name */}
           <div 
-            className="flex items-center gap-3 cursor-pointer select-none shrink-0" 
+            className="flex items-center gap-1 cursor-pointer select-none shrink-0"
             onClick={() => { setActiveTab('catalog'); setSearchQuery(''); }}
             id="brand-logo"
           >
             <div className="w-10 h-10 flex items-center justify-center">
               <img src={nadeckIcon} alt="Nadeck" className="w-full h-full object-contain" />
             </div>
-            <div className="hidden sm:block">
+            <div>
               <h1 className="text-lg font-bold text-slate-950 leading-none tracking-tight">
                 {t('appName')}
               </h1>
-              <span className="text-[10px] text-slate-500 font-medium">
+              <span className="hidden sm:block text-[10px] text-slate-500 font-medium">
                 {t('appSubtitle')}
               </span>
             </div>
