@@ -820,9 +820,9 @@ export default function DosageCalculator({
                         return (
                           <g key={idx}>
                             {/* Main ticks every 10% interval */}
-                            <line x1={xCoord} y1="35" x2={xCoord} y2="50" stroke="#475569" strokeWidth="2.5" />
-                            {/* Label text under ticks */}
-                            <text x={xCoord} y="72" fill="#94a3b8" fontSize="16" fontWeight="bold" textAnchor="middle">
+                            <line x1={xCoord} y1="35" x2={xCoord} y2="50" stroke="#ffffff" strokeWidth="2.5" />
+                            {/* Label text above the syringe barrel, clear of the glass */}
+                            <text x={xCoord} y="14" fill="#ffffff" fontSize="16" fontWeight="bold" textAnchor="middle">
                               {unitVal}
                             </text>
                           </g>
@@ -835,7 +835,7 @@ export default function DosageCalculator({
                         const percentX = idx / 50;
                         const xCoord = 29 + percentX * 456;
                         return (
-                          <line key={idx} x1={xCoord} y1="35" x2={xCoord} y2="43" stroke="#334155" strokeWidth="1.5" />
+                          <line key={idx} x1={xCoord} y1="35" x2={xCoord} y2="43" stroke="#ffffff" strokeWidth="1.5" opacity="0.4" />
                         );
                       })}
 
