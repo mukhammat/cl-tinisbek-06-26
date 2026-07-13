@@ -320,6 +320,118 @@ export default function DosageCalculator({
     return l[key][currentLang] || l[key]['en'];
   };
 
+  const renderSyringeGraphic = (idSuffix: string) => (
+    <div className="bg-slate-950 rounded-2xl p-5 border border-slate-900 space-y-4" id={`syringe-interactive-graphic-${idSuffix}`}>
+
+      <div className="flex justify-between items-center border-b border-slate-900 pb-2">
+        <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block">
+          {getLocalText('visualGuide')}
+        </span>
+        <span className="text-[10px] text-nadeck-400 font-black uppercase tracking-wider bg-nadeck-950 border border-nadeck-900 px-2 py-0.5 rounded-md">
+          {syringeType === 100 ? 'Syringe U-100' : syringeType === 50 ? 'Syringe U-50' : 'Syringe U-30'}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 items-center">
+
+        {/* Syringe Drawing Volume Scale (The dynamically-drawn Insulin Syringe) */}
+        <div className="space-y-3">
+          {/* Float units indicator, placed above the graphic so it never covers the drawing on narrow screens */}
+          {unitsToDraw > 0 && (
+            <div className="inline-flex bg-nadeck-500 text-slate-950 text-xs sm:text-base font-black px-2.5 py-1 rounded-md shadow-xs animate-pulse">
+              FLOW BARREL: {unitsToDraw} Units (U)
+            </div>
+          )}
+          <div className="relative w-full min-h-[100px] overflow-hidden bg-slate-900/40 rounded-xl p-3 flex items-center justify-center">
+            <svg viewBox="0 0 540 130" className="w-full h-auto select-none" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+              {/* Needle tip connector assembly */}
+              <rect x="15" y="57" width="12" height="16" fill="#f8fafc" rx="1.5" />
+              <line x1="0" y1="65" x2="15" y2="65" stroke="#cbd5e1" strokeWidth="3" />
+
+              {/* Syringe Outer Glass Barrel Body */}
+              <rect x="27" y="35" width="460" height="60" rx="6" fill="#0f172a" stroke="#475569" strokeWidth="3" />
+
+              {/* Shaded/Colored Liquid Fill Area inside Syringe */}
+              {/* The volume is proportioned dynamically using target units draw over total units (syringeType) */}
+              {unitsToDraw > 0 && (
+                <rect
+                  x="29"
+                  y="37.5"
+                  width={Math.min(456, (Math.min(unitsToDraw, syringeType) / syringeType) * 456)}
+                  height="55"
+                  fill={`url(#liquid-gradient-${idSuffix})`}
+                  opacity="0.85"
+                />
+              )}
+
+              {/* Plunger shaft and black stopper seal gasket */}
+              {/* Plunger stopper is at the end of liquid fill */}
+              {(() => {
+                const fillWidth = Math.min(456, (Math.min(unitsToDraw, syringeType) / syringeType) * 456);
+                const stopperX = 29 + fillWidth;
+                return (
+                  <>
+                    {/* Stopper rubber head seal */}
+                    <rect x={stopperX - 8} y="37.5" width="8" height="55" fill="#ea580c" rx="1" />
+                    <rect x={stopperX - 12} y="37.5" width="4" height="55" fill="#334155" />
+                    {/* Metal Plunger Rod stretching out on the right */}
+                    <rect x={stopperX} y="60" width={500 - stopperX} height="10" fill="#94a3b8" />
+                    {/* Plunger thumb-press base */}
+                    <rect x="500" y="33" width="10" height="64" fill="#cbd5e1" rx="2" />
+                  </>
+                );
+              })()}
+
+              {/* Calibration tick marks on syringe glass */}
+              {/* We draw ticks from 0 to syringeType */}
+              {Array.from({ length: 11 }).map((_, idx) => {
+                const unitVal = Math.round((syringeType / 10) * idx);
+                const percentX = idx / 10;
+                const xCoord = 29 + percentX * 456;
+                return (
+                  <g key={idx}>
+                    {/* Main ticks every 10% interval */}
+                    <line x1={xCoord} y1="35" x2={xCoord} y2="50" stroke="#ffffff" strokeWidth="2.5" />
+                    {/* Label text above the syringe barrel, clear of the glass */}
+                    <text x={xCoord} y="14" fill="#ffffff" fontSize="16" fontWeight="bold" textAnchor="middle">
+                      {unitVal}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Micro tick marks in between */}
+              {Array.from({ length: 50 }).map((_, idx) => {
+                if (idx % 5 === 0) return null; // Skip main ticks
+                const percentX = idx / 50;
+                const xCoord = 29 + percentX * 456;
+                return (
+                  <line key={idx} x1={xCoord} y1="35" x2={xCoord} y2="43" stroke="#ffffff" strokeWidth="1.5" opacity="0.4" />
+                );
+              })}
+
+              {/* Linear Liquid Gradient Definition */}
+              <defs>
+                <linearGradient id={`liquid-gradient-${idSuffix}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#0d9488" stopOpacity="0.85" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+
+          <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold px-2">
+            <span>← {currentLang === 'ru' ? 'Коннектор иглы' : 'Needle Point'}</span>
+            <span>{currentLang === 'ru' ? 'Плунжер шприца' : 'Syringe Plunger'} →</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
+
   return (
     <div className="bg-slate-50/20 rounded-3xl border border-slate-100 p-6 sm:p-8 space-y-8 shadow-xs" id="calculator-panel">
       
@@ -569,6 +681,11 @@ export default function DosageCalculator({
             </div>
           </div>
 
+          {/* Mobile-only: syringe visual shown directly below the desired dose field */}
+          <div className="lg:hidden">
+            {renderSyringeGraphic('mobile')}
+          </div>
+
           {/* 6. Frequency Planning */}
           <div className="space-y-3 pt-2 border-t border-slate-100" id="frequency-mode-box">
             <div className="flex justify-between items-center text-[11px] font-black text-slate-600 uppercase tracking-wider">
@@ -748,115 +865,9 @@ export default function DosageCalculator({
               </div>
             )}
 
-            {/* HIGH-END INTERACTIVE VISUAL DILUTION SIMULATOR DIAGRAM: VIAL AND SYRINGE */}
-            <div className="bg-slate-950 rounded-2xl p-5 border border-slate-900 space-y-4" id="syringe-interactive-graphic">
-              
-              <div className="flex justify-between items-center border-b border-slate-900 pb-2">
-                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block">
-                  {getLocalText('visualGuide')}
-                </span>
-                <span className="text-[10px] text-nadeck-400 font-black uppercase tracking-wider bg-nadeck-950 border border-nadeck-900 px-2 py-0.5 rounded-md">
-                  {syringeType === 100 ? 'Syringe U-100' : syringeType === 50 ? 'Syringe U-50' : 'Syringe U-30'}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 gap-6 items-center">
-
-                {/* Syringe Drawing Volume Scale (The dynamically-drawn Insulin Syringe) */}
-                <div className="space-y-3">
-                  {/* Float units indicator, placed above the graphic so it never covers the drawing on narrow screens */}
-                  {unitsToDraw > 0 && (
-                    <div className="inline-flex bg-nadeck-500 text-slate-950 text-xs sm:text-base font-black px-2.5 py-1 rounded-md shadow-xs animate-pulse">
-                      FLOW BARREL: {unitsToDraw} Units (U)
-                    </div>
-                  )}
-                  <div className="relative w-full min-h-[100px] overflow-hidden bg-slate-900/40 rounded-xl p-3 flex items-center justify-center">
-                    <svg viewBox="0 0 540 130" className="w-full h-auto select-none" fill="none" xmlns="http://www.w3.org/2000/svg">
-
-                      {/* Needle tip connector assembly */}
-                      <rect x="15" y="57" width="12" height="16" fill="#f8fafc" rx="1.5" />
-                      <line x1="0" y1="65" x2="15" y2="65" stroke="#cbd5e1" strokeWidth="3" />
-
-                      {/* Syringe Outer Glass Barrel Body */}
-                      <rect x="27" y="35" width="460" height="60" rx="6" fill="#0f172a" stroke="#475569" strokeWidth="3" />
-
-                      {/* Shaded/Colored Liquid Fill Area inside Syringe */}
-                      {/* The volume is proportioned dynamically using target units draw over total units (syringeType) */}
-                      {unitsToDraw > 0 && (
-                        <rect
-                          x="29"
-                          y="37.5"
-                          width={Math.min(456, (Math.min(unitsToDraw, syringeType) / syringeType) * 456)}
-                          height="55"
-                          fill="url(#liquid-gradient)"
-                          opacity="0.85"
-                        />
-                      )}
-
-                      {/* Plunger shaft and black stopper seal gasket */}
-                      {/* Plunger stopper is at the end of liquid fill */}
-                      {(() => {
-                        const fillWidth = Math.min(456, (Math.min(unitsToDraw, syringeType) / syringeType) * 456);
-                        const stopperX = 29 + fillWidth;
-                        return (
-                          <>
-                            {/* Stopper rubber head seal */}
-                            <rect x={stopperX - 8} y="37.5" width="8" height="55" fill="#ea580c" rx="1" />
-                            <rect x={stopperX - 12} y="37.5" width="4" height="55" fill="#334155" />
-                            {/* Metal Plunger Rod stretching out on the right */}
-                            <rect x={stopperX} y="60" width={500 - stopperX} height="10" fill="#94a3b8" />
-                            {/* Plunger thumb-press base */}
-                            <rect x="500" y="33" width="10" height="64" fill="#cbd5e1" rx="2" />
-                          </>
-                        );
-                      })()}
-
-                      {/* Calibration tick marks on syringe glass */}
-                      {/* We draw ticks from 0 to syringeType */}
-                      {Array.from({ length: 11 }).map((_, idx) => {
-                        const unitVal = Math.round((syringeType / 10) * idx);
-                        const percentX = idx / 10;
-                        const xCoord = 29 + percentX * 456;
-                        return (
-                          <g key={idx}>
-                            {/* Main ticks every 10% interval */}
-                            <line x1={xCoord} y1="35" x2={xCoord} y2="50" stroke="#ffffff" strokeWidth="2.5" />
-                            {/* Label text above the syringe barrel, clear of the glass */}
-                            <text x={xCoord} y="14" fill="#ffffff" fontSize="16" fontWeight="bold" textAnchor="middle">
-                              {unitVal}
-                            </text>
-                          </g>
-                        );
-                      })}
-
-                      {/* Micro tick marks in between */}
-                      {Array.from({ length: 50 }).map((_, idx) => {
-                        if (idx % 5 === 0) return null; // Skip main ticks
-                        const percentX = idx / 50;
-                        const xCoord = 29 + percentX * 456;
-                        return (
-                          <line key={idx} x1={xCoord} y1="35" x2={xCoord} y2="43" stroke="#ffffff" strokeWidth="1.5" opacity="0.4" />
-                        );
-                      })}
-
-                      {/* Linear Liquid Gradient Definition */}
-                      <defs>
-                        <linearGradient id="liquid-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.4" />
-                          <stop offset="100%" stopColor="#0d9488" stopOpacity="0.85" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                  </div>
-                  
-                  <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold px-2">
-                    <span>← {currentLang === 'ru' ? 'Коннектор иглы' : 'Needle Point'}</span>
-                    <span>{currentLang === 'ru' ? 'Плунжер шприца' : 'Syringe Plunger'} →</span>
-                  </div>
-                </div>
-
-              </div>
-
+            {/* HIGH-END INTERACTIVE VISUAL DILUTION SIMULATOR DIAGRAM: VIAL AND SYRINGE (desktop position) */}
+            <div className="hidden lg:block">
+              {renderSyringeGraphic('desktop')}
             </div>
 
             {/* Preparation and Reconstitution safety rules panel */}
