@@ -493,7 +493,7 @@ export default function App() {
 
             <div className="space-y-2 text-xs">
               <h5 className="text-white font-bold">{currentLang === 'ru' ? 'Контакты' : 'Contacts'}</h5>
-              <p className="text-slate-500">📍 Алматы, пр. Назарбаева 130</p>
+              <p className="text-slate-500">📍 Астана</p>
               <p className="text-slate-500">📞 <a href="tel:+77070222312" className="hover:text-white transition-colors">+7 (707) 022-23-12</a></p>
               <p className="text-slate-500">✉ <a href="mailto:support@nadeck.net" className="hover:text-white transition-colors">support@nadeck.net</a></p>
             </div>
