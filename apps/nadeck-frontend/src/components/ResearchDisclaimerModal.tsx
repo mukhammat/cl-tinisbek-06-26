@@ -35,7 +35,7 @@ export default function ResearchDisclaimerModal({ currentLang }: ResearchDisclai
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" id="research-disclaimer-wrapper">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4" id="research-disclaimer-wrapper">
           <motion.div
             id="research-disclaimer-backdrop"
             initial={{ opacity: 0 }}
@@ -58,7 +58,7 @@ export default function ResearchDisclaimerModal({ currentLang }: ResearchDisclai
               </h2>
             </div>
 
-            <div className="px-6 py-4 max-h-[50vh] overflow-y-auto">
+            <div className="px-6 py-4 max-h-[72dvh] lg:max-h-[50vh] overflow-y-auto">
               <p id="research-disclaimer-body" className="text-xl lg:text-sm text-slate-600 leading-relaxed text-center whitespace-pre-line">
                 {t('researchDisclaimerBody')}
               </p>
