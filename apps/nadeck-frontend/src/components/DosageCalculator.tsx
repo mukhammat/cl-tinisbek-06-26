@@ -648,7 +648,7 @@ export default function DosageCalculator({
             </div>
 
             <div className="flex flex-wrap gap-1.5">
-              {[100, 250, 500, 750, 1000, 1500].map((dosage) => (
+              {[500, 1000, 1500, 2000, 2500].map((dosage) => (
                 <button
                   key={dosage}
                   type="button"
