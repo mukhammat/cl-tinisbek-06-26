@@ -4,11 +4,33 @@
  */
 
 import { Inject, Injectable, BadRequestException, UnauthorizedException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../database/prisma.service';
+import { isAdminEmail } from './admin-emails.util';
+
+const BCRYPT_ROUNDS = 10;
 
 @Injectable()
 export class AuthService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  private buildAuthResponse(user: { email: string; fullName: string; phone: string | null; address: string | null; isAdmin: boolean }) {
+    const token = this.jwtService.sign({ email: user.email, isAdmin: user.isAdmin });
+
+    return {
+      email: user.email,
+      fullName: user.fullName,
+      phone: user.phone || '',
+      address: user.address || '',
+      isAuthenticated: true,
+      isAdmin: user.isAdmin,
+      token,
+    };
+  }
 
   async register(body: any) {
     const { email, password, fullName, phone, address } = body;
@@ -25,23 +47,19 @@ export class AuthService {
         throw new BadRequestException('User with this email already exists');
       }
 
+      const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
       const user = await this.prisma.user.create({
         data: {
           email: emailLower,
-          password,
+          password: hashedPassword,
           fullName,
           phone: phone || '',
           address: address || '',
+          isAdmin: isAdminEmail(emailLower),
         },
       });
 
-      return {
-        email: user.email,
-        fullName: user.fullName,
-        phone: user.phone || '',
-        address: user.address || '',
-        isAuthenticated: true,
-      };
+      return this.buildAuthResponse(user);
     } catch (err: any) {
       if (err instanceof BadRequestException) throw err;
       console.error('Register service error:', err);
@@ -60,17 +78,31 @@ export class AuthService {
       const user = await this.prisma.user.findUnique({
         where: { email: emailLower },
       });
-      if (!user || user.password !== password) {
+      if (!user) {
         throw new UnauthorizedException('Invalid email or password');
       }
 
-      return {
-        email: user.email,
-        fullName: user.fullName,
-        phone: user.phone || '',
-        address: user.address || '',
-        isAuthenticated: true,
-      };
+      // Passwords created before bcrypt hashing was introduced are stored in plaintext.
+      // Accept them once, then transparently upgrade to a bcrypt hash so every login
+      // after this one goes through the normal hashed-compare path.
+      const isBcryptHash = user.password.startsWith('$2');
+      const passwordMatches = isBcryptHash
+        ? await bcrypt.compare(password, user.password)
+        : user.password === password;
+
+      if (!passwordMatches) {
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      if (!isBcryptHash) {
+        const upgradedHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+        await this.prisma.user.update({
+          where: { email: emailLower },
+          data: { password: upgradedHash },
+        });
+      }
+
+      return this.buildAuthResponse(user);
     } catch (err: any) {
       if (err instanceof UnauthorizedException || err instanceof BadRequestException) throw err;
       console.error('Login service error:', err);

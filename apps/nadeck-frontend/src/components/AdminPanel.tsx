@@ -27,13 +27,16 @@ interface AdminPanelProps {
   currentLang: Language;
   onRefreshMedicines: () => void;
   allMedicines: Medicine[];
+  token?: string;
 }
 
 export default function AdminPanel({
   currentLang,
   onRefreshMedicines,
-  allMedicines
+  allMedicines,
+  token
 }: AdminPanelProps) {
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
   const [activeSubTab, setActiveSubTab] = useState<'products' | 'orders'>('products');
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -61,7 +64,7 @@ export default function AdminPanel({
   // Fetch orders
   const fetchAllOrders = () => {
     setOrdersLoading(true);
-    fetch('/api/admin/orders')
+    fetch('/api/admin/orders', { headers: authHeaders })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load orders');
         return res.json();
@@ -104,7 +107,7 @@ export default function AdminPanel({
 
     fetch(`/api/medicines/${med.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
       body: JSON.stringify(updatedMed)
     })
       .then((res) => {
@@ -126,7 +129,8 @@ export default function AdminPanel({
     if (!window.confirm(`Are you sure you want to delete "${nameen}"?`)) return;
 
     fetch(`/api/medicines/${medId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: authHeaders
     })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to delete product');
@@ -146,7 +150,7 @@ export default function AdminPanel({
   const handleUpdateOrderStatus = (orderId: string, status: string) => {
     fetch(`/api/admin/orders/${orderId}/status`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
       body: JSON.stringify({ status })
     })
       .then((res) => {
@@ -271,7 +275,7 @@ export default function AdminPanel({
 
     fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
       body: JSON.stringify(payload)
     })
       .then((res) => {

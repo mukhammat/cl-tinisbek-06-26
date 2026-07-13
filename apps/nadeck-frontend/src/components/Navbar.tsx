@@ -108,7 +108,7 @@ export default function Navbar({
             >
               {t('ordersTab')}
             </button>
-            {user.isAuthenticated && (user.email.toLowerCase() === 'dosnet2200@gmail.com' || user.email.toLowerCase() === 'admin@example.com' || user.email.toLowerCase().endsWith('@admin.com')) && (
+            {user.isAuthenticated && user.isAdmin && (
               <button
                 id="tab-admin"
                 onClick={() => setActiveTab('admin')}
@@ -284,7 +284,7 @@ export default function Navbar({
           >
             {t('ordersTab')}
           </button>
-          {user.isAuthenticated && (user.email.toLowerCase() === 'dosnet2200@gmail.com' || user.email.toLowerCase() === 'admin@example.com' || user.email.toLowerCase().endsWith('@admin.com')) && (
+          {user.isAuthenticated && user.isAdmin && (
             <button
               id="mobile-tab-admin"
               onClick={() => { setActiveTab('admin'); }}

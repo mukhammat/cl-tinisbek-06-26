@@ -8,11 +8,12 @@ datasource db {
 }
 
 model User {
-  email    String @id
+  email    String  @id
   password String
   fullName String
-  phone    String @default("")
-  address  String @default("")
+  phone    String  @default("")
+  address  String  @default("")
+  isAdmin  Boolean @default(false)
 }
 
 model Medicine {

@@ -60,6 +60,8 @@ export interface User {
   phone: string;
   address: string;
   isAuthenticated: boolean;
+  isAdmin?: boolean;
+  token?: string;
 }
 
 export interface Order {

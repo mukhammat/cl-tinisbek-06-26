@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Controller, Get, Post, Put, Body, Param, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Inject, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('api')
 export class OrdersController {
@@ -20,11 +21,13 @@ export class OrdersController {
     return this.ordersService.getUserOrders(email);
   }
 
+  @UseGuards(AdminGuard)
   @Get('admin/orders')
   getAdminOrders() {
     return this.ordersService.getAdminOrders();
   }
 
+  @UseGuards(AdminGuard)
   @Put('admin/orders/:id/status')
   updateOrderStatus(@Param('id') id: string, @Body('status') status: string) {
     return this.ordersService.updateOrderStatus(id, status);

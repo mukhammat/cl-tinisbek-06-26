@@ -465,6 +465,7 @@ export default function App() {
                   currentLang={currentLang}
                   onRefreshMedicines={fetchMedicinesList}
                   allMedicines={medicinesList}
+                  token={user.token}
                 />
               )}
             </div>
