@@ -6,7 +6,6 @@
 import { useState, useEffect } from 'react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data';
-import { FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const STORAGE_KEY = 'nadeck_research_disclaimer_ack';
@@ -54,10 +53,7 @@ export default function ResearchDisclaimerModal({ currentLang }: ResearchDisclai
             className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 z-10"
           >
             <div className="px-6 pt-6 pb-2 flex flex-col items-center text-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
-                <FlaskConical className="w-6 h-6" />
-              </div>
-              <h2 id="research-disclaimer-title" className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
+              <h2 id="research-disclaimer-title" className="text-2xl lg:text-3xl font-black text-rose-700 tracking-tight">
                 {t('researchDisclaimerTitle')}
               </h2>
             </div>
