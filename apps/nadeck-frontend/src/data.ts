@@ -433,14 +433,14 @@ export const MEDICINES_DATA: Medicine[] = [
 
 export const TRANSLATIONS: Record<string, Record<Language, string>> = {
   researchDisclaimerTitle: {
-    ru: 'Только для исследовательских целей',
-    en: 'For Research Use Only',
-    ar: 'للأغراض البحثية فقط'
+    ru: 'ВНИМАНИЕ!',
+    en: 'WARNING!',
+    ar: 'تحذير!'
   },
   researchDisclaimerBody: {
-    ru: 'Все товары, представленные на этом сайте, предназначены исключительно для исследовательских и лабораторных целей (in vitro). Вся информация на сайте носит справочный и образовательный характер и не является медицинской консультацией. Товары не предназначены для применения человеком или животными, не являются лекарственными средствами, БАДами или косметическими продуктами и не должны использоваться, маркироваться или позиционироваться в этом качестве. Работать с данными продуктами могут только квалифицированные специалисты в лабораторных условиях. Продолжая пользоваться сайтом, вы подтверждаете, что ознакомились с этим уведомлением и принимаете его условия.',
-    en: 'All products listed on this website are intended strictly for research and laboratory (in vitro) purposes. All information on this site is provided for reference and educational purposes only and does not constitute medical advice. These products are not intended for human or animal use, are not drugs, dietary supplements, or cosmetic products, and must not be used, labeled, or represented as such. Handling of these products is restricted to licensed, qualified professionals in a laboratory setting. By continuing to use this site, you confirm that you have read and agree to this notice.',
-    ar: 'جميع المنتجات المعروضة على هذا الموقع مخصصة حصراً للأغراض البحثية والمخبرية (في المختبر). جميع المعلومات الواردة في هذا الموقع هي لأغراض مرجعية وتعليمية فقط ولا تُعد استشارة طبية. هذه المنتجات غير مخصصة للاستخدام البشري أو الحيواني، وهي ليست أدوية أو مكملات غذائية أو منتجات تجميلية، ويجب عدم استخدامها أو تصنيفها أو تقديمها على هذا النحو. يقتصر التعامل مع هذه المنتجات على المتخصصين المرخصين والمؤهلين ضمن بيئة مخبرية. من خلال متابعة استخدام هذا الموقع، فإنك تؤكد أنك قرأت هذا الإشعار وتوافق على شروطه.'
+    ru: 'Я подтверждаю, что достиг(-ла) 18 лет и обладаю необходимой квалификацией.\nСоглашаюсь, что вся информация на сайте носит образовательный характер, а приобретенные материалы будут использоваться для исследовательских целей — не для самостоятельного применения на людях, животных, перорального приема, а также не в качестве лекарств, БАДов, косметики или средств бытовой химии, а также не для коммерческих целей.\nПродолжая работу с сайтом, я принимаю указанные условия.',
+    en: 'I confirm that I am 18 years of age or older and possess the necessary qualifications.\nI agree that all information on this site is educational in nature, and any purchased materials will be used strictly for research purposes — not for self-administration on humans or animals, oral consumption, or as drugs, dietary supplements, cosmetics, or household chemicals, and not for commercial purposes.\nBy continuing to use this site, I accept the stated terms.',
+    ar: 'أؤكد أنني بلغت 18 عاماً من العمر وأمتلك المؤهلات اللازمة.\nأوافق على أن جميع المعلومات الواردة في هذا الموقع ذات طابع تعليمي، وأن المواد المشتراة ستُستخدم حصراً لأغراض بحثية — وليس للاستخدام الذاتي على البشر أو الحيوانات، أو للتناول عن طريق الفم، وليست أدوية أو مكملات غذائية أو مستحضرات تجميل أو مواد كيميائية منزلية، وليست لأغراض تجارية.\nبمواصلة استخدام هذا الموقع، أوافق على الشروط المذكورة.'
   },
   researchDisclaimerAgreeBtn: {
     ru: 'Я согласен, продолжить',

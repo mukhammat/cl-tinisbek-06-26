@@ -324,10 +324,10 @@ export default function DosageCalculator({
     <div className="bg-slate-950 rounded-2xl p-5 border border-slate-900 space-y-4" id={`syringe-interactive-graphic-${idSuffix}`}>
 
       <div className="flex justify-between items-center border-b border-slate-900 pb-2">
-        <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block">
+        <span className="text-[10px] lg:text-xs text-slate-400 font-black uppercase tracking-widest block">
           {getLocalText('visualGuide')}
         </span>
-        <span className="text-[10px] text-nadeck-400 font-black uppercase tracking-wider bg-nadeck-950 border border-nadeck-900 px-2 py-0.5 rounded-md">
+        <span className="text-[10px] lg:text-xs text-nadeck-400 font-black uppercase tracking-wider bg-nadeck-950 border border-nadeck-900 px-2 py-0.5 rounded-md">
           {syringeType === 100 ? 'Syringe U-100' : syringeType === 50 ? 'Syringe U-50' : 'Syringe U-30'}
         </span>
       </div>
@@ -421,7 +421,7 @@ export default function DosageCalculator({
             </svg>
           </div>
 
-          <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold px-2">
+          <div className="flex justify-between items-center text-[10px] lg:text-xs text-slate-500 font-semibold px-2">
             <span>← {currentLang === 'ru' ? 'Коннектор иглы' : 'Needle Point'}</span>
             <span>{currentLang === 'ru' ? 'Плунжер шприца' : 'Syringe Plunger'} →</span>
           </div>
@@ -442,19 +442,19 @@ export default function DosageCalculator({
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-nadeck-300">
               <Calculator className="w-6 h-6 shrink-0" />
-              <span className="text-xs font-black uppercase tracking-widest bg-nadeck-500/20 text-nadeck-300 px-3 py-1 rounded-full border border-nadeck-500/30">
+              <span className="text-xs lg:text-sm font-black uppercase tracking-widest bg-nadeck-500/20 text-nadeck-300 px-3 py-1 rounded-full border border-nadeck-500/30">
                 PRO CALIBRATION v3.5
               </span>
             </div>
             <h2 id="calc-header-title" className="text-xl sm:text-2xl font-black tracking-tight">{t('calculatorHeader')}</h2>
-            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+            <p className="text-xs lg:text-sm text-slate-300 max-w-2xl leading-relaxed">
               {t('calcIntro')}
             </p>
           </div>
           <button 
             type="button" 
             onClick={resetToOptimalDefaults}
-            className="self-start md:self-center px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white text-xs font-bold rounded-xl border border-white/10 flex items-center gap-1.5 transition active:scale-95 shrink-0"
+            className="self-start md:self-center px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white text-xs lg:text-sm font-bold rounded-xl border border-white/10 flex items-center gap-1.5 transition active:scale-95 shrink-0"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>{getLocalText('calcResetBtn')}</span>
@@ -470,7 +470,7 @@ export default function DosageCalculator({
           {/* Section subtitle */}
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
             <div className="w-2 h-2 rounded-full bg-nadeck-500" />
-            <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">
+            <h3 className="text-xs lg:text-sm font-black text-slate-800 uppercase tracking-widest">
               {currentLang === 'ru' ? 'Шаг 1: Параметры флакона и шприца' : 'Step 1: Input variables'}
             </h3>
           </div>
@@ -478,16 +478,16 @@ export default function DosageCalculator({
           {/* 1. Target Peptide Selection */}
           <div className="space-y-1.5" id="calc-med-select-box">
             <div className="flex justify-between items-center">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-wider">{t('selectMedicineLabel')}</label>
+              <label className="text-[11px] lg:text-sm font-black text-slate-600 uppercase tracking-wider">{t('selectMedicineLabel')}</label>
               {searchQuery.trim() && (
-                <span className="text-[10px] text-nadeck-600 font-bold bg-nadeck-50 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] lg:text-xs text-nadeck-600 font-bold bg-nadeck-50 px-2 py-0.5 rounded-full">
                   {currentLang === 'ru' ? `Найдено: ${filteredMedicines.length}` : `Found: ${filteredMedicines.length}`}
                 </span>
               )}
             </div>
             <div className="relative">
               {filteredMedicines.length === 0 ? (
-                <div className="w-full bg-rose-50 border border-rose-100 rounded-xl px-4 py-3.5 text-xs font-bold text-rose-700">
+                <div className="w-full bg-rose-50 border border-rose-100 rounded-xl px-4 py-3.5 text-xs lg:text-sm font-bold text-rose-700">
                   {currentLang === 'ru' ? 'Ничего не найдено по вашему запросу' : 'No peptides matching your search'}
                 </div>
               ) : (
@@ -496,7 +496,7 @@ export default function DosageCalculator({
                     id="calc-med-select"
                     value={selectedMedId}
                     onChange={(e) => setSelectedMedId(e.target.value)}
-                    className="w-full appearance-none bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:border-nadeck-500 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:outline-none transition cursor-pointer pr-10"
+                    className="w-full appearance-none bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:border-nadeck-500 rounded-xl px-4 py-3.5 text-sm lg:text-base font-semibold text-slate-800 focus:outline-none transition cursor-pointer pr-10"
                   >
                     {filteredMedicines.map((med) => (
                       <option key={med.id} value={med.id}>
@@ -514,7 +514,7 @@ export default function DosageCalculator({
 
           {/* 2. Vial Quantity Option Button Group & Custom Slider */}
           <div className="space-y-2" id="vial-weight-box">
-            <div className="flex justify-between items-center text-[11px] font-black text-slate-600 uppercase tracking-wider">
+            <div className="flex justify-between items-center text-[11px] lg:text-sm font-black text-slate-600 uppercase tracking-wider">
               <span>{getLocalText('vialMgLabel')}</span>
               <div className="flex items-center gap-1">
                 <input
@@ -524,9 +524,9 @@ export default function DosageCalculator({
                   step="0.1"
                   value={vialMg || ''}
                   onChange={(e) => setVialMg(Number(e.target.value) || 0)}
-                  className="w-14 px-1 py-0.5 bg-nadeck-50 focus:bg-white text-nadeck-700 rounded border border-nadeck-100 focus:outline-none focus:ring-1 focus:ring-nadeck-500 text-xs font-black text-center"
+                  className="w-14 px-1 py-0.5 bg-nadeck-50 focus:bg-white text-nadeck-700 rounded border border-nadeck-100 focus:outline-none focus:ring-1 focus:ring-nadeck-500 text-xs lg:text-sm font-black text-center"
                 />
-                <span className="text-[10px] text-nadeck-700 font-bold lowercase">мг</span>
+                <span className="text-[10px] lg:text-xs text-nadeck-700 font-bold lowercase">мг</span>
               </div>
             </div>
             <div className="grid grid-cols-4 gap-2">
@@ -535,7 +535,7 @@ export default function DosageCalculator({
                   key={mg}
                   type="button"
                   onClick={() => setVialMg(mg)}
-                  className={`py-2 rounded-lg text-xs font-extrabold border transition ${
+                  className={`py-2 rounded-lg text-xs lg:text-sm font-extrabold border transition ${
                     vialMg === mg
                       ? 'bg-nadeck-600 border-nadeck-600 text-white shadow-xs'
                       : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100/70'
@@ -559,7 +559,7 @@ export default function DosageCalculator({
 
           {/* 3. Reconstitution liquid (diluent added) */}
           <div className="space-y-2" id="diluent-ml-box">
-            <div className="flex justify-between items-center text-[11px] font-black text-slate-600 uppercase tracking-wider">
+            <div className="flex justify-between items-center text-[11px] lg:text-sm font-black text-slate-600 uppercase tracking-wider">
               <span>{getLocalText('diluentMlLabel')}</span>
               <div className="flex items-center gap-1">
                 <input
@@ -569,9 +569,9 @@ export default function DosageCalculator({
                   step="0.1"
                   value={diluentMl || ''}
                   onChange={(e) => setDiluentMl(Number(e.target.value) || 0)}
-                  className="w-14 px-1 py-0.5 bg-nadeck-50 focus:bg-white text-nadeck-700 rounded border border-nadeck-100 focus:outline-none focus:ring-1 focus:ring-nadeck-500 text-xs font-black text-center"
+                  className="w-14 px-1 py-0.5 bg-nadeck-50 focus:bg-white text-nadeck-700 rounded border border-nadeck-100 focus:outline-none focus:ring-1 focus:ring-nadeck-500 text-xs lg:text-sm font-black text-center"
                 />
-                <span className="text-[10px] text-nadeck-700 font-bold lowercase">мл</span>
+                <span className="text-[10px] lg:text-xs text-nadeck-700 font-bold lowercase">мл</span>
               </div>
             </div>
             <div className="grid grid-cols-5 gap-1.5">
@@ -580,7 +580,7 @@ export default function DosageCalculator({
                   key={ml}
                   type="button"
                   onClick={() => setDiluentMl(ml)}
-                  className={`py-2 rounded-lg text-xs font-extrabold border transition ${
+                  className={`py-2 rounded-lg text-xs lg:text-sm font-extrabold border transition ${
                     diluentMl === ml
                       ? 'bg-nadeck-600 border-nadeck-600 text-white shadow-xs'
                       : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100/70'
@@ -604,7 +604,7 @@ export default function DosageCalculator({
 
           {/* 4. Insulin Syringe Capacity Choice */}
           <div className="space-y-2" id="syringe-type-box">
-            <label className="text-[11px] font-black text-slate-600 uppercase tracking-wider block">
+            <label className="text-[11px] lg:text-sm font-black text-slate-600 uppercase tracking-wider block">
               {getLocalText('syringeCapacityLabel')}
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -617,13 +617,13 @@ export default function DosageCalculator({
                   key={s.value}
                   type="button"
                   onClick={() => setSyringeType(s.value as 100 | 50 | 30)}
-                  className={`py-3 px-1.5 rounded-xl text-xs font-black border transition flex flex-col items-center justify-center gap-1 ${
+                  className={`py-3 px-1.5 rounded-xl text-xs lg:text-sm font-black border transition flex flex-col items-center justify-center gap-1 ${
                     syringeType === s.value
                       ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
                       : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  <span className="text-[11px]">{s.label}</span>
+                  <span className="text-[11px] lg:text-sm">{s.label}</span>
                 </button>
               ))}
             </div>
@@ -631,7 +631,7 @@ export default function DosageCalculator({
 
           {/* 5. Desired Single Dosage in Micrograms */}
           <div className="space-y-3 pt-2" id="desired-mcg-box">
-            <div className="flex justify-between items-center text-[11px] font-black text-slate-600 uppercase tracking-wider">
+            <div className="flex justify-between items-center text-[11px] lg:text-sm font-black text-slate-600 uppercase tracking-wider">
               <span>{getLocalText('desiredMcgLabel')}</span>
               <div className="flex items-center gap-1">
                 <input
@@ -641,9 +641,9 @@ export default function DosageCalculator({
                   step="0.01"
                   value={desiredMcg ? Number((desiredMcg / 1000).toFixed(3)) : ''}
                   onChange={(e) => setDesiredMcg(Math.round((Number(e.target.value) || 0) * 1000))}
-                  className="w-16 px-1 py-0.5 bg-nadeck-50 focus:bg-white text-nadeck-700 rounded border border-nadeck-100 focus:outline-none focus:ring-1 focus:ring-nadeck-500 text-xs font-black text-center"
+                  className="w-16 px-1 py-0.5 bg-nadeck-50 focus:bg-white text-nadeck-700 rounded border border-nadeck-100 focus:outline-none focus:ring-1 focus:ring-nadeck-500 text-xs lg:text-sm font-black text-center"
                 />
-                <span className="text-[10px] text-nadeck-700 font-bold lowercase">мг</span>
+                <span className="text-[10px] lg:text-xs text-nadeck-700 font-bold lowercase">мг</span>
               </div>
             </div>
 
@@ -653,7 +653,7 @@ export default function DosageCalculator({
                   key={dosage}
                   type="button"
                   onClick={() => setDesiredMcg(dosage)}
-                  className={`px-3 py-2 rounded-lg text-xs font-extrabold border transition ${
+                  className={`px-3 py-2 rounded-lg text-xs lg:text-sm font-extrabold border transition ${
                     desiredMcg === dosage
                       ? 'bg-nadeck-600 border-nadeck-600 text-white shadow-xs'
                       : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100/70'
@@ -674,7 +674,7 @@ export default function DosageCalculator({
               onChange={(e) => setDesiredMcg(Number(e.target.value))}
               className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-nadeck-600 focus:outline-none"
             />
-            <div className="flex justify-between text-[10px] text-slate-400 font-bold tracking-tight select-none px-0.5">
+            <div className="flex justify-between text-[10px] lg:text-xs text-slate-400 font-bold tracking-tight select-none px-0.5">
               <span>0.02 мг</span>
               <span>1 мг</span>
               <span>2.5 мг</span>
@@ -688,7 +688,7 @@ export default function DosageCalculator({
 
           {/* 6. Frequency Planning */}
           <div className="space-y-3 pt-2 border-t border-slate-100" id="frequency-mode-box">
-            <div className="flex justify-between items-center text-[11px] font-black text-slate-600 uppercase tracking-wider">
+            <div className="flex justify-between items-center text-[11px] lg:text-sm font-black text-slate-600 uppercase tracking-wider">
               <span>{getLocalText('howOftenLabel')}</span>
             </div>
             
@@ -701,7 +701,7 @@ export default function DosageCalculator({
               ].map((item) => (
                 <label 
                   key={item.value} 
-                  className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition select-none ${
+                  className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-xs lg:text-sm font-semibold cursor-pointer transition select-none ${
                     frequencyMode === item.value 
                       ? 'bg-nadeck-50/40 border-nadeck-500/30 text-nadeck-900 shadow-2xs' 
                       : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50/50'
@@ -732,11 +732,11 @@ export default function DosageCalculator({
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3 justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-nadeck-600" />
-                <h3 id="calc-results-title" className="text-xs font-black text-slate-800 uppercase tracking-widest">
+                <h3 id="calc-results-title" className="text-xs lg:text-sm font-black text-slate-800 uppercase tracking-widest">
                   {t('calcResultsTitle')}
                 </h3>
               </div>
-              <span className="text-[10px] bg-nadeck-50 text-nadeck-700 px-2 py-0.5 rounded-md font-bold uppercase shrink-0">
+              <span className="text-[10px] lg:text-xs bg-nadeck-50 text-nadeck-700 px-2 py-0.5 rounded-md font-bold uppercase shrink-0">
                 {currentLang === 'ru' ? 'Живой расчет' : 'Real-time'}
               </span>
             </div>
@@ -746,42 +746,42 @@ export default function DosageCalculator({
               
               {/* Concentration */}
               <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider leading-relaxed">
+                <span className="text-[10px] lg:text-xs text-slate-400 font-bold block uppercase tracking-wider leading-relaxed">
                   {getLocalText('concentrationTitle')}
                 </span>
-                <p id="concentration-factor" className="text-sm font-black text-slate-800">
-                  {(concentrationMcgPerMl / 1000).toFixed(2)} мг/мл <span className="text-[10px] font-medium text-slate-400">({concentrationMcgPerMl.toLocaleString()} мкг/мл)</span>
+                <p id="concentration-factor" className="text-sm lg:text-base font-black text-slate-800">
+                  {(concentrationMcgPerMl / 1000).toFixed(2)} мг/мл <span className="text-[10px] lg:text-xs font-medium text-slate-400">({concentrationMcgPerMl.toLocaleString()} мкг/мл)</span>
                 </p>
               </div>
 
               {/* Peptide per Unit */}
               <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider leading-relaxed">
+                <span className="text-[10px] lg:text-xs text-slate-400 font-bold block uppercase tracking-wider leading-relaxed">
                   {getLocalText('perUnitTitle')}
                 </span>
-                <p id="mcg-per-unit" className="text-sm font-black text-nadeck-700">
+                <p id="mcg-per-unit" className="text-sm lg:text-base font-black text-nadeck-700">
                   {mcgPerUnit.toFixed(1)} мкг / mcg
                 </p>
               </div>
 
               {/* Liquid ml to draw */}
               <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider leading-relaxed">
+                <span className="text-[10px] lg:text-xs text-slate-400 font-bold block uppercase tracking-wider leading-relaxed">
                   {getLocalText('totalLiquidTitle')}
                 </span>
-                <p id="target-ml-draw" className="text-base font-black text-slate-800">
-                  {mlToDraw} мл / ml <span className="text-[10px] text-slate-400 font-medium">({(mlToDraw * 1000).toFixed(0)} мкл)</span>
+                <p id="target-ml-draw" className="text-base lg:text-lg font-black text-slate-800">
+                  {mlToDraw} мл / ml <span className="text-[10px] lg:text-xs text-slate-400 font-medium">({(mlToDraw * 1000).toFixed(0)} мкл)</span>
                 </p>
               </div>
 
               {/* Volume scale pointer crucial U! */}
               <div className="bg-nadeck-50 p-4 rounded-2xl border border-nadeck-500/10 space-y-1 shadow-2xs">
-                <span className="text-[10px] text-nadeck-800 font-extrabold block uppercase tracking-wider">
+                <span className="text-[10px] lg:text-xs text-nadeck-800 font-extrabold block uppercase tracking-wider">
                   {getLocalText('unitsToFillTitle')}
                 </span>
                 <p id="target-units-draw" className="text-xl sm:text-2xl font-black text-nadeck-900 flex items-baseline gap-1 animate-pulse">
                   <span>{unitsToDraw}</span>
-                  <span className="text-[10px] font-bold uppercase text-nadeck-700">{currentLang === 'ru' ? 'ЕДИНИЦ' : currentLang === 'ar' ? 'وحدات' : 'Units'} (U)</span>
+                  <span className="text-[10px] lg:text-xs font-bold uppercase text-nadeck-700">{currentLang === 'ru' ? 'ЕДИНИЦ' : currentLang === 'ar' ? 'وحدات' : 'Units'} (U)</span>
                 </p>
               </div>
 
@@ -792,7 +792,7 @@ export default function DosageCalculator({
               
               <div className="flex items-center gap-1.5 border-b border-white/5 pb-2">
                 <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
-                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+                <h4 className="text-[11px] lg:text-sm font-black text-slate-400 uppercase tracking-wider">
                   {currentLang === 'ru' ? 'Показатели расхода и уколов' : 'Injections & Duration Profile'}
                 </h4>
               </div>
@@ -801,41 +801,41 @@ export default function DosageCalculator({
                 
                 {/* 1. Total injections in vial */}
                 <div className="space-y-1">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">
+                  <span className="text-[9px] lg:text-[11px] font-bold text-slate-400 uppercase block tracking-wider">
                     {getLocalText('injectionsPerVialLabel')}
                   </span>
-                  <p className="text-lg font-black text-white flex items-baseline gap-1" id="vial-total-shots-metric">
+                  <p className="text-lg lg:text-xl font-black text-white flex items-baseline gap-1" id="vial-total-shots-metric">
                     <span>{totalInjectionsPerVial}</span>
-                    <span className="text-[10px] text-nadeck-400 font-bold">{currentLang === 'ru' ? 'уколов' : 'shots'}</span>
+                    <span className="text-[10px] lg:text-xs text-nadeck-400 font-bold">{currentLang === 'ru' ? 'уколов' : 'shots'}</span>
                   </p>
                 </div>
 
                 {/* 2. Pure Cost Per Single Injection */}
                 <div className="space-y-1">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">
+                  <span className="text-[9px] lg:text-[11px] font-bold text-slate-400 uppercase block tracking-wider">
                     {getLocalText('costPerInjectionLabel')}
                   </span>
-                  <p className="text-lg font-black text-amber-300 flex items-baseline gap-0.5" id="vial-shot-cost-metric">
+                  <p className="text-lg lg:text-xl font-black text-amber-300 flex items-baseline gap-0.5" id="vial-shot-cost-metric">
                     <span>{costPerInjection.toLocaleString()}</span>
-                    <span className="text-[10px] text-slate-400 font-bold">{t('currencySymbol')}</span>
+                    <span className="text-[10px] lg:text-xs text-slate-400 font-bold">{t('currencySymbol')}</span>
                   </p>
                 </div>
 
                 {/* 3. Duration calendar prediction */}
                 <div className="space-y-1">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider animate-pulse">
+                  <span className="text-[9px] lg:text-[11px] font-bold text-slate-400 uppercase block tracking-wider animate-pulse">
                     {getLocalText('durationLabel')}
                   </span>
-                  <p className="text-lg font-black text-nadeck-300 flex items-baseline gap-1" id="vial-duration-metric">
+                  <p className="text-lg lg:text-xl font-black text-nadeck-300 flex items-baseline gap-1" id="vial-duration-metric">
                     <span>~ {durationMeta.count}</span>
-                    <span className="text-xs font-bold text-slate-400">{getLocalText(durationMeta.key as any)}</span>
+                    <span className="text-xs lg:text-sm font-bold text-slate-400">{getLocalText(durationMeta.key as any)}</span>
                   </p>
                 </div>
 
               </div>
 
               {/* Economic Advantage Indicator Banner */}
-              <div className="text-[10px] text-slate-400 bg-white/5 p-2.5 rounded-xl border border-white/5 flex items-center justify-between gap-2.5">
+              <div className="text-[10px] lg:text-xs text-slate-400 bg-white/5 p-2.5 rounded-xl border border-white/5 flex items-center justify-between gap-2.5">
                 <div className="flex items-center gap-1">
                   <TrendingDown className="w-3.5 h-3.5 text-emerald-400" />
                   <span>
@@ -852,14 +852,14 @@ export default function DosageCalculator({
 
             {/* Error or Warning Displays */}
             {isOverSyringeCapacity && (
-              <div id="syringe-warning" className="bg-rose-50 text-rose-700 border border-rose-100 rounded-2xl p-4 text-xs font-bold leading-relaxed flex items-start gap-2.5">
+              <div id="syringe-warning" className="bg-rose-50 text-rose-700 border border-rose-100 rounded-2xl p-4 text-xs lg:text-sm font-bold leading-relaxed flex items-start gap-2.5">
                 <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
                 <span>{getLocalText('warningOverSyringe')}</span>
               </div>
             )}
 
             {isOverVialCapacity && (
-              <div id="vial-warning" className="bg-rose-50 text-rose-700 border border-rose-100 rounded-2xl p-4 text-xs font-bold leading-relaxed flex items-start gap-2.5">
+              <div id="vial-warning" className="bg-rose-50 text-rose-700 border border-rose-100 rounded-2xl p-4 text-xs lg:text-sm font-bold leading-relaxed flex items-start gap-2.5">
                 <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
                 <span>{getLocalText('warningOverVial')}</span>
               </div>
@@ -877,10 +877,10 @@ export default function DosageCalculator({
               <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 flex items-start gap-2.5">
                 <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <h5 className="text-[10px] font-black text-amber-800 uppercase tracking-widest">
+                  <h5 className="text-[10px] lg:text-xs font-black text-amber-800 uppercase tracking-widest">
                     {currentLang === 'ru' ? 'Смешивать без встряхивания' : 'Gently Reconstitute'}
                   </h5>
-                  <p className="text-[10px] text-amber-900 leading-normal">
+                  <p className="text-[10px] lg:text-xs text-amber-900 leading-normal">
                     {getLocalText('ruleNeverShake')}
                   </p>
                 </div>
@@ -890,10 +890,10 @@ export default function DosageCalculator({
               <div className="bg-sky-50/50 p-4 rounded-2xl border border-sky-100 flex items-start gap-2.5">
                 <ShieldAlert className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <h5 className="text-[10px] font-black text-sky-800 uppercase tracking-widest">
+                  <h5 className="text-[10px] lg:text-xs font-black text-sky-800 uppercase tracking-widest">
                     {currentLang === 'ru' ? 'Холод и Темнота (2°C - 8°C)' : 'Refrigerated Storage'}
                   </h5>
-                  <p className="text-[10px] text-sky-900 leading-normal">
+                  <p className="text-[10px] lg:text-xs text-sky-900 leading-normal">
                     {getLocalText('storageRule')}
                   </p>
                 </div>
@@ -908,10 +908,10 @@ export default function DosageCalculator({
             
             {/* Direct peptide price display */}
             <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase">{getLocalText('vialPriceLabel')}</span>
-              <div id="calc-res-cost" className="text-2xl font-black text-slate-950 flex items-baseline gap-1">
+              <span className="text-[10px] lg:text-xs text-slate-400 font-bold uppercase">{getLocalText('vialPriceLabel')}</span>
+              <div id="calc-res-cost" className="text-2xl lg:text-3xl font-black text-slate-950 flex items-baseline gap-1">
                 <span>{selectedMed.price.toLocaleString()} {t('currencySymbol')}</span>
-                <span className="text-xs text-slate-400 font-medium">/ {currentLang === 'ru' ? 'за флакон (vial)' : 'per active vial'}</span>
+                <span className="text-xs lg:text-sm text-slate-400 font-medium">/ {currentLang === 'ru' ? 'за флакон (vial)' : 'per active vial'}</span>
               </div>
             </div>
 
@@ -929,7 +929,7 @@ export default function DosageCalculator({
 
           {/* Success Banner inside calculator context */}
           {successMsg && (
-            <div id="calc-success-banner" className="bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl p-3 text-xs flex items-center justify-center gap-2 font-bold animate-fade-in shadow-2xs">
+            <div id="calc-success-banner" className="bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl p-3 text-xs lg:text-sm flex items-center justify-center gap-2 font-bold animate-fade-in shadow-2xs">
               <Check className="w-4 h-4 animate-bounce" />
               <span>
                 {currentLang === 'ru' 

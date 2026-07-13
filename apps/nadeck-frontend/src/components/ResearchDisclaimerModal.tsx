@@ -57,13 +57,13 @@ export default function ResearchDisclaimerModal({ currentLang }: ResearchDisclai
               <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
                 <FlaskConical className="w-6 h-6" />
               </div>
-              <h2 id="research-disclaimer-title" className="text-lg font-black text-slate-900 tracking-tight">
+              <h2 id="research-disclaimer-title" className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
                 {t('researchDisclaimerTitle')}
               </h2>
             </div>
 
             <div className="px-6 py-4 max-h-[50vh] overflow-y-auto">
-              <p id="research-disclaimer-body" className="text-xs sm:text-sm text-slate-600 leading-relaxed text-center">
+              <p id="research-disclaimer-body" className="text-xl lg:text-sm text-slate-600 leading-relaxed text-center whitespace-pre-line">
                 {t('researchDisclaimerBody')}
               </p>
             </div>
@@ -72,7 +72,7 @@ export default function ResearchDisclaimerModal({ currentLang }: ResearchDisclai
               <button
                 id="btn-research-disclaimer-agree"
                 onClick={handleAgree}
-                className="w-full py-3.5 bg-nadeck-600 hover:bg-nadeck-700 text-white font-bold text-sm rounded-xl shadow-lg transition"
+                className="w-full py-3.5 bg-nadeck-600 hover:bg-nadeck-700 text-white font-bold text-[15px] rounded-xl shadow-lg transition"
               >
                 {t('researchDisclaimerAgreeBtn')}
               </button>
