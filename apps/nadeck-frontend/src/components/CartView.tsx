@@ -38,7 +38,7 @@ export default function CartView({
 
   // WhatsApp number that receives the order template (payment gateway integration
   // requires a live site for callbacks, so orders are confirmed/paid via WhatsApp for now)
-  const WHATSAPP_NUMBER = '77273214567';
+  const WHATSAPP_NUMBER = '77070222312';
 
   // Confirmation state
   const [loading, setLoading] = useState(false);
