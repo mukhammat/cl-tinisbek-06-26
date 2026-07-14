@@ -17,6 +17,7 @@ interface CartViewProps {
   user: User;
   onPlaceOrder: (newOrder: Order) => void;
   onClearCart: () => void;
+  onGoToAdditionalGoods: () => void;
 }
 
 export default function CartView({
@@ -26,7 +27,8 @@ export default function CartView({
   onUpdateQty,
   user,
   onPlaceOrder,
-  onClearCart
+  onClearCart,
+  onGoToAdditionalGoods
 }: CartViewProps) {
   
   // Delivery states
@@ -449,6 +451,16 @@ export default function CartView({
               {grandTotal.toLocaleString()} {t('currencySymbol')}
             </span>
           </div>
+
+          <button
+            id="btn-add-syringes"
+            type="button"
+            onClick={onGoToAdditionalGoods}
+            className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm tracking-wider rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition duration-200"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{currentLang === 'ru' ? 'Добавить шприцы' : 'Add Syringes'}</span>
+          </button>
 
           <button
             id="btn-confirm-checkout"

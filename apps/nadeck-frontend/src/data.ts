@@ -518,6 +518,31 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     en: 'Anti-Aging & BEAUTY',
     ar: 'مкосметика & الجمال'
   },
+  catPainkiller: {
+    ru: 'Обезболивающие',
+    en: 'Painkillers',
+    ar: 'مسكنات الألم'
+  },
+  catVitamin: {
+    ru: 'Витамины',
+    en: 'Vitamins',
+    ar: 'الفيتامينات'
+  },
+  catAntiallergic: {
+    ru: 'Противоаллергические',
+    en: 'Antiallergic',
+    ar: 'مضادات الحساسية'
+  },
+  catDigestive: {
+    ru: 'Пищеварение',
+    en: 'Digestive',
+    ar: 'الهضم'
+  },
+  catAdditional: {
+    ru: 'Дополнительные товары',
+    en: 'Additional Goods',
+    ar: 'المنتجات الإضافية'
+  },
   addToCart: {
     ru: 'В корзину',
     en: 'Add to Cart',

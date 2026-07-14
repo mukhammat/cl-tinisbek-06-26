@@ -20,6 +20,8 @@ interface MedicineGridProps {
   setAuthModalOpen: (open: boolean) => void;
   subscribedIds: string[];
   onSubscribeNotify: (medicineId: string) => void;
+  selectedCategory: string;
+  onSelectCategory: (category: string) => void;
 }
 
 export default function MedicineGrid({
@@ -32,9 +34,10 @@ export default function MedicineGrid({
   user,
   setAuthModalOpen,
   subscribedIds,
-  onSubscribeNotify
+  onSubscribeNotify,
+  selectedCategory,
+  onSelectCategory
 }: MedicineGridProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedVolumes, setSelectedVolumes] = useState<Record<string, number>>({});
 
   const t = (key: string) => {
@@ -46,7 +49,8 @@ export default function MedicineGrid({
     { id: 'painkiller', label: t('catPainkiller') },
     { id: 'vitamin', label: t('catVitamin') },
     { id: 'antiallergic', label: t('catAntiallergic') },
-    { id: 'digestive', label: t('catDigestive') }
+    { id: 'digestive', label: t('catDigestive') },
+    { id: 'additional', label: t('catAdditional') }
   ];
 
   const activeMedicines = allMedicines && allMedicines.length > 0 ? allMedicines : MEDICINES_DATA;
@@ -76,7 +80,7 @@ export default function MedicineGrid({
           <button
             key={cat.id}
             id={`filter-btn-${cat.id}`}
-            onClick={() => setSelectedCategory(cat.id)}
+            onClick={() => onSelectCategory(cat.id)}
             className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap snap-start transition-all duration-200 ${
               selectedCategory === cat.id
                 ? 'bg-nadeck-600 border border-nadeck-600 text-white shadow-md shadow-nadeck-50'

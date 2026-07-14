@@ -33,6 +33,9 @@ export default function App() {
   // Selected single medicine for details
   const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
 
+  // Selected catalog category so external CTAs can jump straight into a filtered section
+  const [selectedCatalogCategory, setSelectedCatalogCategory] = useState<string>('all');
+
   // Load medicines list from database, default to empty to allow loading inside Grid
   const [medicinesList, setMedicinesList] = useState<Medicine[]>([]);
 
@@ -272,6 +275,13 @@ export default function App() {
     setSelectedMedicine(null);
   };
 
+  const handleGoToAdditionalGoods = () => {
+    setActiveTab('catalog');
+    setSelectedMedicine(null);
+    setSearchQuery('');
+    setSelectedCatalogCategory('additional');
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans selection:bg-nadeck-500 selection:text-white" id="main-frame">
       
@@ -405,6 +415,8 @@ export default function App() {
                       setAuthModalOpen={setAuthModalOpen}
                       subscribedIds={subscribedIds}
                       onSubscribeNotify={handleSubscribeNotify}
+                      selectedCategory={selectedCatalogCategory}
+                      onSelectCategory={setSelectedCatalogCategory}
                     />
                   </div>
                 )
@@ -449,6 +461,7 @@ export default function App() {
                     user={user}
                     onPlaceOrder={handlePlaceOrder}
                     onClearCart={() => setCart([])}
+                    onGoToAdditionalGoods={handleGoToAdditionalGoods}
                   />
                 </div>
               )}
