@@ -12,8 +12,8 @@ import { motion, AnimatePresence } from 'motion/react';
 interface CartViewProps {
   currentLang: Language;
   cart: CartItem[];
-  onRemoveFromCart: (medId: string) => void;
-  onUpdateQty: (medId: string, qty: number) => void;
+  onRemoveFromCart: (medId: string, selectedVolume?: number) => void;
+  onUpdateQty: (medId: string, qty: number, selectedVolume?: number) => void;
   user: User;
   onPlaceOrder: (newOrder: Order) => void;
   onClearCart: () => void;
@@ -50,7 +50,7 @@ export default function CartView({
   };
 
   const calculateSubtotal = () => {
-    return cart.reduce((total, item) => total + (item.medicine.price * item.quantity), 0);
+    return cart.reduce((total, item) => total + ((item.unitPrice ?? item.medicine.price) * item.quantity), 0);
   };
 
   const isFreeDelivery = () => {
@@ -69,7 +69,8 @@ export default function CartView({
     const lines = [heading, ''];
 
     cart.forEach((item) => {
-      lines.push(`• ${item.medicine.name[currentLang]} x${item.quantity} — ${(item.medicine.price * item.quantity).toLocaleString()} ${t('currencySymbol')}`);
+      const unitPrice = item.unitPrice ?? item.medicine.price;
+      lines.push(`• ${item.medicine.name[currentLang]}${item.selectedStrength ? ` (${item.selectedStrength} мг)` : ''} x${item.quantity} — ${(unitPrice * item.quantity).toLocaleString()} ${t('currencySymbol')}`);
     });
 
     lines.push('');
@@ -104,7 +105,7 @@ export default function CartView({
       email: user.email || 'guest',
       items: cart.map(item => ({
         medicineName: item.medicine.name,
-        price: item.medicine.price,
+        price: item.unitPrice ?? item.medicine.price,
         quantity: item.quantity
       })),
       totalPrice: grandTotal,
@@ -234,10 +235,13 @@ export default function CartView({
           </h2>
 
           <div className="divide-y divide-slate-100" id="cart-items-list">
-            {cart.map((item) => (
-              <div 
-                key={item.medicine.id} 
-                id={`cart-item-row-${item.medicine.id}`}
+            {cart.map((item) => {
+              const lineKey = `${item.medicine.id}-${item.selectedStrength ?? 'base'}`;
+              const unitPrice = item.unitPrice ?? item.medicine.price;
+              return (
+              <div
+                key={lineKey}
+                id={`cart-item-row-${lineKey}`}
                 className="py-4 flex gap-4 items-center justify-between"
               >
                 {/* Thumb */}
@@ -258,25 +262,25 @@ export default function CartView({
                     {item.selectedStrength ? ` · ${item.selectedStrength} мг` : ''}
                   </span>
                   <div className="text-[10.5px] text-slate-400 font-extrabold mt-0.5">
-                    {item.medicine.price.toLocaleString()} {t('currencySymbol')}
+                    {unitPrice.toLocaleString()} {t('currencySymbol')}
                   </div>
                 </div>
 
                 {/* Adjust items */}
                 <div className="flex items-center gap-2 border border-slate-200 bg-slate-50 py-0.5 px-1 rounded-lg">
                   <button
-                    id={`cart-qty-dec-${item.medicine.id}`}
-                    onClick={() => onUpdateQty(item.medicine.id, item.quantity - 1)}
+                    id={`cart-qty-dec-${lineKey}`}
+                    onClick={() => onUpdateQty(item.medicine.id, item.quantity - 1, item.selectedStrength)}
                     className="p-1 rounded text-slate-500 hover:text-slate-800"
                   >
                     <Minus className="w-3 h-3" />
                   </button>
-                  <span id={`cart-qty-num-${item.medicine.id}`} className="w-5 text-center text-xs font-black text-slate-800">
+                  <span id={`cart-qty-num-${lineKey}`} className="w-5 text-center text-xs font-black text-slate-800">
                     {item.quantity}
                   </span>
                   <button
-                    id={`cart-qty-inc-${item.medicine.id}`}
-                    onClick={() => onUpdateQty(item.medicine.id, item.quantity + 1)}
+                    id={`cart-qty-inc-${lineKey}`}
+                    onClick={() => onUpdateQty(item.medicine.id, item.quantity + 1, item.selectedStrength)}
                     className="p-1 rounded text-slate-500 hover:text-slate-800"
                   >
                     <Plus className="w-3 h-3" />
@@ -285,15 +289,16 @@ export default function CartView({
 
                 {/* Trash delete button */}
                 <button
-                  id={`cart-item-remove-${item.medicine.id}`}
-                  onClick={() => onRemoveFromCart(item.medicine.id)}
+                  id={`cart-item-remove-${lineKey}`}
+                  onClick={() => onRemoveFromCart(item.medicine.id, item.selectedStrength)}
                   className="p-2 bg-rose-50 hover:bg-rose-100 rounded-xl text-rose-500 hover:text-rose-700 transition"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
 
               </div>
-            ))}
+              );
+            })}
           </div>
 
         </div>

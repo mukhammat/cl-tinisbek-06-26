@@ -13,7 +13,7 @@ interface MedicineGridProps {
   currentLang: Language;
   onSelectMedicine: (medicine: Medicine) => void;
   cart: CartItem[];
-  onAddToCart: (medicine: Medicine, quantity?: number, selectedVolume?: number) => void;
+  onAddToCart: (medicine: Medicine, quantity?: number, selectedVolume?: number, unitPrice?: number) => void;
   searchQuery: string;
   allMedicines?: Medicine[];
   user: User;
@@ -63,9 +63,6 @@ export default function MedicineGrid({
     return matchesCategory && (nameMatch || descMatch || substanceMatch);
   });
 
-  const isItemInCart = (medId: string) => {
-    return cart.some((item) => item.medicine.id === medId);
-  };
 
   return (
     <div className="space-y-8" id="catalog-section">
@@ -98,12 +95,13 @@ export default function MedicineGrid({
           id="medicines-grid-layout"
         >
           {filteredMedicines.map((med, index) => {
-            const inCart = isItemInCart(med.id);
-            const cartQty = cart.find(item => item.medicine.id === med.id)?.quantity || 0;
             const isOutOfStock = med.inStock === false;
             const isSubscribed = subscribedIds.includes(med.id);
-            const availableVolumes = med.volumes && med.volumes.length > 0 ? med.volumes : [med.mgPerUnit];
+            const availableVolumes = med.volumes && med.volumes.length > 0 ? med.volumes : [{ mgPerUnit: med.mgPerUnit, price: med.price }];
             const currentVolume = selectedVolumes[med.id] ?? med.mgPerUnit;
+            const currentVolumeInfo = availableVolumes.find((v) => v.mgPerUnit === currentVolume) || availableVolumes[0];
+            const cartQty = cart.find(item => item.medicine.id === med.id && item.selectedStrength === currentVolumeInfo.mgPerUnit)?.quantity || 0;
+            const inCart = cartQty > 0;
 
             const handleNotifyClick = () => {
               if (!user.isAuthenticated) {
@@ -176,9 +174,9 @@ export default function MedicineGrid({
                       {med.description[currentLang]}
                     </p>
 
-                    {/* Price */}
+                    {/* Price (follows the selected volume) */}
                     <span id={`price-${med.id}`} className="block text-xl font-black text-slate-900 pt-1">
-                      {med.price.toLocaleString()} {t('currencySymbol')}
+                      {currentVolumeInfo.price.toLocaleString()} {t('currencySymbol')}
                     </span>
                   </div>
 
@@ -193,7 +191,9 @@ export default function MedicineGrid({
                         className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-nadeck-100 focus:border-nadeck-300"
                       >
                         {availableVolumes.map((vol) => (
-                          <option key={vol} value={vol}>{vol} мг</option>
+                          <option key={vol.mgPerUnit} value={vol.mgPerUnit}>
+                            {vol.mgPerUnit} мг — {vol.price.toLocaleString()} {t('currencySymbol')}
+                          </option>
                         ))}
                       </select>
                       <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -238,7 +238,7 @@ export default function MedicineGrid({
                     ) : (
                       <button
                         id={`add-to-cart-btn-${med.id}`}
-                        onClick={() => onAddToCart(med, 1, currentVolume)}
+                        onClick={() => onAddToCart(med, 1, currentVolumeInfo.mgPerUnit, currentVolumeInfo.price)}
                         className={`flex-1 px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-300 ${
                           inCart
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100/60'

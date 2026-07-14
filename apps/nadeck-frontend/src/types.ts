@@ -18,6 +18,11 @@ export const SUPPORTED_LANGUAGES: LanguageConfig[] = [
   { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' }
 ];
 
+export interface MedicineVolume {
+  mgPerUnit: number;
+  price: number; // this volume's own price, may differ from other volumes of the same product
+}
+
 export interface Medicine {
   id: string;
   name: Record<Language, string>;
@@ -33,7 +38,7 @@ export interface Medicine {
   rating: number;
   form: 'tablet' | 'capsule' | 'liquid' | 'vial';
   mgPerUnit: number; // e.g. 5 for 5mg vial (default/primary volume)
-  volumes: number[]; // all available package volumes in mg, e.g. [2, 5, 10]
+  volumes: MedicineVolume[]; // all available package volumes, each with its own price
   dosageRules: {
     mgPerKgPerDay: number; // Dosage factor
     defaultDailyDoses: number; // times per day
@@ -52,7 +57,8 @@ export interface AppNotification {
 export interface CartItem {
   medicine: Medicine;
   quantity: number;
-  selectedStrength?: number;
+  selectedStrength?: number; // the chosen volume's mgPerUnit
+  unitPrice?: number; // resolved price for the chosen volume, falls back to medicine.price when absent
 }
 
 export interface User {

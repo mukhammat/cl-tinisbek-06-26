@@ -25,7 +25,7 @@ import { motion } from 'motion/react';
 
 interface DosageCalculatorProps {
   currentLang: Language;
-  onAddToCart: (medicine: Medicine, quantity: number, selectedVolume?: number) => void;
+  onAddToCart: (medicine: Medicine, quantity: number, selectedVolume?: number, unitPrice?: number) => void;
   cart: CartItem[];
   allMedicines?: Medicine[];
   searchQuery?: string;

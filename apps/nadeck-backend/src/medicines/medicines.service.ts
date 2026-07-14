@@ -14,6 +14,14 @@ export class MedicinesService {
     @Inject(NotificationsService) private readonly notificationsService: NotificationsService,
   ) {}
 
+  // Normalizes the admin-submitted volumes list into { mgPerUnit, price } pairs, dropping anything invalid
+  private normalizeVolumes(volumes: any): { mgPerUnit: number; price: number }[] {
+    if (!Array.isArray(volumes)) return [];
+    return volumes
+      .map((v) => ({ mgPerUnit: Number(v?.mgPerUnit), price: Number(v?.price) }))
+      .filter((v) => Number.isFinite(v.mgPerUnit) && v.mgPerUnit > 0 && Number.isFinite(v.price) && v.price >= 0);
+  }
+
   async getAll() {
     try {
       const rows = await this.prisma.medicine.findMany();
@@ -69,7 +77,7 @@ export class MedicinesService {
           rating: Number(rating || 5.0),
           form: form || 'vial',
           mgPerUnit: Number(mgPerUnit || 5),
-          volumes: JSON.stringify(Array.isArray(volumes) ? volumes.map(Number) : []),
+          volumes: JSON.stringify(this.normalizeVolumes(volumes)),
           dosageRules: JSON.stringify(dosageRules || { mgPerKgPerDay: 0.005, defaultDailyDoses: 1 }),
           inStock: inStock === false ? 0 : 1,
         }
@@ -107,7 +115,7 @@ export class MedicinesService {
           rating: Number(rating),
           form,
           mgPerUnit: Number(mgPerUnit),
-          volumes: JSON.stringify(Array.isArray(volumes) ? volumes.map(Number) : []),
+          volumes: JSON.stringify(this.normalizeVolumes(volumes)),
           dosageRules: JSON.stringify(dosageRules),
           inStock: newInStock,
         }

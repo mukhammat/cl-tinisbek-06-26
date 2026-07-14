@@ -52,9 +52,10 @@ export default function AdminPanel({
   const [isAdding, setIsAdding] = useState(false);
   const [formData, setFormData] = useState<Partial<Medicine>>({});
 
-  // Volumes list (mg options) available for the product, plus the pending "new volume" input
-  const [volumesList, setVolumesList] = useState<number[]>([]);
-  const [newVolumeInput, setNewVolumeInput] = useState('');
+  // Volumes list (mg + own price) available for the product, plus the pending "new volume" inputs
+  const [volumesList, setVolumesList] = useState<{ mgPerUnit: number; price: number }[]>([]);
+  const [newVolumeMg, setNewVolumeMg] = useState('');
+  const [newVolumePrice, setNewVolumePrice] = useState('');
 
   // Localized form inputs
   const [locNames, setLocNames] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
@@ -175,7 +176,8 @@ export default function AdminPanel({
   const startEditProduct = (med: Medicine) => {
     setFormData(med);
     setVolumesList([...(med.volumes || [])]);
-    setNewVolumeInput('');
+    setNewVolumeMg('');
+    setNewVolumePrice('');
     setLocNames({ ...med.name });
     setLocSubs({ ...med.activeSubstance });
     setLocDescs({ ...med.description });
@@ -212,8 +214,9 @@ export default function AdminPanel({
       },
       inStock: true
     });
-    setVolumesList([5]);
-    setNewVolumeInput('');
+    setVolumesList([{ mgPerUnit: 5, price: 15000 }]);
+    setNewVolumeMg('');
+    setNewVolumePrice('');
     setLocNames({ ru: '', en: '', ar: '' });
     setLocSubs({ ru: '', en: '', ar: '' });
     setLocDescs({ ru: '', en: '', ar: '' });
@@ -226,23 +229,30 @@ export default function AdminPanel({
     setIsEditing(false);
   };
 
-  // Add a new volume (mg) option to the pending list, ignoring duplicates/invalid values
+  // Add a new volume (mg + its own price) option to the pending list, ignoring duplicates/invalid values
   const handleAddVolume = () => {
-    const val = Number(newVolumeInput);
-    if (!newVolumeInput || Number.isNaN(val) || val <= 0) {
+    const mg = Number(newVolumeMg);
+    const price = Number(newVolumePrice);
+    if (!newVolumeMg || Number.isNaN(mg) || mg <= 0) {
       showFeedback('error', currentLang === 'ru' ? 'Введите корректное значение объёма (мг)' : 'Enter a valid volume value (mg)');
       return;
     }
-    if (volumesList.includes(val)) {
-      setNewVolumeInput('');
+    if (!newVolumePrice || Number.isNaN(price) || price < 0) {
+      showFeedback('error', currentLang === 'ru' ? 'Введите корректную цену для этого объёма' : 'Enter a valid price for this volume');
       return;
     }
-    setVolumesList([...volumesList, val].sort((a, b) => a - b));
-    setNewVolumeInput('');
+    if (volumesList.some((v) => v.mgPerUnit === mg)) {
+      setNewVolumeMg('');
+      setNewVolumePrice('');
+      return;
+    }
+    setVolumesList([...volumesList, { mgPerUnit: mg, price }].sort((a, b) => a.mgPerUnit - b.mgPerUnit));
+    setNewVolumeMg('');
+    setNewVolumePrice('');
   };
 
-  const handleRemoveVolume = (vol: number) => {
-    setVolumesList(volumesList.filter((v) => v !== vol));
+  const handleRemoveVolume = (mg: number) => {
+    setVolumesList(volumesList.filter((v) => v.mgPerUnit !== mg));
   };
 
   // Handle Submit (Create or Update Product)
@@ -930,10 +940,10 @@ export default function AdminPanel({
                   </div>
                 </div>
 
-                {/* Available Volumes manager: add/remove mg package options shown on product cards */}
+                {/* Available Volumes manager: each volume has its own mg strength AND its own price */}
                 <div className="pt-4 border-t border-nadeck-500/10" id="form-volumes-box">
                   <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
-                    {currentLang === 'ru' ? 'Доступные объёмы (мг)' : 'Available Volumes (mg)'}
+                    {currentLang === 'ru' ? 'Доступные объёмы и цены' : 'Available Volumes & Prices'}
                   </label>
                   <div className="flex flex-wrap gap-2 mb-2" id="form-volumes-list">
                     {volumesList.length === 0 && (
@@ -943,15 +953,15 @@ export default function AdminPanel({
                     )}
                     {volumesList.map((vol) => (
                       <span
-                        key={vol}
-                        id={`form-volume-chip-${vol}`}
+                        key={vol.mgPerUnit}
+                        id={`form-volume-chip-${vol.mgPerUnit}`}
                         className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full bg-white border border-nadeck-500/20 text-xs font-bold text-nadeck-800"
                       >
-                        {vol} мг
+                        {vol.mgPerUnit} мг — {vol.price.toLocaleString()} ₸
                         <button
-                          id={`form-volume-remove-${vol}`}
+                          id={`form-volume-remove-${vol.mgPerUnit}`}
                           type="button"
-                          onClick={() => handleRemoveVolume(vol)}
+                          onClick={() => handleRemoveVolume(vol.mgPerUnit)}
                           className="p-0.5 rounded-full hover:bg-rose-50 hover:text-rose-600 text-slate-400 transition-colors"
                           title={currentLang === 'ru' ? 'Удалить объём' : 'Remove volume'}
                         >
@@ -962,20 +972,36 @@ export default function AdminPanel({
                   </div>
                   <div className="flex items-center gap-2">
                     <input
-                      id="form-input-new-volume"
+                      id="form-input-new-volume-mg"
                       type="number"
                       min="0"
                       step="0.1"
-                      placeholder={currentLang === 'ru' ? 'Напр. 10' : 'e.g. 10'}
-                      value={newVolumeInput}
-                      onChange={(e) => setNewVolumeInput(e.target.value)}
+                      placeholder={currentLang === 'ru' ? 'Объём, мг' : 'Volume, mg'}
+                      value={newVolumeMg}
+                      onChange={(e) => setNewVolumeMg(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           handleAddVolume();
                         }
                       }}
-                      className="w-32 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
+                      className="w-28 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
+                    />
+                    <input
+                      id="form-input-new-volume-price"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder={currentLang === 'ru' ? 'Цена, ₸' : 'Price, ₸'}
+                      value={newVolumePrice}
+                      onChange={(e) => setNewVolumePrice(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddVolume();
+                        }
+                      }}
+                      className="w-28 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
                     />
                     <button
                       id="form-btn-add-volume"

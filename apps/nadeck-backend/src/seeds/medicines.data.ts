@@ -13,7 +13,7 @@ export interface Medicine {
   rating: number;
   form: string;
   mgPerUnit: number;
-  volumes: number[];
+  volumes: { mgPerUnit: number; price: number }[];
   dosageRules: { mgPerKgPerDay: number; defaultDailyDoses: number };
   inStock?: boolean;
 }
@@ -54,7 +54,11 @@ export const MEDICINES_DATA: Medicine[] = [
     rating: 4.9,
     form: 'vial',
     mgPerUnit: 5,
-    volumes: [2, 5, 10],
+    volumes: [
+          { mgPerUnit: 2, price: 9000 },
+          { mgPerUnit: 5, price: 18500 },
+          { mgPerUnit: 10, price: 32000 }
+        ],
     dosageRules: { mgPerKgPerDay: 0.005, defaultDailyDoses: 1 }
   },
   {
@@ -92,7 +96,11 @@ export const MEDICINES_DATA: Medicine[] = [
     rating: 4.95,
     form: 'vial',
     mgPerUnit: 10,
-    volumes: [5, 10, 15],
+    volumes: [
+          { mgPerUnit: 5, price: 19500 },
+          { mgPerUnit: 10, price: 32000 },
+          { mgPerUnit: 15, price: 42000 }
+        ],
     dosageRules: { mgPerKgPerDay: 0.007, defaultDailyDoses: 1 }
   },
   {
@@ -130,7 +138,11 @@ export const MEDICINES_DATA: Medicine[] = [
     rating: 4.88,
     form: 'vial',
     mgPerUnit: 5,
-    volumes: [2, 5, 10],
+    volumes: [
+          { mgPerUnit: 2, price: 8000 },
+          { mgPerUnit: 5, price: 15000 },
+          { mgPerUnit: 10, price: 26000 }
+        ],
     dosageRules: { mgPerKgPerDay: 0.004, defaultDailyDoses: 2 }
   },
   {
@@ -168,7 +180,11 @@ export const MEDICINES_DATA: Medicine[] = [
     rating: 4.82,
     form: 'vial',
     mgPerUnit: 5,
-    volumes: [2, 5, 10],
+    volumes: [
+          { mgPerUnit: 2, price: 8500 },
+          { mgPerUnit: 5, price: 16500 },
+          { mgPerUnit: 10, price: 28000 }
+        ],
     dosageRules: { mgPerKgPerDay: 0.005, defaultDailyDoses: 1 }
   },
   {
@@ -206,7 +222,11 @@ export const MEDICINES_DATA: Medicine[] = [
     rating: 4.79,
     form: 'vial',
     mgPerUnit: 10,
-    volumes: [5, 10, 15],
+    volumes: [
+          { mgPerUnit: 5, price: 8500 },
+          { mgPerUnit: 10, price: 14000 },
+          { mgPerUnit: 15, price: 19500 }
+        ],
     dosageRules: { mgPerKgPerDay: 0.003, defaultDailyDoses: 1 }
   },
   {
@@ -244,7 +264,11 @@ export const MEDICINES_DATA: Medicine[] = [
     rating: 4.85,
     form: 'vial',
     mgPerUnit: 5,
-    volumes: [2, 5, 10],
+    volumes: [
+          { mgPerUnit: 2, price: 6500 },
+          { mgPerUnit: 5, price: 12500 },
+          { mgPerUnit: 10, price: 21000 }
+        ],
     dosageRules: { mgPerKgPerDay: 0.003, defaultDailyDoses: 3 }
   }
 ];

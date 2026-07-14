@@ -217,33 +217,34 @@ export default function App() {
     return TRANSLATIONS[key]?.[currentLang] || key;
   };
 
-  // Cart operations
-  const handleAddToCart = (medicine: Medicine, qtyToAdd: number = 1, selectedVolume?: number) => {
+  // Cart operations. Different volumes of the same product carry different prices, so
+  // cart lines are keyed by (medicine id + selected volume), not just the product id.
+  const handleAddToCart = (medicine: Medicine, qtyToAdd: number = 1, selectedVolume?: number, unitPrice?: number) => {
     setCart((prevCart) => {
-      const existing = prevCart.find((item) => item.medicine.id === medicine.id);
+      const existing = prevCart.find((item) => item.medicine.id === medicine.id && item.selectedStrength === selectedVolume);
       if (existing) {
         return prevCart.map((item) =>
-          item.medicine.id === medicine.id
-            ? { ...item, quantity: item.quantity + qtyToAdd, selectedStrength: selectedVolume ?? item.selectedStrength }
+          item === existing
+            ? { ...item, quantity: item.quantity + qtyToAdd }
             : item
         );
       }
-      return [...prevCart, { medicine, quantity: qtyToAdd, selectedStrength: selectedVolume }];
+      return [...prevCart, { medicine, quantity: qtyToAdd, selectedStrength: selectedVolume, unitPrice }];
     });
   };
 
-  const handleRemoveFromCart = (medId: string) => {
-    setCart((prevCart) => prevCart.filter((item) => item.medicine.id !== medId));
+  const handleRemoveFromCart = (medId: string, selectedVolume?: number) => {
+    setCart((prevCart) => prevCart.filter((item) => !(item.medicine.id === medId && item.selectedStrength === selectedVolume)));
   };
 
-  const handleUpdateQty = (medId: string, updatedQty: number) => {
+  const handleUpdateQty = (medId: string, updatedQty: number, selectedVolume?: number) => {
     if (updatedQty <= 0) {
-      handleRemoveFromCart(medId);
+      handleRemoveFromCart(medId, selectedVolume);
       return;
     }
     setCart((prevCart) =>
       prevCart.map((item) =>
-        item.medicine.id === medId ? { ...item, quantity: updatedQty } : item
+        item.medicine.id === medId && item.selectedStrength === selectedVolume ? { ...item, quantity: updatedQty } : item
       )
     );
   };
