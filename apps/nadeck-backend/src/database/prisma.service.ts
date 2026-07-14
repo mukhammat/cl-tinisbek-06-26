@@ -35,6 +35,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
               rating: Number(med.rating),
               form: med.form,
               mgPerUnit: Number(med.mgPerUnit),
+              volumes: JSON.stringify(med.volumes || []),
               dosageRules: JSON.stringify(med.dosageRules),
               inStock: 1,
             },

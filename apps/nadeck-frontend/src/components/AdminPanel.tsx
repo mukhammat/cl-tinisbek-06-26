@@ -51,7 +51,11 @@ export default function AdminPanel({
   const [isEditing, setIsEditing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [formData, setFormData] = useState<Partial<Medicine>>({});
-  
+
+  // Volumes list (mg options) available for the product, plus the pending "new volume" input
+  const [volumesList, setVolumesList] = useState<number[]>([]);
+  const [newVolumeInput, setNewVolumeInput] = useState('');
+
   // Localized form inputs
   const [locNames, setLocNames] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
   const [locSubs, setLocSubs] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
@@ -170,6 +174,8 @@ export default function AdminPanel({
   // Open Edit Form
   const startEditProduct = (med: Medicine) => {
     setFormData(med);
+    setVolumesList([...(med.volumes || [])]);
+    setNewVolumeInput('');
     setLocNames({ ...med.name });
     setLocSubs({ ...med.activeSubstance });
     setLocDescs({ ...med.description });
@@ -206,6 +212,8 @@ export default function AdminPanel({
       },
       inStock: true
     });
+    setVolumesList([5]);
+    setNewVolumeInput('');
     setLocNames({ ru: '', en: '', ar: '' });
     setLocSubs({ ru: '', en: '', ar: '' });
     setLocDescs({ ru: '', en: '', ar: '' });
@@ -216,6 +224,25 @@ export default function AdminPanel({
 
     setIsAdding(true);
     setIsEditing(false);
+  };
+
+  // Add a new volume (mg) option to the pending list, ignoring duplicates/invalid values
+  const handleAddVolume = () => {
+    const val = Number(newVolumeInput);
+    if (!newVolumeInput || Number.isNaN(val) || val <= 0) {
+      showFeedback('error', currentLang === 'ru' ? 'Введите корректное значение объёма (мг)' : 'Enter a valid volume value (mg)');
+      return;
+    }
+    if (volumesList.includes(val)) {
+      setNewVolumeInput('');
+      return;
+    }
+    setVolumesList([...volumesList, val].sort((a, b) => a - b));
+    setNewVolumeInput('');
+  };
+
+  const handleRemoveVolume = (vol: number) => {
+    setVolumesList(volumesList.filter((v) => v !== vol));
   };
 
   // Handle Submit (Create or Update Product)
@@ -266,6 +293,7 @@ export default function AdminPanel({
       rating: Number(formData.rating || 5.0),
       form: formData.form || 'vial',
       mgPerUnit: Number(formData.mgPerUnit || 5),
+      volumes: volumesList,
       dosageRules: formData.dosageRules || { mgPerKgPerDay: 0.005, defaultDailyDoses: 1 },
       inStock: formData.inStock !== false
     };
@@ -899,6 +927,65 @@ export default function AdminPanel({
                       })}
                       className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
                     />
+                  </div>
+                </div>
+
+                {/* Available Volumes manager: add/remove mg package options shown on product cards */}
+                <div className="pt-4 border-t border-nadeck-500/10" id="form-volumes-box">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                    {currentLang === 'ru' ? 'Доступные объёмы (мг)' : 'Available Volumes (mg)'}
+                  </label>
+                  <div className="flex flex-wrap gap-2 mb-2" id="form-volumes-list">
+                    {volumesList.length === 0 && (
+                      <span className="text-[11px] text-slate-400">
+                        {currentLang === 'ru' ? 'Объёмы не добавлены' : 'No volumes added yet'}
+                      </span>
+                    )}
+                    {volumesList.map((vol) => (
+                      <span
+                        key={vol}
+                        id={`form-volume-chip-${vol}`}
+                        className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full bg-white border border-nadeck-500/20 text-xs font-bold text-nadeck-800"
+                      >
+                        {vol} мг
+                        <button
+                          id={`form-volume-remove-${vol}`}
+                          type="button"
+                          onClick={() => handleRemoveVolume(vol)}
+                          className="p-0.5 rounded-full hover:bg-rose-50 hover:text-rose-600 text-slate-400 transition-colors"
+                          title={currentLang === 'ru' ? 'Удалить объём' : 'Remove volume'}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="form-input-new-volume"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder={currentLang === 'ru' ? 'Напр. 10' : 'e.g. 10'}
+                      value={newVolumeInput}
+                      onChange={(e) => setNewVolumeInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddVolume();
+                        }
+                      }}
+                      className="w-32 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
+                    />
+                    <button
+                      id="form-btn-add-volume"
+                      type="button"
+                      onClick={handleAddVolume}
+                      className="px-3 py-2 bg-nadeck-600 hover:bg-nadeck-700 text-white font-bold text-[11px] rounded-lg flex items-center gap-1 active:scale-95 transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      {currentLang === 'ru' ? 'Добавить' : 'Add'}
+                    </button>
                   </div>
                 </div>
               </div>

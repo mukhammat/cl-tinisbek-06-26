@@ -32,7 +32,8 @@ export interface Medicine {
   image: string;
   rating: number;
   form: 'tablet' | 'capsule' | 'liquid' | 'vial';
-  mgPerUnit: number; // e.g. 5 for 5mg vial
+  mgPerUnit: number; // e.g. 5 for 5mg vial (default/primary volume)
+  volumes: number[]; // all available package volumes in mg, e.g. [2, 5, 10]
   dosageRules: {
     mgPerKgPerDay: number; // Dosage factor
     defaultDailyDoses: number; // times per day

@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { Medicine, Language, CartItem, User } from '../types';
 import { TRANSLATIONS } from '../data';
-import { Star, ArrowLeft, Plus, Minus, ShoppingCart, ShieldAlert, Award, FileText, Check, BellRing, BellOff } from 'lucide-react';
+import { Star, ArrowLeft, Plus, Minus, ShoppingCart, ShieldAlert, Award, FileText, Check, BellRing, BellOff, ChevronDown } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface MedicineDetailProps {
@@ -14,7 +14,7 @@ interface MedicineDetailProps {
   medicine: Medicine;
   onBack: () => void;
   cart: CartItem[];
-  onAddToCart: (medicine: Medicine, quantity: number) => void;
+  onAddToCart: (medicine: Medicine, quantity: number, selectedVolume?: number) => void;
   user: User;
   setAuthModalOpen: (open: boolean) => void;
   subscribedIds: string[];
@@ -33,6 +33,8 @@ export default function MedicineDetail({
   onSubscribeNotify
 }: MedicineDetailProps) {
   const [qty, setQty] = useState<number>(1);
+  const availableVolumes = medicine.volumes && medicine.volumes.length > 0 ? medicine.volumes : [medicine.mgPerUnit];
+  const [selectedVolume, setSelectedVolume] = useState<number>(medicine.mgPerUnit);
 
   const t = (key: string) => {
     return TRANSLATIONS[key]?.[currentLang] || key;
@@ -47,7 +49,7 @@ export default function MedicineDetail({
   const isSubscribed = subscribedIds.includes(medicine.id);
 
   const handleAddToCart = () => {
-    onAddToCart(medicine, qty);
+    onAddToCart(medicine, qty, selectedVolume);
     setQty(1); // Reset local quantity
   };
 
@@ -126,14 +128,32 @@ export default function MedicineDetail({
                   {currentLang === 'ru' ? 'Форма выпуска' : currentLang === 'ar' ? 'شكل الدواء' : 'Dosage Form'}:
                 </span>{' '}
                 <span className="text-slate-700 font-bold">
-                  {medicine.form === 'tablet' 
-                    ? (currentLang === 'ru' ? 'Таблетки' : currentLang === 'ar' ? 'أقراص' : 'Tablets') 
-                    : medicine.form === 'capsule' 
-                    ? (currentLang === 'ru' ? 'Капсулы' : currentLang === 'ar' ? 'كبسولات' : 'Capsules') 
+                  {medicine.form === 'tablet'
+                    ? (currentLang === 'ru' ? 'Таблетки' : currentLang === 'ar' ? 'أقراص' : 'Tablets')
+                    : medicine.form === 'capsule'
+                    ? (currentLang === 'ru' ? 'Капсулы' : currentLang === 'ar' ? 'كبسولات' : 'Capsules')
                     : (currentLang === 'ru' ? 'Раствор' : currentLang === 'ar' ? 'محلول' : 'Liquid suspension')
-                  } ({medicine.mgPerUnit} мг)
+                  }
                 </span>
               </p>
+            </div>
+
+            {/* Volume selector */}
+            <div className="space-y-1.5 max-w-[220px]">
+              <span className="block text-[10px] text-slate-400 font-semibold uppercase">{t('volumeLabel')}</span>
+              <div className="relative">
+                <select
+                  id={`detail-volume-select-${medicine.id}`}
+                  value={selectedVolume}
+                  onChange={(e) => setSelectedVolume(Number(e.target.value))}
+                  className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-nadeck-100 focus:border-nadeck-300"
+                >
+                  {availableVolumes.map((vol) => (
+                    <option key={vol} value={vol}>{vol} мг</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
           </div>
 

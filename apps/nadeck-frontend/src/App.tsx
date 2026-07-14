@@ -218,17 +218,17 @@ export default function App() {
   };
 
   // Cart operations
-  const handleAddToCart = (medicine: Medicine, qtyToAdd: number = 1) => {
+  const handleAddToCart = (medicine: Medicine, qtyToAdd: number = 1, selectedVolume?: number) => {
     setCart((prevCart) => {
       const existing = prevCart.find((item) => item.medicine.id === medicine.id);
       if (existing) {
         return prevCart.map((item) =>
           item.medicine.id === medicine.id
-            ? { ...item, quantity: item.quantity + qtyToAdd }
+            ? { ...item, quantity: item.quantity + qtyToAdd, selectedStrength: selectedVolume ?? item.selectedStrength }
             : item
         );
       }
-      return [...prevCart, { medicine, quantity: qtyToAdd }];
+      return [...prevCart, { medicine, quantity: qtyToAdd, selectedStrength: selectedVolume }];
     });
   };
 

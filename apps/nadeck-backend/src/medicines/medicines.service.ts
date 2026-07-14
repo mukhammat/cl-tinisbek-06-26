@@ -32,6 +32,7 @@ export class MedicinesService {
         rating: m.rating,
         form: m.form,
         mgPerUnit: m.mgPerUnit,
+        volumes: JSON.parse(m.volumes || '[]'),
         dosageRules: JSON.parse(m.dosageRules),
         inStock: m.inStock === 1,
       }));
@@ -44,7 +45,7 @@ export class MedicinesService {
   async create(body: any) {
     const {
       id, name, category, activeSubstance, description, fullDescription,
-      indications, contraindications, usage, price, image, rating, form, mgPerUnit, dosageRules, inStock
+      indications, contraindications, usage, price, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
     } = body;
 
     if (!id || !name || !price) {
@@ -68,6 +69,7 @@ export class MedicinesService {
           rating: Number(rating || 5.0),
           form: form || 'vial',
           mgPerUnit: Number(mgPerUnit || 5),
+          volumes: JSON.stringify(Array.isArray(volumes) ? volumes.map(Number) : []),
           dosageRules: JSON.stringify(dosageRules || { mgPerKgPerDay: 0.005, defaultDailyDoses: 1 }),
           inStock: inStock === false ? 0 : 1,
         }
@@ -82,7 +84,7 @@ export class MedicinesService {
   async update(id: string, body: any) {
     const {
       name, category, activeSubstance, description, fullDescription,
-      indications, contraindications, usage, price, image, rating, form, mgPerUnit, dosageRules, inStock
+      indications, contraindications, usage, price, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
     } = body;
 
     try {
@@ -105,6 +107,7 @@ export class MedicinesService {
           rating: Number(rating),
           form,
           mgPerUnit: Number(mgPerUnit),
+          volumes: JSON.stringify(Array.isArray(volumes) ? volumes.map(Number) : []),
           dosageRules: JSON.stringify(dosageRules),
           inStock: newInStock,
         }

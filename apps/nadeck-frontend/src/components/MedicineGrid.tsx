@@ -6,14 +6,14 @@
 import { useState } from 'react';
 import { Medicine, Language, CartItem, User } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
-import { Star, Check, Plus, ShoppingCart, HelpCircle, BellRing, BellOff } from 'lucide-react';
+import { Star, Check, Plus, ShoppingCart, HelpCircle, BellRing, BellOff, ChevronDown } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface MedicineGridProps {
   currentLang: Language;
   onSelectMedicine: (medicine: Medicine) => void;
   cart: CartItem[];
-  onAddToCart: (medicine: Medicine, quantity?: number) => void;
+  onAddToCart: (medicine: Medicine, quantity?: number, selectedVolume?: number) => void;
   searchQuery: string;
   allMedicines?: Medicine[];
   user: User;
@@ -35,6 +35,7 @@ export default function MedicineGrid({
   onSubscribeNotify
 }: MedicineGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedVolumes, setSelectedVolumes] = useState<Record<string, number>>({});
 
   const t = (key: string) => {
     return TRANSLATIONS[key]?.[currentLang] || key;
@@ -101,6 +102,8 @@ export default function MedicineGrid({
             const cartQty = cart.find(item => item.medicine.id === med.id)?.quantity || 0;
             const isOutOfStock = med.inStock === false;
             const isSubscribed = subscribedIds.includes(med.id);
+            const availableVolumes = med.volumes && med.volumes.length > 0 ? med.volumes : [med.mgPerUnit];
+            const currentVolume = selectedVolumes[med.id] ?? med.mgPerUnit;
 
             const handleNotifyClick = () => {
               if (!user.isAuthenticated) {
@@ -120,9 +123,9 @@ export default function MedicineGrid({
                 className="group flex flex-col bg-white rounded-3xl border border-slate-100/80 shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all duration-350 overflow-hidden"
               >
                 
-                {/* Visual Thumbnail */}
-                <div 
-                  className="aspect-video w-full relative bg-slate-50 cursor-pointer overflow-hidden p-0"
+                {/* Visual Thumbnail (product-shot style) */}
+                <div
+                  className="aspect-[4/3] w-full relative bg-slate-50 cursor-pointer overflow-hidden p-6"
                   onClick={() => onSelectMedicine(med)}
                   id={`thumbnail-${med.id}`}
                 >
@@ -130,7 +133,7 @@ export default function MedicineGrid({
                     src={med.image}
                     alt={med.name[currentLang]}
                     referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                   />
                   {/* Category Badge overlay */}
                   <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] uppercase font-bold text-nadeck-800 bg-nadeck-50/90 rounded-full border border-nadeck-100/50">
@@ -152,37 +155,61 @@ export default function MedicineGrid({
                 </div>
 
                 {/* Body details */}
-                <div className="p-5 flex-1 flex flex-col justify-between">
+                <div className="p-5 flex-1 flex flex-col gap-4">
                   <div className="space-y-2">
                     {/* Active Substance tagline */}
                     <span className="text-[10px] text-nadeck-600 font-bold tracking-wider uppercase">
                       {med.activeSubstance[currentLang]}
                     </span>
-                    
+
                     {/* Medicine Name */}
-                    <h3 
-                      className="text-base font-extrabold text-slate-950 group-hover:text-nadeck-600 cursor-pointer transition-colors leading-snug line-clamp-1"
+                    <h3
+                      className="text-lg font-extrabold text-slate-950 group-hover:text-nadeck-600 cursor-pointer transition-colors leading-snug line-clamp-1"
                       onClick={() => onSelectMedicine(med)}
                       id={`title-${med.id}`}
                     >
                       {med.name[currentLang]}
                     </h3>
-                    
+
                     {/* Brief desc */}
                     <p className="text-xs text-slate-500 leading-relaxed font-normal min-h-[36px] line-clamp-2">
                       {med.description[currentLang]}
                     </p>
+
+                    {/* Price */}
+                    <span id={`price-${med.id}`} className="block text-xl font-black text-slate-900 pt-1">
+                      {med.price.toLocaleString()} {t('currencySymbol')}
+                    </span>
                   </div>
 
-                  {/* Actions & Price Footer */}
-                  <div className="pt-4 mt-4 border-t border-slate-100/70 flex items-center justify-between gap-3">
-                    {/* Price Tag */}
-                    <div>
-                      <span className="block text-[10px] text-slate-400 font-medium">{t('priceLabel')}</span>
-                      <span id={`price-${med.id}`} className="text-base font-extrabold text-slate-900">
-                        {med.price.toLocaleString()} {t('currencySymbol')}
-                      </span>
+                  {/* Volume selector */}
+                  <div className="space-y-1.5">
+                    <span className="block text-[10px] text-slate-400 font-medium">{t('volumeLabel')}</span>
+                    <div className="relative">
+                      <select
+                        id={`volume-select-${med.id}`}
+                        value={currentVolume}
+                        onChange={(e) => setSelectedVolumes((prev) => ({ ...prev, [med.id]: Number(e.target.value) }))}
+                        className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-nadeck-100 focus:border-nadeck-300"
+                      >
+                        {availableVolumes.map((vol) => (
+                          <option key={vol} value={vol}>{vol} мг</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
+                  </div>
+
+                  {/* Actions Footer */}
+                  <div className="pt-4 mt-auto border-t border-slate-100/70 flex items-center gap-2">
+                    {/* More details */}
+                    <button
+                      id={`details-btn-${med.id}`}
+                      onClick={() => onSelectMedicine(med)}
+                      className="flex-1 px-4 py-2.5 rounded-2xl font-bold text-xs border border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 active:scale-95 transition-all duration-300"
+                    >
+                      {t('moreDetailsBtn')}
+                    </button>
 
                     {/* Cart operations / Notify Me when unavailable */}
                     {isOutOfStock ? (
@@ -190,7 +217,7 @@ export default function MedicineGrid({
                         id={`notify-btn-${med.id}`}
                         onClick={handleNotifyClick}
                         disabled={isSubscribed}
-                        className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-1.5 transition-all duration-300 ${
+                        className={`flex-1 px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-300 ${
                           isSubscribed
                             ? 'bg-slate-50 text-slate-500 border border-slate-200 cursor-default'
                             : 'bg-amber-500 text-white hover:bg-amber-600 active:scale-95 shadow-md shadow-amber-50'
@@ -211,8 +238,8 @@ export default function MedicineGrid({
                     ) : (
                       <button
                         id={`add-to-cart-btn-${med.id}`}
-                        onClick={() => onAddToCart(med, 1)}
-                        className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-1.5 transition-all duration-300 ${
+                        onClick={() => onAddToCart(med, 1, currentVolume)}
+                        className={`flex-1 px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-300 ${
                           inCart
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100/60'
                             : 'bg-nadeck-600 text-white hover:bg-nadeck-700 active:scale-95 shadow-md shadow-nadeck-50'
@@ -221,7 +248,7 @@ export default function MedicineGrid({
                         {inCart ? (
                           <>
                             <Check className="w-3.5 h-3.5" />
-                            <span>{t('itemAdded')} ({cartQty})</span>
+                            <span>{cartQty}</span>
                           </>
                         ) : (
                           <>

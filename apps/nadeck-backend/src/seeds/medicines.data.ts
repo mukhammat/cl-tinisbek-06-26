@@ -13,6 +13,7 @@ export interface Medicine {
   rating: number;
   form: string;
   mgPerUnit: number;
+  volumes: number[];
   dosageRules: { mgPerKgPerDay: number; defaultDailyDoses: number };
   inStock?: boolean;
 }
@@ -53,6 +54,7 @@ export const MEDICINES_DATA: Medicine[] = [
     rating: 4.9,
     form: 'vial',
     mgPerUnit: 5,
+    volumes: [2, 5, 10],
     dosageRules: { mgPerKgPerDay: 0.005, defaultDailyDoses: 1 }
   },
   {
@@ -90,6 +92,7 @@ export const MEDICINES_DATA: Medicine[] = [
     rating: 4.95,
     form: 'vial',
     mgPerUnit: 10,
+    volumes: [5, 10, 15],
     dosageRules: { mgPerKgPerDay: 0.007, defaultDailyDoses: 1 }
   },
   {
@@ -127,6 +130,7 @@ export const MEDICINES_DATA: Medicine[] = [
     rating: 4.88,
     form: 'vial',
     mgPerUnit: 5,
+    volumes: [2, 5, 10],
     dosageRules: { mgPerKgPerDay: 0.004, defaultDailyDoses: 2 }
   },
   {
@@ -164,6 +168,7 @@ export const MEDICINES_DATA: Medicine[] = [
     rating: 4.82,
     form: 'vial',
     mgPerUnit: 5,
+    volumes: [2, 5, 10],
     dosageRules: { mgPerKgPerDay: 0.005, defaultDailyDoses: 1 }
   },
   {
@@ -201,6 +206,7 @@ export const MEDICINES_DATA: Medicine[] = [
     rating: 4.79,
     form: 'vial',
     mgPerUnit: 10,
+    volumes: [5, 10, 15],
     dosageRules: { mgPerKgPerDay: 0.003, defaultDailyDoses: 1 }
   },
   {
@@ -238,6 +244,7 @@ export const MEDICINES_DATA: Medicine[] = [
     rating: 4.85,
     form: 'vial',
     mgPerUnit: 5,
+    volumes: [2, 5, 10],
     dosageRules: { mgPerKgPerDay: 0.003, defaultDailyDoses: 3 }
   }
 ];
