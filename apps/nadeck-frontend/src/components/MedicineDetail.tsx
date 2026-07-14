@@ -151,7 +151,7 @@ export default function MedicineDetail({
                 >
                   {availableVolumes.map((vol) => (
                     <option key={vol.mgPerUnit} value={vol.mgPerUnit}>
-                      {vol.mgPerUnit} мг — {vol.price.toLocaleString()} {t('currencySymbol')}
+                      {vol.mgPerUnit} мг
                     </option>
                   ))}
                 </select>
