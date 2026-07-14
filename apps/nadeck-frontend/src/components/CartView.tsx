@@ -307,7 +307,10 @@ export default function CartView({
         <div className="bg-white rounded-3xl border border-slate-100 p-4 shadow-sm flex items-center justify-between gap-3 text-xs" id="promo-section">
           <div className="flex items-center gap-2 text-slate-500">
             <Ticket className="w-4 h-4 text-emerald-600" />
-            <span className="font-semibold">{currentLang === 'ru' ? 'Промокод или скидочный купон' : 'Promo code or discount coupon'}</span>
+            <div className="flex flex-col leading-tight">
+              <span className="font-semibold">{currentLang === 'ru' ? 'Промокод или скидочный купон' : 'Promo code or discount coupon'}</span>
+              <span className="text-[10px] text-slate-400 font-medium">{currentLang === 'ru' ? 'не обязательно' : 'optional'}</span>
+            </div>
           </div>
           <div className="flex gap-2">
             <input 
