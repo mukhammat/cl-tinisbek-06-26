@@ -77,3 +77,8 @@ model Notification {
   createdAt  String
   read       Int    @default(0)
 }
+
+model NewsletterSubscriber {
+  email     String @id
+  createdAt String
+}

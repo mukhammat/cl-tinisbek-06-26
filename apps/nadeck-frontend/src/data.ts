@@ -940,5 +940,35 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     ru: 'Прочитать все',
     en: 'Mark all read',
     ar: 'تعليم الكل كمقروء'
+  },
+  newsletterTitle: {
+    ru: 'Подпишитесь на нашу рассылку',
+    en: 'Subscribe to our newsletter',
+    ar: 'اشترك في نشرتنا الإخبارية'
+  },
+  newsletterSubtitle: {
+    ru: 'И узнавайте первыми о новых поступлениях пептидов',
+    en: 'Be the first to know about new peptide arrivals',
+    ar: 'وكن أول من يعرف بوصول الببتيدات الجديدة'
+  },
+  newsletterPlaceholder: {
+    ru: 'Ваша почта',
+    en: 'Your email',
+    ar: 'بريدك الإلكتروني'
+  },
+  newsletterSubscribeBtn: {
+    ru: 'Подписаться',
+    en: 'Subscribe',
+    ar: 'اشتراك'
+  },
+  newsletterSuccess: {
+    ru: 'Спасибо! Вы подписаны на рассылку.',
+    en: 'Thanks! You are now subscribed.',
+    ar: 'شكراً! تم اشتراكك بنجاح.'
+  },
+  newsletterError: {
+    ru: 'Не удалось подписаться. Проверьте email и попробуйте снова.',
+    en: 'Could not subscribe. Check the email and try again.',
+    ar: 'تعذر الاشتراك. تحقق من البريد الإلكتروني وحاول مرة أخرى.'
   }
 };

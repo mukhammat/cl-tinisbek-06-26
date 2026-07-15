@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Language, Medicine, CartItem, User, Order, AppNotification, SUPPORTED_LANGUAGES, Category } from './types';
 import { MEDICINES_DATA, TRANSLATIONS } from './data';
 import Navbar from './components/Navbar';
@@ -217,6 +217,32 @@ export default function App() {
         }
       })
       .catch((err) => console.error('Error subscribing to notifications:', err));
+  };
+
+  // Footer newsletter signup
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  const handleNewsletterSubscribe = (e: FormEvent) => {
+    e.preventDefault();
+    setNewsletterStatus('loading');
+    fetch('/api/newsletter/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: newsletterEmail }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Subscribe failed');
+        return res.json();
+      })
+      .then(() => {
+        setNewsletterStatus('success');
+        setNewsletterEmail('');
+      })
+      .catch((err) => {
+        console.error('Newsletter subscribe error:', err);
+        setNewsletterStatus('error');
+      });
   };
 
   const handleMarkNotificationRead = (id: string) => {
@@ -548,7 +574,40 @@ export default function App() {
       {/* Footer Branding line and contact details */}
       <footer className="bg-slate-900 text-slate-400 py-10 border-t border-slate-950" id="main-footer">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          
+
+          {/* Newsletter signup */}
+          <div className="border-b border-slate-800/60 pb-8 flex flex-col items-center text-center gap-3" id="footer-newsletter">
+            <h4 className="text-white font-black text-lg sm:text-xl tracking-tight">{t('newsletterTitle')}</h4>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-md">{t('newsletterSubtitle')}</p>
+
+            {newsletterStatus === 'success' ? (
+              <p id="newsletter-success" className="mt-1 text-sm font-bold text-emerald-400">{t('newsletterSuccess')}</p>
+            ) : (
+              <form onSubmit={handleNewsletterSubscribe} className="flex flex-col sm:flex-row gap-2 w-full max-w-md mt-1" id="newsletter-form">
+                <input
+                  id="newsletter-email-input"
+                  type="email"
+                  required
+                  placeholder={t('newsletterPlaceholder')}
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-nadeck-500"
+                />
+                <button
+                  id="newsletter-submit-btn"
+                  type="submit"
+                  disabled={newsletterStatus === 'loading'}
+                  className="px-5 py-2.5 rounded-xl bg-nadeck-500 hover:bg-nadeck-400 text-slate-950 font-extrabold text-xs sm:text-sm tracking-wide transition disabled:opacity-60 whitespace-nowrap"
+                >
+                  {newsletterStatus === 'loading' ? '...' : t('newsletterSubscribeBtn')}
+                </button>
+              </form>
+            )}
+            {newsletterStatus === 'error' && (
+              <p id="newsletter-error" className="text-xs font-semibold text-rose-400">{t('newsletterError')}</p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
