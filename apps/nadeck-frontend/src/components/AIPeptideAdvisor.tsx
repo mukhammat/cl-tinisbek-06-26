@@ -224,6 +224,22 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
         )}
       </AnimatePresence>
 
+      {/* Telegram Button */}
+      <motion.a
+        id="btn-telegram-launcher"
+        href="https://t.me/nadeck"
+        target="_blank"
+        rel="noopener noreferrer"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="w-14 h-14 mb-4 bg-gradient-to-tr from-[#229ED9] to-[#2AABEE] text-white rounded-full shadow-2xl border border-white/20 flex items-center justify-center relative cursor-pointer"
+        aria-label="Telegram"
+      >
+        <svg viewBox="0 0 24 24" className="w-7 h-7" fill="currentColor">
+          <path d="M21.94 4.6 18.68 20.1c-.24 1.1-.9 1.37-1.82.85l-5.03-3.71-2.43 2.34c-.27.27-.5.5-1.02.5l.36-5.16 9.4-8.5c.41-.36-.09-.56-.63-.2L6.7 12.62l-4.98-1.56c-1.08-.34-1.1-1.08.23-1.6L20.6 3.36c.9-.33 1.69.22 1.34 1.24Z" />
+        </svg>
+      </motion.a>
+
       {/* Launcher Button */}
       <motion.button
         id="btn-ai-chat-launcher"
