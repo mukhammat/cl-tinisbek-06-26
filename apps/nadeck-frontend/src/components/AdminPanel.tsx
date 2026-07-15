@@ -60,6 +60,7 @@ export default function AdminPanel({
   const [isEditingCategory, setIsEditingCategory] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [categoryForm, setCategoryForm] = useState<Partial<Category>>({});
+  const [locCategoryNames, setLocCategoryNames] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
 
   // Volumes list (mg + own price) available for the product, plus the pending "new volume" inputs
   const [volumesList, setVolumesList] = useState<{ mgPerUnit: number; price: number }[]>([]);
@@ -76,7 +77,9 @@ export default function AdminPanel({
   const [locContras, setLocContras] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' }); // comma or newline
 
   const activeCategories = categories.filter((category) => category.isActive !== false);
-  const categoryLabelById = Object.fromEntries(categories.map((category) => [category.id, category.name]));
+  const categoryLabelById = Object.fromEntries(
+    categories.map((category) => [category.id, category.name[currentLang] || category.name.en || category.id])
+  );
   // Single source of truth for "no category picked yet" - reused everywhere a default is needed below.
   const defaultCategoryId = activeCategories[0]?.id || 'weightloss';
 
@@ -249,10 +252,10 @@ export default function AdminPanel({
   const startAddCategory = () => {
     setCategoryForm({
       id: '',
-      name: '',
       sortOrder: categories.length,
       isActive: true,
     });
+    setLocCategoryNames({ ru: '', en: '', ar: '' });
     setIsAddingCategory(true);
     setIsEditingCategory(false);
     setIsAdding(false);
@@ -261,6 +264,7 @@ export default function AdminPanel({
 
   const startEditCategory = (category: Category) => {
     setCategoryForm(category);
+    setLocCategoryNames({ ...category.name });
     setIsEditingCategory(true);
     setIsAddingCategory(false);
     setIsAdding(false);
@@ -374,10 +378,13 @@ export default function AdminPanel({
     e.preventDefault();
 
     const targetId = isAddingCategory ? (categoryForm.id || '').trim().toLowerCase() : (categoryForm.id || '').trim();
-    const name = (categoryForm.name || '').trim();
+    const name = { ...locCategoryNames };
+    if (!name.en && name.ru) name.en = name.ru;
+    if (!name.ru && name.en) name.ru = name.en;
+    if (!name.ar) name.ar = name.en || name.ru;
 
-    if (!targetId || !name) {
-      showFeedback('error', currentLang === 'ru' ? 'Укажите ID и название категории' : 'Category id and name are required');
+    if (!targetId || !name.en) {
+      showFeedback('error', currentLang === 'ru' ? 'Укажите ID и название категории (минимум на английском)' : 'Category id and name (at least English) are required');
       return;
     }
 
@@ -454,7 +461,7 @@ export default function AdminPanel({
 
   const filteredCategories = categories.filter((category) => {
     const q = categorySearch.toLowerCase();
-    return category.id.toLowerCase().includes(q) || category.name.toLowerCase().includes(q);
+    return category.id.toLowerCase().includes(q) || Object.values(category.name).some((val) => val.toLowerCase().includes(q));
   });
 
   // KPI Calculations
@@ -787,7 +794,7 @@ export default function AdminPanel({
                       {filteredCategories.map((category) => (
                         <tr key={category.id} className="hover:bg-slate-50/40 transition-colors">
                           <td className="py-4 px-5 font-mono text-xs font-bold text-slate-900">{category.id}</td>
-                          <td className="py-4 px-4 text-sm font-semibold text-slate-800">{category.name}</td>
+                          <td className="py-4 px-4 text-sm font-semibold text-slate-800">{category.name[currentLang] || category.name.en}</td>
                           <td className="py-4 px-4 text-sm text-slate-600">{category.sortOrder}</td>
                           <td className="py-4 px-4 text-center">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${category.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
@@ -854,7 +861,7 @@ export default function AdminPanel({
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
                     {currentLang === 'ru' ? 'ID категории' : 'Category ID'} *
@@ -869,16 +876,43 @@ export default function AdminPanel({
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                    {currentLang === 'ru' ? 'Название категории' : 'Category Name'} *
+                    🇷🇺 {currentLang === 'ru' ? 'Название (RU)' : 'Name (RU)'}
                   </label>
                   <input
                     type="text"
-                    placeholder={currentLang === 'ru' ? 'Напр. Дополнительные товары' : 'e.g. Additional Goods'}
-                    value={categoryForm.name || ''}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                    placeholder="Напр. Дополнительные товары"
+                    value={locCategoryNames.ru}
+                    onChange={(e) => setLocCategoryNames({ ...locCategoryNames, ru: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+                    🇺🇸 {currentLang === 'ru' ? 'Название (EN)' : 'Name (EN)'} *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Additional Goods"
+                    value={locCategoryNames.en}
+                    onChange={(e) => setLocCategoryNames({ ...locCategoryNames, en: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+                    🇸🇦 {currentLang === 'ru' ? 'Название (AR)' : 'Name (AR)'}
+                  </label>
+                  <input
+                    type="text"
+                    dir="rtl"
+                    placeholder="مثال: منتجات إضافية"
+                    value={locCategoryNames.ar}
+                    onChange={(e) => setLocCategoryNames({ ...locCategoryNames, ar: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none text-right"
                   />
                 </div>
               </div>
@@ -1103,7 +1137,7 @@ export default function AdminPanel({
                   >
                     {activeCategories.map((category) => (
                       <option key={category.id} value={category.id}>
-                        {category.name}
+                        {categoryLabelById[category.id]}
                       </option>
                     ))}
                   </select>

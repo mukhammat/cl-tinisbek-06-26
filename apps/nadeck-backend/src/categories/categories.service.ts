@@ -1,9 +1,15 @@
 import { BadRequestException, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 
+export interface LocalizedText {
+  ru?: string;
+  en?: string;
+  ar?: string;
+}
+
 export interface CategoryPayload {
   id?: string;
-  name?: string;
+  name?: LocalizedText;
   sortOrder?: number;
   isActive?: boolean;
 }
@@ -12,10 +18,22 @@ export interface CategoryPayload {
 export class CategoriesService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
+  // Normalizes a localized-text payload into a { ru, en, ar } object, filling any
+  // missing language with the English value (mirrors MedicinesService's name handling).
+  // Returned as a plain Record so it satisfies Prisma's Json input type directly.
+  private normalizeName(name: LocalizedText | undefined): Record<string, string> {
+    const en = String(name?.en || name?.ru || '').trim();
+    return {
+      ru: String(name?.ru || en).trim(),
+      en,
+      ar: String(name?.ar || en).trim(),
+    };
+  }
+
   async getAll() {
     try {
       return await this.prisma.category.findMany({
-        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        orderBy: { sortOrder: 'asc' },
       });
     } catch (err) {
       console.error('Error fetching categories:', err);
@@ -25,9 +43,9 @@ export class CategoriesService {
 
   async create(body: CategoryPayload) {
     const id = String(body?.id || '').trim().toLowerCase();
-    const name = String(body?.name || '').trim();
+    const name = this.normalizeName(body?.name);
 
-    if (!id || !name) {
+    if (!id || !name.en) {
       throw new BadRequestException('Category id and name are required');
     }
 
@@ -49,9 +67,9 @@ export class CategoriesService {
   }
 
   async update(id: string, body: CategoryPayload) {
-    const name = String(body?.name || '').trim();
+    const name = this.normalizeName(body?.name);
 
-    if (!name) {
+    if (!name.en) {
       throw new BadRequestException('Category name is required');
     }
 

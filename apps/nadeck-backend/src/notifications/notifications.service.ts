@@ -76,7 +76,7 @@ export class NotificationsService {
       return reversed.map((n) => ({
         id: n.id,
         medicineId: n.medicineId,
-        message: JSON.parse(n.message),
+        message: n.message,
         createdAt: n.createdAt,
         read: n.read === 1,
       }));
@@ -131,7 +131,7 @@ export class NotificationsService {
           data: {
             email: sub.email,
             medicineId,
-            message: JSON.stringify(message),
+            message,
             createdAt: new Date().toISOString(),
             read: 0,
           },

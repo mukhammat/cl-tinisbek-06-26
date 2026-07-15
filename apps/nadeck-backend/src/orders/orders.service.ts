@@ -20,17 +20,15 @@ export class OrdersService {
       const trackingNumber = 'PP-' + Math.floor(100000 + Math.random() * 900000);
       const dateStr = new Date().toLocaleDateString('ru-RU');
       const userEmailVal = email ? email.toLowerCase() : 'guest';
-      const itemsStr = JSON.stringify(items);
-      const addressStr = JSON.stringify(address);
 
       const order = await this.prisma.order.create({
         data: {
           id: trackingNumber,
           date: dateStr,
           userEmail: userEmailVal,
-          items: itemsStr,
+          items,
           totalPrice: parseFloat(totalPrice),
-          address: addressStr,
+          address,
           paymentMethod,
           status: 'pending',
         }
@@ -68,9 +66,9 @@ export class OrdersService {
       return reversed.map((o) => ({
         id: o.id,
         date: o.date,
-        items: JSON.parse(o.items),
+        items: o.items,
         totalPrice: o.totalPrice,
-        address: JSON.parse(o.address),
+        address: o.address,
         paymentMethod: o.paymentMethod,
         status: o.status,
       }));
@@ -91,9 +89,9 @@ export class OrdersService {
         id: o.id,
         date: o.date,
         userEmail: o.userEmail,
-        items: JSON.parse(o.items),
+        items: o.items,
         totalPrice: o.totalPrice,
-        address: JSON.parse(o.address),
+        address: o.address,
         paymentMethod: o.paymentMethod,
         status: o.status,
       }));

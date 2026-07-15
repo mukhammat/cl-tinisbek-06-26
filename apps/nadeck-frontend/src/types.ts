@@ -25,7 +25,7 @@ export interface MedicineVolume {
 
 export interface Category {
   id: string;
-  name: string;
+  name: Record<Language, string>;
   sortOrder: number;
   isActive: boolean;
 }

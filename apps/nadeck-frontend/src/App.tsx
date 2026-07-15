@@ -243,26 +243,29 @@ export default function App() {
   // Used only until /api/categories has loaded (or if it fails) - derived straight from
   // whatever medicine data is on hand, so it always covers every category id in use.
   const fallbackCategories: Category[] = Array.from(new Set(catalogSourceMedicines.map((medicine) => medicine.category).filter(Boolean)))
-    .map((category, index) => ({
-      id: category,
-      name: TRANSLATIONS[`cat${category.charAt(0).toUpperCase()}${category.slice(1)}`]?.[currentLang] || category,
-      sortOrder: index,
-      isActive: true,
-    }));
+    .map((category, index) => {
+      const translated = TRANSLATIONS[`cat${category.charAt(0).toUpperCase()}${category.slice(1)}`];
+      return {
+        id: category,
+        name: { ru: translated?.ru || category, en: translated?.en || category, ar: translated?.ar || category },
+        sortOrder: index,
+        isActive: true,
+      };
+    });
 
   // The full category list, including inactive ones, so a medicine's label always resolves
   // even after its category has been deactivated (only filtering/selection should hide it).
   const allCategories = categoriesList.length > 0 ? categoriesList : fallbackCategories;
   const categoryLabelById: Record<string, string> = Object.fromEntries(
-    allCategories.map((category) => [category.id, category.name])
+    allCategories.map((category) => [category.id, category.name[currentLang] || category.name.en || category.id])
   );
 
   // Categories offered for filtering/selecting: active only, ordered by the admin-editable sortOrder.
   const activeCategories = allCategories
     .filter((category) => category.isActive !== false)
-    .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.name.localeCompare(right.name));
+    .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || categoryLabelById[left.id].localeCompare(categoryLabelById[right.id]));
 
-  const categoryFilters = activeCategories.map((category) => ({ id: category.id, label: category.name }));
+  const categoryFilters = activeCategories.map((category) => ({ id: category.id, label: categoryLabelById[category.id] }));
   const adminCategories = allCategories;
 
   // Cart operations. Different volumes of the same product carry different prices, so

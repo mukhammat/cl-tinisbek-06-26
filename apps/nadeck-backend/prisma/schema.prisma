@@ -18,7 +18,7 @@ model User {
 
 model Category {
   id         String     @id
-  name       String
+  name       Json // { ru, en, ar }
   sortOrder  Int        @default(0)
   isActive   Boolean    @default(true)
   medicines  Medicine[]
@@ -26,23 +26,23 @@ model Category {
 
 model Medicine {
   id                String @id
-  name              String
+  name              Json // { ru, en, ar }
   categoryId        String @default("weightloss")
   category          Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  activeSubstance   String
-  description       String
-  fullDescription   String
-  indications       String
-  contraindications String
-  usage             String
+  activeSubstance   Json // { ru, en, ar }
+  description       Json // { ru, en, ar }
+  fullDescription   Json // { ru, en, ar }
+  indications       Json // { ru: string[], en: string[], ar: string[] }
+  contraindications Json // { ru: string[], en: string[], ar: string[] }
+  usage             Json // { ru, en, ar }
   price             Float
   image             String
   rating            Float
   form              String
   mgPerUnit         Float
-  // JSON string with [{ mgPerUnit, price }] volume options for the medicine
-  volumes           String @default("[]")
-  dosageRules       String
+  // [{ mgPerUnit, price }] volume options for the medicine
+  volumes           Json @default("[]")
+  dosageRules       Json // { mgPerKgPerDay, defaultDailyDoses }
   inStock           Int
 }
 
@@ -50,9 +50,9 @@ model Order {
   id            String @id
   date          String
   userEmail     String
-  items         String
+  items         Json // [{ medicineName, price, quantity }]
   totalPrice    Float
-  address       String
+  address       Json // { city, street, apartment, postalCode }
   paymentMethod String
   status        String @default("pending")
 }
@@ -71,7 +71,7 @@ model Notification {
   id         String @id @default(cuid())
   email      String
   medicineId String
-  message    String
+  message    Json // { ru, en, ar }
   createdAt  String
   read       Int    @default(0)
 }

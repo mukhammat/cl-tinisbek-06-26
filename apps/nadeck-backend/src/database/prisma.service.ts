@@ -2,15 +2,15 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { MEDICINES_DATA } from '../seeds/medicines.data';
 
-const DEFAULT_CATEGORY_NAMES: Record<string, string> = {
-  weightloss: 'Weight Loss',
-  healing: 'Recovery & Healing',
-  antiaging: 'Anti-Aging',
-  painkiller: 'Painkillers',
-  vitamin: 'Vitamins',
-  antiallergic: 'Antiallergic',
-  digestive: 'Digestive',
-  additional: 'Additional Goods',
+const DEFAULT_CATEGORY_NAMES: Record<string, { ru: string; en: string; ar: string }> = {
+  weightloss: { ru: 'Похудение & GLP-1', en: 'Fat Loss & GLP-1', ar: 'تخسيس الوزن & GLP-1' },
+  healing: { ru: 'Восстановление & Суставы', en: 'Recovery & Healing', ar: 'الاستشفاء & المفاصل' },
+  antiaging: { ru: 'Омоложение & Красота', en: 'Anti-Aging & Beauty', ar: 'مكافحة الشيخوخة والجمال' },
+  painkiller: { ru: 'Обезболивающие', en: 'Painkillers', ar: 'مسكنات الألم' },
+  vitamin: { ru: 'Витамины', en: 'Vitamins', ar: 'الفيتامينات' },
+  antiallergic: { ru: 'Противоаллергические', en: 'Antiallergic', ar: 'مضادات الحساسية' },
+  digestive: { ru: 'Пищеварение', en: 'Digestive', ar: 'الهضم' },
+  additional: { ru: 'Дополнительные товары', en: 'Additional Goods', ar: 'المنتجات الإضافية' },
 };
 
 @Injectable()
@@ -29,7 +29,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     const ids = Array.from(new Set([...Object.keys(DEFAULT_CATEGORY_NAMES), ...MEDICINES_DATA.map((med) => med.category)]));
     return ids.map((id, index) => ({
       id,
-      name: DEFAULT_CATEGORY_NAMES[id] || id,
+      name: DEFAULT_CATEGORY_NAMES[id] || { ru: id, en: id, ar: id },
       sortOrder: index,
       isActive: true,
     }));
@@ -59,21 +59,21 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           await this.medicine.create({
             data: {
               id: med.id,
-              name: JSON.stringify(med.name),
+              name: med.name,
               categoryId: med.category,
-              activeSubstance: JSON.stringify(med.activeSubstance),
-              description: JSON.stringify(med.description),
-              fullDescription: JSON.stringify(med.fullDescription),
-              indications: JSON.stringify(med.indications),
-              contraindications: JSON.stringify(med.contraindications),
-              usage: JSON.stringify(med.usage),
+              activeSubstance: med.activeSubstance,
+              description: med.description,
+              fullDescription: med.fullDescription,
+              indications: med.indications,
+              contraindications: med.contraindications,
+              usage: med.usage,
               price: Number(med.price),
               image: med.image,
               rating: Number(med.rating),
               form: med.form,
               mgPerUnit: Number(med.mgPerUnit),
-              volumes: JSON.stringify(med.volumes || []),
-              dosageRules: JSON.stringify(med.dosageRules),
+              volumes: med.volumes || [],
+              dosageRules: med.dosageRules,
               inStock: 1,
             },
           });
