@@ -23,10 +23,17 @@ export interface MedicineVolume {
   price: number; // this volume's own price, may differ from other volumes of the same product
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
 export interface Medicine {
   id: string;
   name: Record<Language, string>;
-  category: string; // e.g., 'painkiller', 'vitamin', 'antiallergic', 'digestive'
+  category: string; // category id from database
   activeSubstance: Record<Language, string>;
   description: Record<Language, string>;
   fullDescription: Record<Language, string>;

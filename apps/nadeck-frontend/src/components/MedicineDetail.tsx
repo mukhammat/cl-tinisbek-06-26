@@ -19,6 +19,7 @@ interface MedicineDetailProps {
   setAuthModalOpen: (open: boolean) => void;
   subscribedIds: string[];
   onSubscribeNotify: (medicineId: string) => void;
+  categoryLabelById: Record<string, string>;
 }
 
 export default function MedicineDetail({
@@ -30,7 +31,8 @@ export default function MedicineDetail({
   user,
   setAuthModalOpen,
   subscribedIds,
-  onSubscribeNotify
+  onSubscribeNotify,
+  categoryLabelById
 }: MedicineDetailProps) {
   const [qty, setQty] = useState<number>(1);
   const availableVolumes = medicine.volumes && medicine.volumes.length > 0 ? medicine.volumes : [{ mgPerUnit: medicine.mgPerUnit, price: medicine.price }];
@@ -40,6 +42,8 @@ export default function MedicineDetail({
   const t = (key: string) => {
     return TRANSLATIONS[key]?.[currentLang] || key;
   };
+
+  const categoryLabel = categoryLabelById[medicine.category] || medicine.category;
 
   const increment = () => setQty(prev => prev + 1);
   const decrement = () => setQty(prev => prev > 1 ? prev - 1 : 1);
@@ -101,7 +105,7 @@ export default function MedicineDetail({
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-nadeck-800 bg-nadeck-50 rounded-full">
-                {t(`cat${medicine.category.charAt(0).toUpperCase() + medicine.category.slice(1)}`)}
+                {categoryLabel}
               </span>
               <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
                 <Star className="w-4 h-4 fill-current animate-spin-pulse" />

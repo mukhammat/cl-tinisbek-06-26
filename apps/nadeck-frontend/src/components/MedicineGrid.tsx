@@ -20,6 +20,8 @@ interface MedicineGridProps {
   setAuthModalOpen: (open: boolean) => void;
   subscribedIds: string[];
   onSubscribeNotify: (medicineId: string) => void;
+  categoryFilters: Array<{ id: string; label: string }>;
+  categoryLabelById: Record<string, string>;
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
 }
@@ -35,6 +37,8 @@ export default function MedicineGrid({
   setAuthModalOpen,
   subscribedIds,
   onSubscribeNotify,
+  categoryFilters,
+  categoryLabelById,
   selectedCategory,
   onSelectCategory
 }: MedicineGridProps) {
@@ -44,14 +48,7 @@ export default function MedicineGrid({
     return TRANSLATIONS[key]?.[currentLang] || key;
   };
 
-  const categories = [
-    { id: 'all', label: t('categoriesAll') },
-    { id: 'painkiller', label: t('catPainkiller') },
-    { id: 'vitamin', label: t('catVitamin') },
-    { id: 'antiallergic', label: t('catAntiallergic') },
-    { id: 'digestive', label: t('catDigestive') },
-    { id: 'additional', label: t('catAdditional') }
-  ];
+  const categories = [{ id: 'all', label: t('categoriesAll') }, ...categoryFilters];
 
   const activeMedicines = allMedicines && allMedicines.length > 0 ? allMedicines : MEDICINES_DATA;
 
@@ -115,6 +112,8 @@ export default function MedicineGrid({
               onSubscribeNotify(med.id);
             };
 
+            const categoryLabel = categoryLabelById[med.category] || med.category;
+
             return (
               <motion.div
                 key={med.id}
@@ -139,7 +138,7 @@ export default function MedicineGrid({
                   />
                   {/* Category Badge overlay */}
                   <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] uppercase font-bold text-nadeck-800 bg-nadeck-50/90 rounded-full border border-nadeck-100/50">
-                    {t(`cat${med.category.charAt(0).toUpperCase() + med.category.slice(1)}`)}
+                    {categoryLabel}
                   </span>
                   {/* Score */}
                   <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 backdrop-blur-xs py-0.5 px-2 rounded-full border border-slate-100 text-amber-500 text-xs font-extrabold select-none">

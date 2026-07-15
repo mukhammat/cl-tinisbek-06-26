@@ -7,6 +7,10 @@ import { Inject, Injectable, BadRequestException, InternalServerErrorException }
 import { PrismaService } from '../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
+// The one place the fallback category id is defined - every caller resolves through
+// resolveCategoryId() below instead of repeating the literal.
+const DEFAULT_CATEGORY_ID = 'weightloss';
+
 @Injectable()
 export class MedicinesService {
   constructor(
@@ -22,13 +26,24 @@ export class MedicinesService {
       .filter((v) => Number.isFinite(v.mgPerUnit) && v.mgPerUnit > 0 && Number.isFinite(v.price) && v.price >= 0);
   }
 
+  // Resolves the category id from either the current `categoryId` field or the legacy
+  // `category` field, falling back to DEFAULT_CATEGORY_ID, and verifies it actually exists.
+  private async resolveCategoryId(categoryId: any, category: any): Promise<string> {
+    const resolvedCategoryId = String(categoryId || category || DEFAULT_CATEGORY_ID).trim();
+    const categoryExists = await this.prisma.category.findUnique({ where: { id: resolvedCategoryId } });
+    if (!categoryExists) {
+      throw new BadRequestException('Selected category does not exist');
+    }
+    return resolvedCategoryId;
+  }
+
   async getAll() {
     try {
       const rows = await this.prisma.medicine.findMany();
       return rows.map((m) => ({
         id: m.id,
         name: JSON.parse(m.name),
-        category: m.category,
+        category: m.categoryId,
         activeSubstance: JSON.parse(m.activeSubstance),
         description: JSON.parse(m.description),
         fullDescription: JSON.parse(m.fullDescription),
@@ -52,7 +67,7 @@ export class MedicinesService {
 
   async create(body: any) {
     const {
-      id, name, category, activeSubstance, description, fullDescription,
+      id, name, categoryId, category, activeSubstance, description, fullDescription,
       indications, contraindications, usage, price, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
     } = body;
 
@@ -60,12 +75,14 @@ export class MedicinesService {
       throw new BadRequestException('Missing required medicine info');
     }
 
+    const resolvedCategoryId = await this.resolveCategoryId(categoryId, category);
+
     try {
       await this.prisma.medicine.create({
         data: {
           id,
           name: JSON.stringify(name),
-          category: category || 'weightloss',
+          categoryId: resolvedCategoryId,
           activeSubstance: JSON.stringify(activeSubstance || { ru: '', en: '', ar: '' }),
           description: JSON.stringify(description || { ru: '', en: '', ar: '' }),
           fullDescription: JSON.stringify(fullDescription || { ru: '', en: '', ar: '' }),
@@ -91,9 +108,11 @@ export class MedicinesService {
 
   async update(id: string, body: any) {
     const {
-      name, category, activeSubstance, description, fullDescription,
+      name, categoryId, category, activeSubstance, description, fullDescription,
       indications, contraindications, usage, price, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
     } = body;
+
+    const resolvedCategoryId = await this.resolveCategoryId(categoryId, category);
 
     try {
       const before = await this.prisma.medicine.findUnique({ where: { id } });
@@ -103,7 +122,7 @@ export class MedicinesService {
         where: { id },
         data: {
           name: JSON.stringify(name),
-          category,
+          categoryId: resolvedCategoryId,
           activeSubstance: JSON.stringify(activeSubstance),
           description: JSON.stringify(description),
           fullDescription: JSON.stringify(fullDescription),

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Medicine, Order, Language, SUPPORTED_LANGUAGES } from '../types';
+import { Medicine, Order, Language, SUPPORTED_LANGUAGES, Category } from '../types';
 import { 
   Package, 
   ShoppingBag, 
@@ -26,18 +26,22 @@ import { motion, AnimatePresence } from 'motion/react';
 interface AdminPanelProps {
   currentLang: Language;
   onRefreshMedicines: () => void;
+  onRefreshCategories: () => void;
   allMedicines: Medicine[];
+  categories: Category[];
   token?: string;
 }
 
 export default function AdminPanel({
   currentLang,
   onRefreshMedicines,
+  onRefreshCategories,
   allMedicines,
+  categories,
   token
 }: AdminPanelProps) {
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-  const [activeSubTab, setActiveSubTab] = useState<'products' | 'orders'>('products');
+  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders'>('products');
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -46,11 +50,16 @@ export default function AdminPanel({
   // Search filter
   const [prodSearch, setProdSearch] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
+  const [categorySearch, setCategorySearch] = useState('');
 
   // CRUD state
   const [isEditing, setIsEditing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [formData, setFormData] = useState<Partial<Medicine>>({});
+
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [categoryForm, setCategoryForm] = useState<Partial<Category>>({});
 
   // Volumes list (mg + own price) available for the product, plus the pending "new volume" inputs
   const [volumesList, setVolumesList] = useState<{ mgPerUnit: number; price: number }[]>([]);
@@ -65,6 +74,11 @@ export default function AdminPanel({
   const [locUsages, setLocUsages] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
   const [locInds, setLocInds] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' }); // comma or newline separated
   const [locContras, setLocContras] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' }); // comma or newline
+
+  const activeCategories = categories.filter((category) => category.isActive !== false);
+  const categoryLabelById = Object.fromEntries(categories.map((category) => [category.id, category.name]));
+  // Single source of truth for "no category picked yet" - reused everywhere a default is needed below.
+  const defaultCategoryId = activeCategories[0]?.id || 'weightloss';
 
   // Fetch orders
   const fetchAllOrders = () => {
@@ -203,6 +217,7 @@ export default function AdminPanel({
   const startAddProduct = () => {
     setFormData({
       id: '',
+      category: defaultCategoryId,
       price: 15000,
       image: 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
       rating: 5.0,
@@ -226,6 +241,29 @@ export default function AdminPanel({
     setLocContras({ ru: '', en: '', ar: '' });
 
     setIsAdding(true);
+    setIsEditing(false);
+    setIsAddingCategory(false);
+    setIsEditingCategory(false);
+  };
+
+  const startAddCategory = () => {
+    setCategoryForm({
+      id: '',
+      name: '',
+      sortOrder: categories.length,
+      isActive: true,
+    });
+    setIsAddingCategory(true);
+    setIsEditingCategory(false);
+    setIsAdding(false);
+    setIsEditing(false);
+  };
+
+  const startEditCategory = (category: Category) => {
+    setCategoryForm(category);
+    setIsEditingCategory(true);
+    setIsAddingCategory(false);
+    setIsAdding(false);
     setIsEditing(false);
   };
 
@@ -283,7 +321,7 @@ export default function AdminPanel({
     const payload = {
       id: targetId,
       name: nameVal,
-      category: formData.category || 'weightloss',
+      categoryId: formData.category || defaultCategoryId,
       activeSubstance: locSubs,
       description: locDescs,
       fullDescription: locFullDescs,
@@ -332,6 +370,68 @@ export default function AdminPanel({
       });
   };
 
+  const handleSubmitCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const targetId = isAddingCategory ? (categoryForm.id || '').trim().toLowerCase() : (categoryForm.id || '').trim();
+    const name = (categoryForm.name || '').trim();
+
+    if (!targetId || !name) {
+      showFeedback('error', currentLang === 'ru' ? 'Укажите ID и название категории' : 'Category id and name are required');
+      return;
+    }
+
+    const url = isAddingCategory ? '/api/categories' : `/api/categories/${targetId}`;
+    const method = isAddingCategory ? 'POST' : 'PUT';
+
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({
+        id: targetId,
+        name,
+        sortOrder: Number(categoryForm.sortOrder || 0),
+        isActive: categoryForm.isActive !== false,
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Category save failed');
+        return res.json();
+      })
+      .then(() => {
+        showFeedback('success', isAddingCategory ? 'Category created!' : 'Category updated!');
+        setIsAddingCategory(false);
+        setIsEditingCategory(false);
+        onRefreshCategories();
+        onRefreshMedicines();
+      })
+      .catch((err) => {
+        console.error(err);
+        showFeedback('error', currentLang === 'ru' ? 'Не удалось сохранить категорию' : 'Could not save category');
+      });
+  };
+
+  const handleDeleteCategory = (categoryId: string) => {
+    if (!window.confirm(currentLang === 'ru' ? 'Удалить эту категорию?' : 'Delete this category?')) return;
+
+    fetch(`/api/categories/${categoryId}`, {
+      method: 'DELETE',
+      headers: authHeaders,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Category delete failed');
+        return res.json();
+      })
+      .then(() => {
+        showFeedback('success', currentLang === 'ru' ? 'Категория удалена' : 'Category deleted');
+        onRefreshCategories();
+      })
+      .catch((err) => {
+        console.error(err);
+        showFeedback('error', currentLang === 'ru' ? 'Нельзя удалить категорию, если она используется товарами' : 'Category deletion failed');
+      });
+  };
+
   // Filter lists
   const filteredProds = allMedicines.filter((m) => {
     const q = prodSearch.toLowerCase();
@@ -350,6 +450,11 @@ export default function AdminPanel({
       o.status.toLowerCase().includes(q) ||
       o.paymentMethod.toLowerCase().includes(q)
     );
+  });
+
+  const filteredCategories = categories.filter((category) => {
+    const q = categorySearch.toLowerCase();
+    return category.id.toLowerCase().includes(q) || category.name.toLowerCase().includes(q);
   });
 
   // KPI Calculations
@@ -466,7 +571,7 @@ export default function AdminPanel({
       <div className="flex border-b border-slate-200 gap-1 overflow-x-auto scrollbar-none" id="admin-views-navbar">
         <button
           id="admin-tab-products"
-          onClick={() => { setActiveSubTab('products'); setIsEditing(false); setIsAdding(false); }}
+          onClick={() => { setActiveSubTab('products'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
           className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
             activeSubTab === 'products' && !isEditing && !isAdding
               ? 'border-nadeck-600 text-nadeck-600'
@@ -477,8 +582,20 @@ export default function AdminPanel({
           <span>{currentLang === 'ru' ? 'Склад товаров' : 'Peptides Catalog'}</span>
         </button>
         <button
+          id="admin-tab-categories"
+          onClick={() => { setActiveSubTab('categories'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
+          className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
+            activeSubTab === 'categories' && !isEditingCategory && !isAddingCategory
+              ? 'border-nadeck-600 text-nadeck-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>{currentLang === 'ru' ? 'Категории' : 'Categories'}</span>
+        </button>
+        <button
           id="admin-tab-orders"
-          onClick={() => { setActiveSubTab('orders'); setIsEditing(false); setIsAdding(false); }}
+          onClick={() => { setActiveSubTab('orders'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
           className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
             activeSubTab === 'orders' && !isEditing && !isAdding
               ? 'border-nadeck-600 text-nadeck-600'
@@ -488,10 +605,10 @@ export default function AdminPanel({
           <ShoppingBag className="w-4 h-4" />
           <span>{currentLang === 'ru' ? 'Заказы клиентов' : 'Customer Orders'}</span>
         </button>
-        {(isEditing || isAdding) && (
+        {(isEditing || isAdding || isEditingCategory || isAddingCategory) && (
           <div className="px-5 py-3 text-xs sm:text-sm font-bold text-nadeck-600 border-b-2 border-nadeck-600 flex items-center gap-1">
             <Edit2 className="w-4 h-4 animate-bounce" />
-            <span>{isAdding ? (currentLang === 'ru' ? 'Новый продукт' : 'Create Product') : (currentLang === 'ru' ? 'Редактирование' : 'Editing Product')}</span>
+            <span>{(isAdding || isAddingCategory) ? (currentLang === 'ru' ? 'Новый элемент' : 'Create Item') : (currentLang === 'ru' ? 'Редактирование' : 'Editing Item')}</span>
           </div>
         )}
       </div>
@@ -553,7 +670,7 @@ export default function AdminPanel({
                           {/* Col 2 Category */}
                           <td className="py-4 px-4">
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                              {med.category}
+                              {categoryLabelById[med.category] || med.category}
                             </span>
                           </td>
 
@@ -625,6 +742,187 @@ export default function AdminPanel({
               </div>
             )}
           </div>
+        )}
+
+        {/* CATEGORY MANAGEMENT TAB */}
+        {activeSubTab === 'categories' && !isEditing && !isAdding && !isEditingCategory && !isAddingCategory && (
+          <div className="space-y-4" id="view-admin-categories">
+            <div className="relative flex items-center gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input
+                  id="admin-category-search"
+                  type="text"
+                  placeholder={currentLang === 'ru' ? 'Поиск категории по ID или названию...' : 'Filter categories by id or name...'}
+                  value={categorySearch}
+                  onChange={(e) => setCategorySearch(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 text-xs sm:text-sm bg-white rounded-2xl border border-slate-200/60 focus:border-nadeck-500 focus:outline-none focus:ring-1 focus:ring-nadeck-500 transition-all duration-200"
+                />
+              </div>
+              <button
+                id="admin-category-add"
+                type="button"
+                onClick={startAddCategory}
+                className="px-4 py-3 rounded-2xl bg-nadeck-600 hover:bg-nadeck-700 text-white text-xs sm:text-sm font-bold flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{currentLang === 'ru' ? 'Добавить категорию' : 'Add Category'}</span>
+              </button>
+            </div>
+
+            {filteredCategories.length > 0 ? (
+              <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase tracking-widest text-[9.5px] font-black">
+                        <th className="py-4 px-5">ID</th>
+                        <th className="py-4 px-4">{currentLang === 'ru' ? 'Название' : 'Name'}</th>
+                        <th className="py-4 px-4">{currentLang === 'ru' ? 'Порядок' : 'Order'}</th>
+                        <th className="py-4 px-4 text-center">{currentLang === 'ru' ? 'Статус' : 'Status'}</th>
+                        <th className="py-4 px-5 text-right">{currentLang === 'ru' ? 'Опции' : 'Actions'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100/70 text-slate-700">
+                      {filteredCategories.map((category) => (
+                        <tr key={category.id} className="hover:bg-slate-50/40 transition-colors">
+                          <td className="py-4 px-5 font-mono text-xs font-bold text-slate-900">{category.id}</td>
+                          <td className="py-4 px-4 text-sm font-semibold text-slate-800">{category.name}</td>
+                          <td className="py-4 px-4 text-sm text-slate-600">{category.sortOrder}</td>
+                          <td className="py-4 px-4 text-center">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${category.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                              {category.isActive ? (currentLang === 'ru' ? 'Активна' : 'Active') : (currentLang === 'ru' ? 'Скрыта' : 'Hidden')}
+                            </span>
+                          </td>
+                          <td className="py-4 px-5 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => startEditCategory(category)}
+                                className="p-1.5 bg-slate-100 hover:bg-slate-200/80 rounded-lg text-slate-600 transition-colors"
+                                title={currentLang === 'ru' ? 'Редактировать' : 'Edit'}
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCategory(category.id)}
+                                className="p-1.5 bg-rose-50 hover:bg-rose-100 rounded-lg text-rose-600 transition-colors"
+                                title={currentLang === 'ru' ? 'Удалить' : 'Delete'}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="py-12 text-center bg-white rounded-3xl border border-dashed border-slate-200">
+                <AlertTriangle className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+                <h3 className="text-sm font-bold text-slate-800">{currentLang === 'ru' ? 'Категории не найдены' : 'No categories found'}</h3>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ADD OR EDIT CATEGORY FORM VIEW COMPONENT */}
+        {(isAddingCategory || isEditingCategory) && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl border border-slate-100 p-6 sm:p-8 shadow-xs"
+            id="admin-category-form-shell"
+          >
+            <form onSubmit={handleSubmitCategory} className="space-y-5" id="admin-category-form">
+              <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900">
+                    {isAddingCategory ? (currentLang === 'ru' ? 'Создание категории' : 'Create Category') : (currentLang === 'ru' ? 'Редактирование категории' : 'Edit Category')}
+                  </h3>
+                  <p className="text-xs text-slate-400">{currentLang === 'ru' ? 'ID используется в товарах, название показывается в каталоге.' : 'The id is used in products, the name is shown in catalog labels.'}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setIsAddingCategory(false); setIsEditingCategory(false); }}
+                  className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div>
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+                    {currentLang === 'ru' ? 'ID категории' : 'Category ID'} *
+                  </label>
+                  <input
+                    type="text"
+                    disabled={!isAddingCategory}
+                    placeholder="e.g. accessories"
+                    value={categoryForm.id || ''}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, id: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400 font-mono"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+                    {currentLang === 'ru' ? 'Название категории' : 'Category Name'} *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={currentLang === 'ru' ? 'Напр. Дополнительные товары' : 'e.g. Additional Goods'}
+                    value={categoryForm.name || ''}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+                    {currentLang === 'ru' ? 'Порядок' : 'Sort Order'}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={categoryForm.sortOrder ?? 0}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, sortOrder: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 w-full">
+                    <input
+                      type="checkbox"
+                      checked={categoryForm.isActive !== false}
+                      onChange={(e) => setCategoryForm({ ...categoryForm, isActive: e.target.checked })}
+                    />
+                    <span>{currentLang === 'ru' ? 'Категория активна' : 'Category is active'}</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button type="submit" className="px-4 py-2.5 rounded-xl bg-nadeck-600 hover:bg-nadeck-700 text-white text-xs sm:text-sm font-bold">
+                  {currentLang === 'ru' ? 'Сохранить' : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsAddingCategory(false); setIsEditingCategory(false); }}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold"
+                >
+                  {currentLang === 'ru' ? 'Отмена' : 'Cancel'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
         )}
 
         {/* ORDER DISPATCH TAB */}
@@ -799,15 +1097,15 @@ export default function AdminPanel({
                   </label>
                   <select
                     id="form-select-category"
-                    value={formData.category || 'weightloss'}
+                    value={formData.category || defaultCategoryId}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
                   >
-                    <option value="weightloss">Weight Loss (Похудение)</option>
-                    <option value="painkiller">Healing & Repair (Заживление)</option>
-                    <option value="vitamin">Vitamins & Hormones (Витамины/Гормоны)</option>
-                    <option value="antiallergic">Anti-Allergic (Противоаллергены)</option>
-                    <option value="digestive">Digestive (Пищеварение)</option>
+                    {activeCategories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

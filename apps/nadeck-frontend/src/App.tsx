@@ -4,8 +4,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Language, Medicine, CartItem, User, Order, AppNotification, SUPPORTED_LANGUAGES } from './types';
-import { TRANSLATIONS } from './data';
+import { Language, Medicine, CartItem, User, Order, AppNotification, SUPPORTED_LANGUAGES, Category } from './types';
+import { MEDICINES_DATA, TRANSLATIONS } from './data';
 import Navbar from './components/Navbar';
 import MedicineGrid from './components/MedicineGrid';
 import MedicineDetail from './components/MedicineDetail';
@@ -38,6 +38,7 @@ export default function App() {
 
   // Load medicines list from database, default to empty to allow loading inside Grid
   const [medicinesList, setMedicinesList] = useState<Medicine[]>([]);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
 
   const fetchMedicinesList = () => {
     fetch('/api/medicines')
@@ -55,8 +56,25 @@ export default function App() {
       });
   };
 
+  const fetchCategoriesList = () => {
+    fetch('/api/categories')
+      .then((res) => {
+        if (!res.ok) throw new Error('Category loading failed');
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCategoriesList(data);
+        }
+      })
+      .catch((err) => {
+        console.error('Error loading categories from db:', err);
+      });
+  };
+
   useEffect(() => {
     fetchMedicinesList();
+    fetchCategoriesList();
   }, []);
 
   // Search input query
@@ -219,6 +237,33 @@ export default function App() {
   const t = (key: string) => {
     return TRANSLATIONS[key]?.[currentLang] || key;
   };
+
+  const catalogSourceMedicines = medicinesList.length > 0 ? medicinesList : MEDICINES_DATA;
+
+  // Used only until /api/categories has loaded (or if it fails) - derived straight from
+  // whatever medicine data is on hand, so it always covers every category id in use.
+  const fallbackCategories: Category[] = Array.from(new Set(catalogSourceMedicines.map((medicine) => medicine.category).filter(Boolean)))
+    .map((category, index) => ({
+      id: category,
+      name: TRANSLATIONS[`cat${category.charAt(0).toUpperCase()}${category.slice(1)}`]?.[currentLang] || category,
+      sortOrder: index,
+      isActive: true,
+    }));
+
+  // The full category list, including inactive ones, so a medicine's label always resolves
+  // even after its category has been deactivated (only filtering/selection should hide it).
+  const allCategories = categoriesList.length > 0 ? categoriesList : fallbackCategories;
+  const categoryLabelById: Record<string, string> = Object.fromEntries(
+    allCategories.map((category) => [category.id, category.name])
+  );
+
+  // Categories offered for filtering/selecting: active only, ordered by the admin-editable sortOrder.
+  const activeCategories = allCategories
+    .filter((category) => category.isActive !== false)
+    .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.name.localeCompare(right.name));
+
+  const categoryFilters = activeCategories.map((category) => ({ id: category.id, label: category.name }));
+  const adminCategories = allCategories;
 
   // Cart operations. Different volumes of the same product carry different prices, so
   // cart lines are keyed by (medicine id + selected volume), not just the product id.
@@ -394,6 +439,7 @@ export default function App() {
                     setAuthModalOpen={setAuthModalOpen}
                     subscribedIds={subscribedIds}
                     onSubscribeNotify={handleSubscribeNotify}
+                    categoryLabelById={categoryLabelById}
                   />
                 ) : (
                   /* Cards Catalog screen */
@@ -415,6 +461,8 @@ export default function App() {
                       setAuthModalOpen={setAuthModalOpen}
                       subscribedIds={subscribedIds}
                       onSubscribeNotify={handleSubscribeNotify}
+                      categoryFilters={categoryFilters}
+                      categoryLabelById={categoryLabelById}
                       selectedCategory={selectedCatalogCategory}
                       onSelectCategory={setSelectedCatalogCategory}
                     />
@@ -478,7 +526,9 @@ export default function App() {
                 <AdminPanel
                   currentLang={currentLang}
                   onRefreshMedicines={fetchMedicinesList}
+                  onRefreshCategories={fetchCategoriesList}
                   allMedicines={medicinesList}
+                  categories={adminCategories}
                   token={user.token}
                 />
               )}

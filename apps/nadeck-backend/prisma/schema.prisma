@@ -16,10 +16,19 @@ model User {
   isAdmin  Boolean @default(false)
 }
 
+model Category {
+  id         String     @id
+  name       String
+  sortOrder  Int        @default(0)
+  isActive   Boolean    @default(true)
+  medicines  Medicine[]
+}
+
 model Medicine {
   id                String @id
   name              String
-  category          String
+  categoryId        String @default("weightloss")
+  category          Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   activeSubstance   String
   description       String
   fullDescription   String
