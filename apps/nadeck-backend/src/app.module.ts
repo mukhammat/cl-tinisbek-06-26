@@ -6,8 +6,9 @@ import { MedicinesModule } from './medicines/medicines.module';
 import { CategoriesModule } from './categories/categories.module';
 import { OrdersModule } from './orders/orders.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { TranslateModule } from './translate/translate.module';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, ChatModule, MedicinesModule, CategoriesModule, OrdersModule, NotificationsModule],
+  imports: [DatabaseModule, AuthModule, ChatModule, MedicinesModule, CategoriesModule, OrdersModule, NotificationsModule, TranslateModule],
 })
 export class AppModule {}

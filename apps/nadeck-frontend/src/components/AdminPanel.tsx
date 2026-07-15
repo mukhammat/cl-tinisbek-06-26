@@ -19,7 +19,9 @@ import {
   Layers, 
   Search,
   DollarSign,
-  AlertTriangle
+  AlertTriangle,
+  Languages,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -61,6 +63,8 @@ export default function AdminPanel({
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [categoryForm, setCategoryForm] = useState<Partial<Category>>({});
   const [locCategoryNames, setLocCategoryNames] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
+  const [isTranslatingCategory, setIsTranslatingCategory] = useState(false);
+  const [isTranslatingProduct, setIsTranslatingProduct] = useState(false);
 
   // Volumes list (mg + own price) available for the product, plus the pending "new volume" inputs
   const [volumesList, setVolumesList] = useState<{ mgPerUnit: number; price: number }[]>([]);
@@ -374,6 +378,51 @@ export default function AdminPanel({
       });
   };
 
+  // Fills every EN/AR field from the RU ones via AI in a single request, locking the form
+  // while the request is in flight so the admin can't edit fields mid-translation.
+  const handleTranslateProduct = () => {
+    if (!locNames.ru.trim()) {
+      showFeedback('error', currentLang === 'ru' ? 'Сначала заполните поля на русском' : 'Fill in the Russian fields first');
+      return;
+    }
+
+    setIsTranslatingProduct(true);
+    fetch('/api/admin/translate/medicine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({
+        name: locNames.ru,
+        activeSubstance: locSubs.ru,
+        description: locDescs.ru,
+        fullDescription: locFullDescs.ru,
+        usage: locUsages.ru,
+        indications: locInds.ru,
+        contraindications: locContras.ru,
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Translation failed');
+        return res.json();
+      })
+      .then((data) => {
+        setLocNames((prev) => ({ ...prev, en: data.en?.name || prev.en, ar: data.ar?.name || prev.ar }));
+        setLocSubs((prev) => ({ ...prev, en: data.en?.activeSubstance || prev.en, ar: data.ar?.activeSubstance || prev.ar }));
+        setLocDescs((prev) => ({ ...prev, en: data.en?.description || prev.en, ar: data.ar?.description || prev.ar }));
+        setLocFullDescs((prev) => ({ ...prev, en: data.en?.fullDescription || prev.en, ar: data.ar?.fullDescription || prev.ar }));
+        setLocUsages((prev) => ({ ...prev, en: data.en?.usage || prev.en, ar: data.ar?.usage || prev.ar }));
+        setLocInds((prev) => ({ ...prev, en: data.en?.indications || prev.en, ar: data.ar?.indications || prev.ar }));
+        setLocContras((prev) => ({ ...prev, en: data.en?.contraindications || prev.en, ar: data.ar?.contraindications || prev.ar }));
+        showFeedback('success', currentLang === 'ru' ? 'Переведено!' : 'Translated!');
+      })
+      .catch((err) => {
+        console.error(err);
+        showFeedback('error', currentLang === 'ru' ? 'Не удалось перевести' : 'Could not translate');
+      })
+      .finally(() => {
+        setIsTranslatingProduct(false);
+      });
+  };
+
   const handleSubmitCategory = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -415,6 +464,37 @@ export default function AdminPanel({
       .catch((err) => {
         console.error(err);
         showFeedback('error', currentLang === 'ru' ? 'Не удалось сохранить категорию' : 'Could not save category');
+      });
+  };
+
+  // Fills EN/AR from the RU name via AI, locking the form while the request is in flight
+  const handleTranslateCategory = () => {
+    const ru = locCategoryNames.ru.trim();
+    if (!ru) {
+      showFeedback('error', currentLang === 'ru' ? 'Сначала введите название на русском' : 'Enter the Russian name first');
+      return;
+    }
+
+    setIsTranslatingCategory(true);
+    fetch('/api/admin/translate/category', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ name: ru }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Translation failed');
+        return res.json();
+      })
+      .then((data) => {
+        setLocCategoryNames((prev) => ({ ...prev, en: data.en || prev.en, ar: data.ar || prev.ar }));
+        showFeedback('success', currentLang === 'ru' ? 'Переведено!' : 'Translated!');
+      })
+      .catch((err) => {
+        console.error(err);
+        showFeedback('error', currentLang === 'ru' ? 'Не удалось перевести' : 'Could not translate');
+      })
+      .finally(() => {
+        setIsTranslatingCategory(false);
       });
   };
 
@@ -841,9 +921,15 @@ export default function AdminPanel({
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl border border-slate-100 p-6 sm:p-8 shadow-xs"
+            className="relative bg-white rounded-3xl border border-slate-100 p-6 sm:p-8 shadow-xs"
             id="admin-category-form-shell"
           >
+            {isTranslatingCategory && (
+              <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-xs rounded-3xl flex flex-col items-center justify-center gap-2" id="category-translate-overlay">
+                <Loader2 className="w-6 h-6 text-nadeck-600 animate-spin" />
+                <span className="text-xs font-bold text-slate-600">{currentLang === 'ru' ? 'ИИ переводит...' : 'AI is translating...'}</span>
+              </div>
+            )}
             <form onSubmit={handleSubmitCategory} className="space-y-5" id="admin-category-form">
               <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                 <div>
@@ -854,13 +940,15 @@ export default function AdminPanel({
                 </div>
                 <button
                   type="button"
+                  disabled={isTranslatingCategory}
                   onClick={() => { setIsAddingCategory(false); setIsEditingCategory(false); }}
-                  className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-colors"
+                  className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-40"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
+              <fieldset disabled={isTranslatingCategory} className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
@@ -877,8 +965,18 @@ export default function AdminPanel({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                    🇷🇺 {currentLang === 'ru' ? 'Название (RU)' : 'Name (RU)'}
+                  <label className="flex items-center justify-between gap-2 text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+                    <span>🇷🇺 {currentLang === 'ru' ? 'Название (RU)' : 'Name (RU)'}</span>
+                    <button
+                      type="button"
+                      id="category-translate-btn"
+                      onClick={handleTranslateCategory}
+                      title={currentLang === 'ru' ? 'Перевести через ИИ' : 'Translate with AI'}
+                      className="normal-case font-bold text-[10px] text-nadeck-600 hover:text-nadeck-700 flex items-center gap-1"
+                    >
+                      <Languages className="w-3.5 h-3.5" />
+                      {currentLang === 'ru' ? 'Перевести ИИ' : 'AI translate'}
+                    </button>
                   </label>
                   <input
                     type="text"
@@ -955,6 +1053,7 @@ export default function AdminPanel({
                   {currentLang === 'ru' ? 'Отмена' : 'Cancel'}
                 </button>
               </div>
+              </fieldset>
             </form>
           </motion.div>
         )}
@@ -1083,15 +1182,21 @@ export default function AdminPanel({
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl border border-slate-100 p-6 sm:p-8 shadow-xs"
+            className="relative bg-white rounded-3xl border border-slate-100 p-6 sm:p-8 shadow-xs"
             id="admin-form-shell"
           >
+            {isTranslatingProduct && (
+              <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-xs rounded-3xl flex flex-col items-center justify-center gap-2" id="product-translate-overlay">
+                <Loader2 className="w-6 h-6 text-nadeck-600 animate-spin" />
+                <span className="text-xs font-bold text-slate-600">{currentLang === 'ru' ? 'ИИ переводит...' : 'AI is translating...'}</span>
+              </div>
+            )}
             <form onSubmit={handleSubmitProduct} className="space-y-6" id="admin-product-item-form">
               <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                 <div>
                   <h3 id="form-heading" className="text-base sm:text-lg font-black text-slate-900">
-                    {isAdding 
-                      ? (currentLang === 'ru' ? '➕ Создание новой карточки товара' : 'Create New Medicine Card') 
+                    {isAdding
+                      ? (currentLang === 'ru' ? '➕ Создание новой карточки товара' : 'Create New Medicine Card')
                       : (currentLang === 'ru' ? '📝 Корректировка параметров препарата' : 'Modify Peptide Inventory Setup')}
                   </h3>
                   <p className="text-xs text-slate-400">{currentLang === 'ru' ? 'Заполните поля ниже. Поддерживаются 3 языка.' : 'Provide localized tags, indicators, and calculation rates.'}</p>
@@ -1099,12 +1204,15 @@ export default function AdminPanel({
                 <button
                   id="form-close-btn"
                   type="button"
+                  disabled={isTranslatingProduct}
                   onClick={() => { setIsAdding(false); setIsEditing(false); }}
-                  className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-colors"
+                  className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-40"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
+
+              <fieldset disabled={isTranslatingProduct} className="space-y-6">
 
               {/* Grid 1 Block: Basic numeric identifiers and pricing */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -1350,10 +1458,22 @@ export default function AdminPanel({
 
               {/* Grid 4 Block: Russian (RU) Localized fields */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50 space-y-4" id="form-ru-fields">
-                <span className="text-xs uppercase font-black text-slate-800 tracking-wider flex items-center gap-1">
-                  🇷🇺 Русский язык (Russian translation config)
-                </span>
-                
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs uppercase font-black text-slate-800 tracking-wider flex items-center gap-1">
+                    🇷🇺 Русский язык (Russian translation config)
+                  </span>
+                  <button
+                    type="button"
+                    id="product-translate-btn"
+                    onClick={handleTranslateProduct}
+                    title={currentLang === 'ru' ? 'Заполнить EN/AR через ИИ по русским полям' : 'Fill EN/AR from Russian fields with AI'}
+                    className="normal-case font-bold text-[11px] text-nadeck-600 hover:text-nadeck-700 flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-nadeck-500/10 transition-colors"
+                  >
+                    <Languages className="w-3.5 h-3.5" />
+                    {currentLang === 'ru' ? 'Перевести ИИ (EN/AR)' : 'AI translate (EN/AR)'}
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">Название препарата (RU)</label>
@@ -1601,6 +1721,31 @@ export default function AdminPanel({
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-right">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1">دواعي الاستعمال (AR، كل سطر على حدة)</label>
+                    <textarea
+                      id="form-ar-inds"
+                      rows={2}
+                      placeholder="زيادة الوزن&#10;مقاومة الأنسولين"
+                      value={locInds.ar}
+                      onChange={(e) => setLocInds({ ...locInds, ar: e.target.value })}
+                      className="w-full px-3 py-1.5 text-[11px] text-right border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1">موانع الاستعمال (AR، كل سطر على حدة)</label>
+                    <textarea
+                      id="form-ar-contras"
+                      rows={2}
+                      placeholder="فرط الحساسية&#10;الحمل"
+                      value={locContras.ar}
+                      onChange={(e) => setLocContras({ ...locContras, ar: e.target.value })}
+                      className="w-full px-3 py-1.5 text-[11px] text-right border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 font-mono"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Form buttons block */}
@@ -1621,6 +1766,7 @@ export default function AdminPanel({
                   {currentLang === 'ru' ? 'Сохранить изменения' : 'Save Changes'}
                 </button>
               </div>
+              </fieldset>
 
             </form>
           </motion.div>
