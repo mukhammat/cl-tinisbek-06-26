@@ -5,6 +5,29 @@
 
 import { Medicine, Language } from './types';
 
+// Preset accent colors admins can assign to "especially important" categories, so they stand
+// out among the filter chips and product-card badges. Keep in sync with CATEGORY_COLOR_IDS in
+// apps/nadeck-backend/src/categories/categories.service.ts. Class strings are spelled out in
+// full (not built with template literals) so Tailwind's JIT scanner picks them up at build time.
+export interface CategoryColorPreset {
+  id: string;
+  dot: string; // solid swatch, used in the admin color picker
+  badge: string; // resting badge/filter-chip style
+  active: string; // selected filter-chip style
+}
+
+export const CATEGORY_COLOR_PRESETS: CategoryColorPreset[] = [
+  { id: 'rose', dot: 'bg-rose-500', badge: 'bg-rose-50 text-rose-700 border-rose-200', active: 'bg-rose-600 border-rose-600 text-white shadow-md shadow-rose-50' },
+  { id: 'amber', dot: 'bg-amber-500', badge: 'bg-amber-50 text-amber-700 border-amber-200', active: 'bg-amber-600 border-amber-600 text-white shadow-md shadow-amber-50' },
+  { id: 'emerald', dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', active: 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-50' },
+  { id: 'sky', dot: 'bg-sky-500', badge: 'bg-sky-50 text-sky-700 border-sky-200', active: 'bg-sky-600 border-sky-600 text-white shadow-md shadow-sky-50' },
+  { id: 'violet', dot: 'bg-violet-500', badge: 'bg-violet-50 text-violet-700 border-violet-200', active: 'bg-violet-600 border-violet-600 text-white shadow-md shadow-violet-50' },
+  { id: 'pink', dot: 'bg-pink-500', badge: 'bg-pink-50 text-pink-700 border-pink-200', active: 'bg-pink-600 border-pink-600 text-white shadow-md shadow-pink-50' },
+];
+
+export const getCategoryColorPreset = (colorId: string | null | undefined): CategoryColorPreset | undefined =>
+  CATEGORY_COLOR_PRESETS.find((preset) => preset.id === colorId);
+
 export const MEDICINES_DATA: Medicine[] = [
   {
     id: 'semaglutide',

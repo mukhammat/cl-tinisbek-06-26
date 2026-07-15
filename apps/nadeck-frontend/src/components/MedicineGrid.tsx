@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { Medicine, Language, CartItem, User } from '../types';
-import { MEDICINES_DATA, TRANSLATIONS } from '../data';
+import { MEDICINES_DATA, TRANSLATIONS, getCategoryColorPreset } from '../data';
 import { Star, Check, Plus, ShoppingCart, HelpCircle, BellRing, BellOff, ChevronDown } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -20,8 +20,9 @@ interface MedicineGridProps {
   setAuthModalOpen: (open: boolean) => void;
   subscribedIds: string[];
   onSubscribeNotify: (medicineId: string) => void;
-  categoryFilters: Array<{ id: string; label: string }>;
+  categoryFilters: Array<{ id: string; label: string; color?: string | null }>;
   categoryLabelById: Record<string, string>;
+  categoryColorById: Record<string, string | null | undefined>;
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
 }
@@ -39,6 +40,7 @@ export default function MedicineGrid({
   onSubscribeNotify,
   categoryFilters,
   categoryLabelById,
+  categoryColorById,
   selectedCategory,
   onSelectCategory
 }: MedicineGridProps) {
@@ -73,20 +75,26 @@ export default function MedicineGrid({
         className="flex gap-2 pb-2 overflow-x-auto scrollbar-none snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0" 
         id="category-filters-container"
       >
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            id={`filter-btn-${cat.id}`}
-            onClick={() => onSelectCategory(cat.id)}
-            className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap snap-start transition-all duration-200 ${
-              selectedCategory === cat.id
-                ? 'bg-nadeck-600 border border-nadeck-600 text-white shadow-md shadow-nadeck-50'
-                : 'bg-white border border-slate-200/50 text-slate-600 hover:border-slate-300 hover:text-slate-900 shadow-sm'
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+        {categories.map((cat) => {
+          const preset = getCategoryColorPreset(cat.color);
+          const isSelected = selectedCategory === cat.id;
+          const colorClasses = preset
+            ? (isSelected ? preset.active : `${preset.badge} hover:brightness-95`)
+            : (isSelected
+              ? 'bg-nadeck-600 border-nadeck-600 text-white shadow-md shadow-nadeck-50'
+              : 'bg-white border-slate-200/50 text-slate-600 hover:border-slate-300 hover:text-slate-900 shadow-sm');
+
+          return (
+            <button
+              key={cat.id}
+              id={`filter-btn-${cat.id}`}
+              onClick={() => onSelectCategory(cat.id)}
+              className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap snap-start transition-all duration-200 border ${colorClasses}`}
+            >
+              {cat.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Grid container */}
@@ -113,6 +121,7 @@ export default function MedicineGrid({
             };
 
             const categoryLabel = categoryLabelById[med.category] || med.category;
+            const categoryColorPreset = getCategoryColorPreset(categoryColorById[med.category]);
 
             return (
               <motion.div
@@ -137,7 +146,11 @@ export default function MedicineGrid({
                     className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                   />
                   {/* Category Badge overlay */}
-                  <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] uppercase font-bold text-nadeck-800 bg-nadeck-50/90 rounded-full border border-nadeck-100/50">
+                  <span
+                    className={`absolute top-3 left-3 px-2.5 py-1 text-[10px] uppercase font-bold rounded-full border ${
+                      categoryColorPreset ? categoryColorPreset.badge : 'text-nadeck-800 bg-nadeck-50/90 border-nadeck-100/50'
+                    }`}
+                  >
                     {categoryLabel}
                   </span>
                   {/* Score */}

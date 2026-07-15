@@ -265,7 +265,10 @@ export default function App() {
     .filter((category) => category.isActive !== false)
     .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || categoryLabelById[left.id].localeCompare(categoryLabelById[right.id]));
 
-  const categoryFilters = activeCategories.map((category) => ({ id: category.id, label: categoryLabelById[category.id] }));
+  const categoryFilters = activeCategories.map((category) => ({ id: category.id, label: categoryLabelById[category.id], color: category.color }));
+  const categoryColorById: Record<string, string | null | undefined> = Object.fromEntries(
+    allCategories.map((category) => [category.id, category.color])
+  );
   const adminCategories = allCategories;
 
   // Cart operations. Different volumes of the same product carry different prices, so
@@ -466,6 +469,7 @@ export default function App() {
                       onSubscribeNotify={handleSubscribeNotify}
                       categoryFilters={categoryFilters}
                       categoryLabelById={categoryLabelById}
+                      categoryColorById={categoryColorById}
                       selectedCategory={selectedCatalogCategory}
                       onSelectCategory={setSelectedCatalogCategory}
                     />

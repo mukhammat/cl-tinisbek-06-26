@@ -26,6 +26,7 @@ export interface MedicineVolume {
 export interface Category {
   id: string;
   name: Record<Language, string>;
+  color?: string | null; // preset accent color id, see CATEGORY_COLOR_PRESETS in data.ts
   sortOrder: number;
   isActive: boolean;
 }

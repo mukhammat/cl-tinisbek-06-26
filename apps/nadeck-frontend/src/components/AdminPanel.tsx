@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Medicine, Order, Language, SUPPORTED_LANGUAGES, Category } from '../types';
+import { CATEGORY_COLOR_PRESETS } from '../data';
 import { 
   Package, 
   ShoppingBag, 
@@ -446,6 +447,7 @@ export default function AdminPanel({
       body: JSON.stringify({
         id: targetId,
         name,
+        color: categoryForm.color || null,
         sortOrder: Number(categoryForm.sortOrder || 0),
         isActive: categoryForm.isActive !== false,
       }),
@@ -1038,6 +1040,37 @@ export default function AdminPanel({
                     />
                     <span>{currentLang === 'ru' ? 'Категория активна' : 'Category is active'}</span>
                   </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+                  {currentLang === 'ru' ? 'Цвет для важных категорий' : 'Color for important categories'}
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    id="category-color-none"
+                    onClick={() => setCategoryForm({ ...categoryForm, color: null })}
+                    title={currentLang === 'ru' ? 'Без цвета' : 'No color'}
+                    className={`w-7 h-7 rounded-full border-2 flex items-center justify-center bg-white ${
+                      !categoryForm.color ? 'border-nadeck-600' : 'border-slate-200'
+                    }`}
+                  >
+                    <X className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                  {CATEGORY_COLOR_PRESETS.map((preset) => (
+                    <button
+                      type="button"
+                      key={preset.id}
+                      id={`category-color-${preset.id}`}
+                      onClick={() => setCategoryForm({ ...categoryForm, color: preset.id })}
+                      title={preset.id}
+                      className={`w-7 h-7 rounded-full border-2 ${preset.dot} ${
+                        categoryForm.color === preset.id ? 'border-nadeck-600' : 'border-transparent'
+                      }`}
+                    />
+                  ))}
                 </div>
               </div>
 

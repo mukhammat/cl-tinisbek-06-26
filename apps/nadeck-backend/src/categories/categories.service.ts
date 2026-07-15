@@ -10,9 +10,13 @@ export interface LocalizedText {
 export interface CategoryPayload {
   id?: string;
   name?: LocalizedText;
+  color?: string | null;
   sortOrder?: number;
   isActive?: boolean;
 }
+
+// Keep in sync with CATEGORY_COLOR_PRESETS in the frontend (apps/nadeck-frontend/src/data.ts).
+const CATEGORY_COLOR_IDS = ['rose', 'amber', 'emerald', 'sky', 'violet', 'pink'];
 
 @Injectable()
 export class CategoriesService {
@@ -28,6 +32,11 @@ export class CategoriesService {
       en,
       ar: String(name?.ar || en).trim(),
     };
+  }
+
+  // Only a known preset id (or none) may be stored - never an arbitrary string.
+  private normalizeColor(color: string | null | undefined): string | null {
+    return color && CATEGORY_COLOR_IDS.includes(color) ? color : null;
   }
 
   async getAll() {
@@ -54,6 +63,7 @@ export class CategoriesService {
         data: {
           id,
           name,
+          color: this.normalizeColor(body?.color),
           sortOrder: Number(body?.sortOrder || 0),
           isActive: body?.isActive !== false,
         },
@@ -78,6 +88,7 @@ export class CategoriesService {
         where: { id },
         data: {
           name,
+          color: this.normalizeColor(body?.color),
           sortOrder: Number(body?.sortOrder || 0),
           isActive: body?.isActive !== false,
         },
