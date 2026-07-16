@@ -26,7 +26,7 @@ export interface MedicineVolume {
 export interface Category {
   id: string;
   name: Record<Language, string>;
-  color?: string | null; // preset accent color id, see CATEGORY_COLOR_PRESETS in data.ts
+  icon?: string | null; // uploaded icon (data URI or URL); falls back to the default red logo mark when unset
   sortOrder: number;
   isActive: boolean;
 }

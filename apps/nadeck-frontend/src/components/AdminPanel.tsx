@@ -5,25 +5,26 @@
 
 import React, { useState, useEffect } from 'react';
 import { Medicine, Order, Language, SUPPORTED_LANGUAGES, Category } from '../types';
-import { CATEGORY_COLOR_PRESETS } from '../data';
-import { 
-  Package, 
-  ShoppingBag, 
-  Plus, 
-  Trash2, 
-  Edit2, 
-  Check, 
-  X, 
-  AlertCircle, 
-  TrendingUp, 
-  Truck, 
-  Layers, 
+import {
+  Package,
+  ShoppingBag,
+  Plus,
+  Trash2,
+  Edit2,
+  Check,
+  X,
+  AlertCircle,
+  TrendingUp,
+  Truck,
+  Layers,
   Search,
   DollarSign,
   AlertTriangle,
   Languages,
-  Loader2
+  Loader2,
+  Upload
 } from 'lucide-react';
+import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AdminPanelProps {
@@ -418,6 +419,24 @@ export default function AdminPanel({
       });
   };
 
+  // Reads the chosen file into a base64 data URI and stores it straight on the category form.
+  const handleCategoryIconUpload = (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showFeedback('error', currentLang === 'ru' ? 'Выберите файл изображения' : 'Please choose an image file');
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      showFeedback('error', currentLang === 'ru' ? 'Файл слишком большой (максимум 1 МБ)' : 'File is too large (max 1MB)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCategoryForm((prev) => ({ ...prev, icon: String(reader.result) }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmitCategory = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -441,7 +460,7 @@ export default function AdminPanel({
       body: JSON.stringify({
         id: targetId,
         name,
-        color: categoryForm.color || null,
+        icon: categoryForm.icon || null,
         sortOrder: Number(categoryForm.sortOrder || 0),
         isActive: categoryForm.isActive !== false,
       }),
@@ -867,7 +886,14 @@ export default function AdminPanel({
                       {filteredCategories.map((category) => (
                         <tr key={category.id} className="hover:bg-slate-50/40 transition-colors">
                           <td className="py-4 px-5 font-mono text-xs font-bold text-slate-900">{category.id}</td>
-                          <td className="py-4 px-4 text-sm font-semibold text-slate-800">{category.name[currentLang] || category.name.en}</td>
+                          <td className="py-4 px-4 text-sm font-semibold text-slate-800">
+                            <div className="flex items-center gap-2.5">
+                              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 shrink-0 overflow-hidden">
+                                <img src={category.icon || defaultCategoryIcon} alt="" className="w-4.5 h-4.5 object-contain" />
+                              </span>
+                              {category.name[currentLang] || category.name.en}
+                            </div>
+                          </td>
                           <td className="py-4 px-4 text-sm text-slate-600">{category.sortOrder}</td>
                           <td className="py-4 px-4 text-center">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${category.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
@@ -1036,33 +1062,47 @@ export default function AdminPanel({
 
               <div>
                 <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                  {currentLang === 'ru' ? 'Цвет для важных категорий' : 'Color for important categories'}
+                  {currentLang === 'ru' ? 'Иконка категории' : 'Category icon'}
                 </label>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    id="category-color-none"
-                    onClick={() => setCategoryForm({ ...categoryForm, color: null })}
-                    title={currentLang === 'ru' ? 'Без цвета' : 'No color'}
-                    className={`w-7 h-7 rounded-full border-2 flex items-center justify-center bg-white ${
-                      !categoryForm.color ? 'border-nadeck-600' : 'border-slate-200'
-                    }`}
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center justify-center w-14 h-14 rounded-2xl border border-slate-200 bg-slate-50 shrink-0 overflow-hidden">
+                    <img
+                      src={categoryForm.icon || defaultCategoryIcon}
+                      alt=""
+                      className="w-9 h-9 object-contain"
+                    />
+                  </span>
+                  <label
+                    htmlFor="category-icon-upload"
+                    className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer transition-colors"
                   >
-                    <X className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-                  {CATEGORY_COLOR_PRESETS.map((preset) => (
+                    <Upload className="w-3.5 h-3.5" />
+                    {currentLang === 'ru' ? 'Загрузить иконку' : 'Upload icon'}
+                  </label>
+                  <input
+                    id="category-icon-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleCategoryIconUpload(e.target.files?.[0])}
+                  />
+                  {categoryForm.icon && (
                     <button
                       type="button"
-                      key={preset.id}
-                      id={`category-color-${preset.id}`}
-                      onClick={() => setCategoryForm({ ...categoryForm, color: preset.id })}
-                      title={preset.id}
-                      className={`w-7 h-7 rounded-full border-2 ${preset.dot} ${
-                        categoryForm.color === preset.id ? 'border-nadeck-600' : 'border-transparent'
-                      }`}
-                    />
-                  ))}
+                      id="category-icon-remove"
+                      onClick={() => setCategoryForm({ ...categoryForm, icon: null })}
+                      title={currentLang === 'ru' ? 'Сбросить (использовать логотип по умолчанию)' : 'Reset (use the default logo)'}
+                      className="p-2 rounded-xl hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
+                <p className="text-[10px] text-slate-400 mt-1.5">
+                  {currentLang === 'ru'
+                    ? 'PNG/SVG до 1 МБ. Если не загрузить — используется логотип Nadeck красного цвета.'
+                    : 'PNG/SVG up to 1MB. If left empty, the red Nadeck logo mark is used by default.'}
+                </p>
               </div>
 
               <div className="flex gap-2">

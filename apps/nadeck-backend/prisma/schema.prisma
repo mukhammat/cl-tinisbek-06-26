@@ -19,8 +19,8 @@ model User {
 model Category {
   id         String     @id
   name       Json // { ru, en, ar }
-  // Preset accent color id (e.g. "rose", "amber") for highlighting important categories; null = default/neutral look
-  color      String?
+  // Uploaded icon for the category filter pill (data URI or URL); null = fall back to the default red logo mark
+  icon       String?
   sortOrder  Int        @default(0)
   isActive   Boolean    @default(true)
   medicines  Medicine[]

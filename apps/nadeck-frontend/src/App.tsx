@@ -292,9 +292,9 @@ export default function App() {
     .filter((category) => category.isActive !== false)
     .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || categoryLabelById[left.id].localeCompare(categoryLabelById[right.id]));
 
-  const categoryFilters = activeCategories.map((category) => ({ id: category.id, label: categoryLabelById[category.id], color: category.color }));
-  const categoryColorById: Record<string, string | null | undefined> = Object.fromEntries(
-    allCategories.map((category) => [category.id, category.color])
+  const categoryFilters = activeCategories.map((category) => ({ id: category.id, label: categoryLabelById[category.id], icon: category.icon }));
+  const categoryIconById: Record<string, string | null | undefined> = Object.fromEntries(
+    allCategories.map((category) => [category.id, category.icon])
   );
   const adminCategories = allCategories;
 
@@ -499,7 +499,7 @@ export default function App() {
                       onSubscribeNotify={handleSubscribeNotify}
                       categoryFilters={categoryFilters}
                       categoryLabelById={categoryLabelById}
-                      categoryColorById={categoryColorById}
+                      categoryIconById={categoryIconById}
                       selectedCategory={selectedCatalogCategory}
                       onSelectCategory={setSelectedCatalogCategory}
                     />
