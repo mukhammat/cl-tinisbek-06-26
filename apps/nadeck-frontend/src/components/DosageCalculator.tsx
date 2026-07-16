@@ -440,12 +440,12 @@ export default function DosageCalculator({
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(20,184,166,0.15),transparent)] pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-nadeck-300">
+            {/* <div className="flex items-center gap-2 text-nadeck-300">
               <Calculator className="w-6 h-6 shrink-0" />
               <span className="text-xs lg:text-sm font-black uppercase tracking-widest bg-nadeck-500/20 text-nadeck-300 px-3 py-1 rounded-full border border-nadeck-500/30">
                 PRO CALIBRATION v3.5
               </span>
-            </div>
+            </div> */}
             <h2 id="calc-header-title" className="text-xl sm:text-2xl font-black tracking-tight">{t('calculatorHeader')}</h2>
             <p className="text-xs lg:text-sm text-slate-300 max-w-2xl leading-relaxed">
               {t('calcIntro')}

@@ -397,9 +397,9 @@ export default function App() {
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(20,184,166,0.15),transparent)] pointer-events-none" />
                 
                 <div className="space-y-4 max-w-xl z-10">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 rounded-full">
+                  {/* <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 rounded-full">
                     ✔ 3-язычный сервис: RU • EN • AR
-                  </span>
+                  </span> */}
                   <h2 id="hero-title" className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
                     {currentLang === 'ru' 
                       ? 'Сертифицированные лекарства и точный расчет' 
@@ -476,12 +476,12 @@ export default function App() {
                 ) : (
                   /* Cards Catalog screen */
                   <div className="space-y-6">
-                    <div className="flex justify-between items-baseline pb-2 border-b border-slate-100">
+                    {/* <div className="flex justify-between items-baseline pb-2 border-b border-slate-100">
                       <h3 className="text-lg font-black text-slate-900 tracking-tight">
                         {currentLang === 'ru' ? 'Каталог медицинских товаров' : currentLang === 'ar' ? 'دليل المنتجات الطبية' : 'Pharmacy Drug Catalog'}
                       </h3>
                       <span className="text-xs text-slate-400 font-semibold uppercase">{currentLang === 'ru' ? 'Только оригинал' : 'Certified supply'}</span>
-                    </div>
+                    </div> */}
                     <MedicineGrid
                       currentLang={currentLang}
                       onSelectMedicine={setSelectedMedicine}
