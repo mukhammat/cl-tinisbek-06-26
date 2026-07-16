@@ -21,8 +21,7 @@ import {
   DollarSign,
   AlertTriangle,
   Languages,
-  Loader2,
-  Upload
+  Loader2
 } from 'lucide-react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
 import { motion, AnimatePresence } from 'motion/react';
@@ -417,24 +416,6 @@ export default function AdminPanel({
       .finally(() => {
         setIsTranslatingProduct(false);
       });
-  };
-
-  // Reads the chosen file into a base64 data URI and stores it straight on the category form.
-  const handleCategoryIconUpload = (file: File | undefined) => {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      showFeedback('error', currentLang === 'ru' ? 'Выберите файл изображения' : 'Please choose an image file');
-      return;
-    }
-    if (file.size > 1024 * 1024) {
-      showFeedback('error', currentLang === 'ru' ? 'Файл слишком большой (максимум 1 МБ)' : 'File is too large (max 1MB)');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setCategoryForm((prev) => ({ ...prev, icon: String(reader.result) }));
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleSubmitCategory = (e: React.FormEvent) => {
@@ -1062,46 +1043,29 @@ export default function AdminPanel({
 
               <div>
                 <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                  {currentLang === 'ru' ? 'Иконка категории' : 'Category icon'}
+                  {currentLang === 'ru' ? 'Ссылка на иконку' : 'Icon URL'}
                 </label>
                 <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-14 h-14 rounded-2xl border border-slate-200 bg-slate-50 shrink-0 overflow-hidden">
+                  <span className="flex items-center justify-center w-11 h-11 rounded-xl border border-slate-200 bg-slate-50 shrink-0 overflow-hidden">
                     <img
                       src={categoryForm.icon || defaultCategoryIcon}
                       alt=""
-                      className="w-9 h-9 object-contain"
+                      className="w-7 h-7 object-contain"
                     />
                   </span>
-                  <label
-                    htmlFor="category-icon-upload"
-                    className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer transition-colors"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    {currentLang === 'ru' ? 'Загрузить иконку' : 'Upload icon'}
-                  </label>
                   <input
-                    id="category-icon-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleCategoryIconUpload(e.target.files?.[0])}
+                    id="category-icon-url"
+                    type="text"
+                    placeholder="https://..."
+                    value={categoryForm.icon || ''}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value || null })}
+                    className="flex-1 px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none font-mono"
                   />
-                  {categoryForm.icon && (
-                    <button
-                      type="button"
-                      id="category-icon-remove"
-                      onClick={() => setCategoryForm({ ...categoryForm, icon: null })}
-                      title={currentLang === 'ru' ? 'Сбросить (использовать логотип по умолчанию)' : 'Reset (use the default logo)'}
-                      className="p-2 rounded-xl hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1.5">
                   {currentLang === 'ru'
-                    ? 'PNG/SVG до 1 МБ. Если не загрузить — используется логотип Nadeck красного цвета.'
-                    : 'PNG/SVG up to 1MB. If left empty, the red Nadeck logo mark is used by default.'}
+                    ? 'Если оставить пустым — используется логотип Nadeck красного цвета.'
+                    : 'If left empty, the red Nadeck logo mark is used by default.'}
                 </p>
               </div>
 
