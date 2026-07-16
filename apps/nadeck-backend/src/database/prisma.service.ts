@@ -17,8 +17,13 @@ const DEFAULT_CATEGORY_NAMES: Record<string, { ru: string; en: string; ar: strin
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     await this.$connect();
-    await this.seedCategories();
-    await this.seedMedicines();
+    // Seeding is a first-boot/local-dev convenience only. In production the catalog is
+    // managed entirely through the Admin Panel, so we never touch it automatically here -
+    // that's what previously made categories look like they "reset" after every deploy.
+    if (process.env.NODE_ENV !== 'production') {
+      await this.seedCategories();
+      await this.seedMedicines();
+    }
   }
 
   async onModuleDestroy() {
