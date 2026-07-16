@@ -61,9 +61,8 @@ export default function MedicineGrid({
     const query = searchQuery.toLowerCase();
     const nameMatch = med.name[currentLang]?.toLowerCase().includes(query) || med.name['en']?.toLowerCase().includes(query);
     const descMatch = med.description[currentLang]?.toLowerCase().includes(query);
-    const substanceMatch = med.activeSubstance[currentLang]?.toLowerCase().includes(query);
-    
-    return matchesCategory && (nameMatch || descMatch || substanceMatch);
+
+    return matchesCategory && (nameMatch || descMatch);
   });
 
 
@@ -171,11 +170,6 @@ export default function MedicineGrid({
                 {/* Body details */}
                 <div className="p-5 flex-1 flex flex-col gap-4">
                   <div className="space-y-2">
-                    {/* Active Substance tagline */}
-                    <span className="text-[10px] text-nadeck-600 font-bold tracking-wider uppercase">
-                      {med.activeSubstance[currentLang]}
-                    </span>
-
                     {/* Medicine Name */}
                     <h3
                       className="text-lg font-extrabold text-slate-950 group-hover:text-nadeck-600 cursor-pointer transition-colors leading-snug line-clamp-1"
@@ -189,30 +183,30 @@ export default function MedicineGrid({
                     <p className="text-xs text-slate-500 leading-relaxed font-normal min-h-[36px] line-clamp-2">
                       {med.description[currentLang]}
                     </p>
-
-                    {/* Price (follows the selected volume) */}
-                    <span id={`price-${med.id}`} className="block text-xl font-black text-slate-900 pt-1">
-                      {currentVolumeInfo.price.toLocaleString()} {t('currencySymbol')}
-                    </span>
                   </div>
 
-                  {/* Volume selector */}
-                  <div className="space-y-1.5">
-                    <span className="block text-[10px] text-slate-400 font-medium">{t('volumeLabel')}</span>
-                    <div className="relative">
-                      <select
-                        id={`volume-select-${med.id}`}
-                        value={currentVolume}
-                        onChange={(e) => setSelectedVolumes((prev) => ({ ...prev, [med.id]: Number(e.target.value) }))}
-                        className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-nadeck-100 focus:border-nadeck-300"
-                      >
-                        {availableVolumes.map((vol) => (
-                          <option key={vol.mgPerUnit} value={vol.mgPerUnit}>
-                            {vol.mgPerUnit} мг
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  {/* Price and Volume selector */}
+                  <div className="flex items-end justify-between gap-3">
+                    <span id={`price-${med.id}`} className="text-xl font-black text-slate-900">
+                      {currentVolumeInfo.price.toLocaleString()} {t('currencySymbol')}
+                    </span>
+                    <div className="space-y-1.5 w-28 shrink-0">
+                      <span className="block text-[10px] text-slate-400 font-medium text-right">{t('volumeLabel')}</span>
+                      <div className="relative">
+                        <select
+                          id={`volume-select-${med.id}`}
+                          value={currentVolume}
+                          onChange={(e) => setSelectedVolumes((prev) => ({ ...prev, [med.id]: Number(e.target.value) }))}
+                          className="w-full appearance-none px-3 py-2.5 pr-8 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-nadeck-100 focus:border-nadeck-300"
+                        >
+                          {availableVolumes.map((vol) => (
+                            <option key={vol.mgPerUnit} value={vol.mgPerUnit}>
+                              {vol.mgPerUnit} мг
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
                   </div>
 

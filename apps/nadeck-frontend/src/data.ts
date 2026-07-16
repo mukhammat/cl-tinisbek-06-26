@@ -37,11 +37,6 @@ export const MEDICINES_DATA: Medicine[] = [
       ar: 'سيماجلوتايد 5 ملغ'
     },
     category: 'weightloss',
-    activeSubstance: {
-      ru: 'Semaglutide (Семаглутид)',
-      en: 'Semaglutide',
-      ar: 'سيماجلوتايد'
-    },
     description: {
       ru: 'Революционный пептид для снижения аппетита, улучшения метаболизма и эффективного контроля веса.',
       en: 'Revolutionary peptide for appetite suppression, metabolic enhancement, and effective weight management.',
@@ -110,11 +105,6 @@ export const MEDICINES_DATA: Medicine[] = [
       ar: 'تيرزيباتايد 10 ملغ'
     },
     category: 'weightloss',
-    activeSubstance: {
-      ru: 'Tirzepatide (Тирзепатид)',
-      en: 'Tirzepatide',
-      ar: 'تيرزيباتايد'
-    },
     description: {
       ru: 'Двойной агонист рецепторов GIP/GLP-1 для продвинутого сжигания жира, нормализации липидного профиля и выносливости.',
       en: 'Dual GIP/GLP-1 receptor agonist for advanced fat burning, lipid normalization, and stamina support.',
@@ -183,11 +173,6 @@ export const MEDICINES_DATA: Medicine[] = [
       ar: 'بي بي سي-157 5 ملغ'
     },
     category: 'healing',
-    activeSubstance: {
-      ru: 'Body Protection Compound (Пентадекапептид)',
-      en: 'Pentadecapeptide BPC-157',
-      ar: 'بي بي سي-157 (مركب حماية الجسم)'
-    },
     description: {
       ru: 'Пептид экстремальной тканевой и органной регенерации: ускоряет заживление связок, сухожилий, мышц и слизистой оболочки желудка.',
       en: 'Extreme tissue and organ regeneration peptide. Promotes fast ligament, tendon, muscular, and gut lining healing.',
@@ -253,11 +238,6 @@ export const MEDICINES_DATA: Medicine[] = [
       ar: 'تي بي-500 5 ملغ'
     },
     category: 'healing',
-    activeSubstance: {
-      ru: 'Thymosin Beta-4 Ac-SDKP (Тимозин Бета-4)',
-      en: 'Thymosin Beta-4 active fragment',
-      ar: 'تيموسين بيتا-4'
-    },
     description: {
       ru: 'Стимулятор клеточной подвижности для экстренного восстановления кровеносной системы, миокарда и эластичности мышечных волокон.',
       en: 'Cellular motility stimulator for cardiovascular tissue repair, skeletal muscles, and microvascular tissue health.',
@@ -323,11 +303,6 @@ export const MEDICINES_DATA: Medicine[] = [
       ar: 'ميلانوتان 2 10 ملغ'
     },
     category: 'antiaging',
-    activeSubstance: {
-      ru: 'Melanotan II (Меланотан 2)',
-      en: 'Melanotan 2',
-      ar: 'ميلانوتان 2'
-    },
     description: {
       ru: 'Пептид ровного глубокого загара без ожогов с сильным эффектом подавления аппетита и стимуляции либидо.',
       en: 'Deep safe tanning peptide without sunburn. Upregulates melanin, enhances libido, and diminishes appetite.',
@@ -396,11 +371,6 @@ export const MEDICINES_DATA: Medicine[] = [
       ar: 'إيباموريلين 5 ملغ'
     },
     category: 'antiaging',
-    activeSubstance: {
-      ru: 'Ipamorelin (Ипаморелин)',
-      en: 'Ipamorelin',
-      ar: 'إيباموريلين'
-    },
     description: {
       ru: 'Высокоселективный стимулятор выброса соматотропного гормона для омоложения кожи, укрепления суставов и прироста качественной мускулатуры.',
       en: 'Highly selective growth hormone secretagogue for skin collagen optimization, joint strength, and lean muscles.',
@@ -600,11 +570,6 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     ru: '₸',
     en: '$',
     ar: '₸'
-  },
-  activeSubstanceLabel: {
-    ru: 'Активное вещество',
-    en: 'Active Substance',
-    ar: 'المادة الفعالة'
   },
   ratingLabel: {
     ru: 'Рейтинг',

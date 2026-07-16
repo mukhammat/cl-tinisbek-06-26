@@ -259,10 +259,11 @@ export default function CartView({
                 {/* Info details */}
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-bold text-slate-900 truncate">{item.medicine.name[currentLang]}</h4>
-                  <span className="text-[10px] text-nadeck-600 font-semibold">
-                    {item.medicine.activeSubstance[currentLang]}
-                    {item.selectedStrength ? ` · ${item.selectedStrength} мг` : ''}
-                  </span>
+                  {item.selectedStrength ? (
+                    <span className="text-[10px] text-nadeck-600 font-semibold">
+                      {item.selectedStrength} мг
+                    </span>
+                  ) : null}
                   <div className="text-[10.5px] text-slate-400 font-extrabold mt-0.5">
                     {unitPrice.toLocaleString()} {t('currencySymbol')}
                   </div>

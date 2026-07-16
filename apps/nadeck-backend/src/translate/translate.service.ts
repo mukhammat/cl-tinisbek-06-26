@@ -65,7 +65,7 @@ export class TranslateService {
   }
 
   async translateMedicine(body: any) {
-    const { name, activeSubstance, description, fullDescription, usage, indications, contraindications } = body || {};
+    const { name, description, fullDescription, usage, indications, contraindications } = body || {};
 
     if (!String(name || '').trim()) {
       throw new BadRequestException('Name is required');
@@ -73,7 +73,6 @@ export class TranslateService {
 
     const fields = {
       name: name || '',
-      activeSubstance: activeSubstance || '',
       description: description || '',
       fullDescription: fullDescription || '',
       usage: usage || '',
@@ -86,14 +85,13 @@ export class TranslateService {
         `"indications" and "contraindications" are newline-separated lists - the translation must keep ` +
         `the exact same number of lines, in the same order, still separated by newlines.\n` +
         `Return strict JSON with exactly this shape:\n` +
-        `{"en": {"name":"","activeSubstance":"","description":"","fullDescription":"","usage":"","indications":"","contraindications":""}, ` +
-        `"ar": {"name":"","activeSubstance":"","description":"","fullDescription":"","usage":"","indications":"","contraindications":""}}\n\n` +
+        `{"en": {"name":"","description":"","fullDescription":"","usage":"","indications":"","contraindications":""}, ` +
+        `"ar": {"name":"","description":"","fullDescription":"","usage":"","indications":"","contraindications":""}}\n\n` +
         `Russian fields (JSON):\n${JSON.stringify(fields)}`
     );
 
     const pick = (lang: 'en' | 'ar') => ({
       name: String(result?.[lang]?.name || '').trim(),
-      activeSubstance: String(result?.[lang]?.activeSubstance || '').trim(),
       description: String(result?.[lang]?.description || '').trim(),
       fullDescription: String(result?.[lang]?.fullDescription || '').trim(),
       usage: String(result?.[lang]?.usage || '').trim(),

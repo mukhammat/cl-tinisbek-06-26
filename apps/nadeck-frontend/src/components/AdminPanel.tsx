@@ -74,7 +74,6 @@ export default function AdminPanel({
 
   // Localized form inputs
   const [locNames, setLocNames] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
-  const [locSubs, setLocSubs] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
   const [locDescs, setLocDescs] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
   const [locFullDescs, setLocFullDescs] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
   const [locUsages, setLocUsages] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
@@ -201,7 +200,6 @@ export default function AdminPanel({
     setNewVolumeMg('');
     setNewVolumePrice('');
     setLocNames({ ...med.name });
-    setLocSubs({ ...med.activeSubstance });
     setLocDescs({ ...med.description });
     setLocFullDescs({ ...med.fullDescription });
     setLocUsages({ ...med.usage || { ru: '', en: '', ar: '' } });
@@ -241,7 +239,6 @@ export default function AdminPanel({
     setNewVolumeMg('');
     setNewVolumePrice('');
     setLocNames({ ru: '', en: '', ar: '' });
-    setLocSubs({ ru: '', en: '', ar: '' });
     setLocDescs({ ru: '', en: '', ar: '' });
     setLocFullDescs({ ru: '', en: '', ar: '' });
     setLocUsages({ ru: '', en: '', ar: '' });
@@ -331,7 +328,6 @@ export default function AdminPanel({
       id: targetId,
       name: nameVal,
       categoryId: formData.category || defaultCategoryId,
-      activeSubstance: locSubs,
       description: locDescs,
       fullDescription: locFullDescs,
       indications: {
@@ -393,7 +389,6 @@ export default function AdminPanel({
       headers: { 'Content-Type': 'application/json', ...authHeaders },
       body: JSON.stringify({
         name: locNames.ru,
-        activeSubstance: locSubs.ru,
         description: locDescs.ru,
         fullDescription: locFullDescs.ru,
         usage: locUsages.ru,
@@ -407,7 +402,6 @@ export default function AdminPanel({
       })
       .then((data) => {
         setLocNames((prev) => ({ ...prev, en: data.en?.name || prev.en, ar: data.ar?.name || prev.ar }));
-        setLocSubs((prev) => ({ ...prev, en: data.en?.activeSubstance || prev.en, ar: data.ar?.activeSubstance || prev.ar }));
         setLocDescs((prev) => ({ ...prev, en: data.en?.description || prev.en, ar: data.ar?.description || prev.ar }));
         setLocFullDescs((prev) => ({ ...prev, en: data.en?.fullDescription || prev.en, ar: data.ar?.fullDescription || prev.ar }));
         setLocUsages((prev) => ({ ...prev, en: data.en?.usage || prev.en, ar: data.ar?.usage || prev.ar }));
@@ -728,7 +722,7 @@ export default function AdminPanel({
                       <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase tracking-widest text-[9.5px] font-black">
                         <th className="py-4 px-5">{currentLang === 'ru' ? 'Товар' : 'Product'}</th>
                         <th className="py-4 px-4">{currentLang === 'ru' ? 'Раздел' : 'Category'}</th>
-                        <th className="py-4 px-4">{currentLang === 'ru' ? 'Действующее вещество / Фасовка' : 'Formulation'}</th>
+                        <th className="py-4 px-4">{currentLang === 'ru' ? 'Фасовка' : 'Formulation'}</th>
                         <th className="py-4 px-4">{currentLang === 'ru' ? 'Цена' : 'Price'}</th>
                         <th className="py-4 px-4 text-center">{currentLang === 'ru' ? 'Наличие' : 'Availability'}</th>
                         <th className="py-4 px-5 text-right">{currentLang === 'ru' ? 'Опции' : 'Actions'}</th>
@@ -765,12 +759,9 @@ export default function AdminPanel({
 
                           {/* Col 3 Info tag */}
                           <td className="py-4 px-4 text-xs">
-                            <div className="space-y-0.5">
-                              <p className="font-medium text-slate-800 line-clamp-1">{med.activeSubstance[currentLang] || med.activeSubstance.en}</p>
-                              <p className="text-[10px] text-slate-400 font-bold capitalize">
-                                {med.form} • {med.mgPerUnit} mg
-                              </p>
-                            </div>
+                            <p className="text-[10px] text-slate-400 font-bold capitalize">
+                              {med.form} • {med.mgPerUnit} mg
+                            </p>
                           </td>
 
                           {/* Col 4 Price point */}
@@ -1507,29 +1498,16 @@ export default function AdminPanel({
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Название препарата (RU)</label>
-                    <input
-                      id="form-ru-name"
-                      type="text"
-                      placeholder="Напр. Семаглутид 5мг"
-                      value={locNames.ru}
-                      onChange={(e) => setLocNames({ ...locNames, ru: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Действующее вещество (RU)</label>
-                    <input
-                      id="form-ru-substance"
-                      type="text"
-                      placeholder="Напр. Semaglutide (Семаглутид)"
-                      value={locSubs.ru}
-                      onChange={(e) => setLocSubs({ ...locSubs, ru: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 mb-1">Название препарата (RU)</label>
+                  <input
+                    id="form-ru-name"
+                    type="text"
+                    placeholder="Напр. Семаглутид 5мг"
+                    value={locNames.ru}
+                    onChange={(e) => setLocNames({ ...locNames, ru: e.target.value })}
+                    className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1600,30 +1578,17 @@ export default function AdminPanel({
                   🇺🇸 English (English translation layout)
                 </span>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Brand/Name (EN) *</label>
-                    <input
-                      id="form-en-name"
-                      type="text"
-                      required
-                      placeholder="e.g. Semaglutide 5mg"
-                      value={locNames.en}
-                      onChange={(e) => setLocNames({ ...locNames, en: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Active Substance (EN)</label>
-                    <input
-                      id="form-en-substance"
-                      type="text"
-                      placeholder="e.g. Semaglutide"
-                      value={locSubs.en}
-                      onChange={(e) => setLocSubs({ ...locSubs, en: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 mb-1">Brand/Name (EN) *</label>
+                  <input
+                    id="form-en-name"
+                    type="text"
+                    required
+                    placeholder="e.g. Semaglutide 5mg"
+                    value={locNames.en}
+                    onChange={(e) => setLocNames({ ...locNames, en: e.target.value })}
+                    className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1694,29 +1659,16 @@ export default function AdminPanel({
                   🇸🇦 اللغة العربية (Arabic Translation Configuration)
                 </span>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-right">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">الاسم التجاري (AR)</label>
-                    <input
-                      id="form-ar-name"
-                      type="text"
-                      placeholder="مثال: سيماجلوتايد 5 ملغ"
-                      value={locNames.ar}
-                      onChange={(e) => setLocNames({ ...locNames, ar: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 text-right"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">المادة الفعالة (AR)</label>
-                    <input
-                      id="form-ar-substance"
-                      type="text"
-                      placeholder="مثال: سيماجلوتايد"
-                      value={locSubs.ar}
-                      onChange={(e) => setLocSubs({ ...locSubs, ar: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 text-right"
-                    />
-                  </div>
+                <div className="text-right">
+                  <label className="block text-[10px] font-bold text-slate-600 mb-1">الاسم التجاري (AR)</label>
+                  <input
+                    id="form-ar-name"
+                    type="text"
+                    placeholder="مثال: سيماجلوتايد 5 ملغ"
+                    value={locNames.ar}
+                    onChange={(e) => setLocNames({ ...locNames, ar: e.target.value })}
+                    className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 text-right"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-right">

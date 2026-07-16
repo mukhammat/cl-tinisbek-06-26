@@ -31,7 +31,6 @@ model Medicine {
   name              Json // { ru, en, ar }
   categoryId        String @default("weightloss")
   category          Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  activeSubstance   Json // { ru, en, ar }
   description       Json // { ru, en, ar }
   fullDescription   Json // { ru, en, ar }
   indications       Json // { ru: string[], en: string[], ar: string[] }

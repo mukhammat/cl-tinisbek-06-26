@@ -35,7 +35,6 @@ export interface Medicine {
   id: string;
   name: Record<Language, string>;
   category: string; // category id from database
-  activeSubstance: Record<Language, string>;
   description: Record<Language, string>;
   fullDescription: Record<Language, string>;
   indications: Record<Language, string[]>;

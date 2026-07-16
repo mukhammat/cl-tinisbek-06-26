@@ -46,11 +46,8 @@ export default function DosageCalculator({
         const nameMatch = (med.name[currentLang] || '').toLowerCase().includes(query) || 
                           (med.name['ru'] || '').toLowerCase().includes(query) || 
                           (med.name['en'] || '').toLowerCase().includes(query);
-        const subMatch = (med.activeSubstance[currentLang] || '').toLowerCase().includes(query) || 
-                         (med.activeSubstance['ru'] || '').toLowerCase().includes(query) || 
-                         (med.activeSubstance['en'] || '').toLowerCase().includes(query);
         const catMatch = (med.category || '').toLowerCase().includes(query);
-        return nameMatch || subMatch || catMatch;
+        return nameMatch || catMatch;
       })
     : activeMedicines;
   

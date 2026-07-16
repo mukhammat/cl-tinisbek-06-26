@@ -61,7 +61,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
               id: med.id,
               name: med.name,
               categoryId: med.category,
-              activeSubstance: med.activeSubstance,
               description: med.description,
               fullDescription: med.fullDescription,
               indications: med.indications,

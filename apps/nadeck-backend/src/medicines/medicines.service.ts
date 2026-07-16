@@ -44,7 +44,6 @@ export class MedicinesService {
         id: m.id,
         name: m.name,
         category: m.categoryId,
-        activeSubstance: m.activeSubstance,
         description: m.description,
         fullDescription: m.fullDescription,
         indications: m.indications,
@@ -67,7 +66,7 @@ export class MedicinesService {
 
   async create(body: any) {
     const {
-      id, name, categoryId, category, activeSubstance, description, fullDescription,
+      id, name, categoryId, category, description, fullDescription,
       indications, contraindications, usage, price, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
     } = body;
 
@@ -83,7 +82,6 @@ export class MedicinesService {
           id,
           name,
           categoryId: resolvedCategoryId,
-          activeSubstance: activeSubstance || { ru: '', en: '', ar: '' },
           description: description || { ru: '', en: '', ar: '' },
           fullDescription: fullDescription || { ru: '', en: '', ar: '' },
           indications: indications || { ru: [], en: [], ar: [] },
@@ -108,7 +106,7 @@ export class MedicinesService {
 
   async update(id: string, body: any) {
     const {
-      name, categoryId, category, activeSubstance, description, fullDescription,
+      name, categoryId, category, description, fullDescription,
       indications, contraindications, usage, price, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
     } = body;
 
@@ -123,7 +121,6 @@ export class MedicinesService {
         data: {
           name,
           categoryId: resolvedCategoryId,
-          activeSubstance,
           description,
           fullDescription,
           indications,

@@ -2,7 +2,6 @@ export interface Medicine {
   id: string;
   name: Record<string, string>;
   category: string;
-  activeSubstance: Record<string, string>;
   description: Record<string, string>;
   fullDescription: Record<string, string>;
   indications: Record<string, string[]>;
@@ -23,7 +22,6 @@ export const MEDICINES_DATA: Medicine[] = [
     id: 'semaglutide',
     name: { ru: 'Semaglutide 5mg', en: 'Semaglutide 5mg', ar: 'سيماجلوتايد 5 ملغ' },
     category: 'weightloss',
-    activeSubstance: { ru: 'Semaglutide (Семаглутид)', en: 'Semaglutide', ar: 'سيماجلوتايد' },
     description: {
       ru: 'Революционный пептид для снижения аппетита, улучшения метаболизма и эффективного контроля веса.',
       en: 'Revolutionary peptide for appetite suppression, metabolic enhancement, and effective weight management.',
@@ -65,7 +63,6 @@ export const MEDICINES_DATA: Medicine[] = [
     id: 'tirzepatide',
     name: { ru: 'Tirzepatide 10mg', en: 'Tirzepatide 10mg', ar: 'تيرزيباتايد 10 ملغ' },
     category: 'weightloss',
-    activeSubstance: { ru: 'Tirzepatide (Тирзепатид)', en: 'Tirzepatide', ar: 'تيرزيباتايد' },
     description: {
       ru: 'Двойной агонист рецепторов GIP/GLP-1 для продвинутого сжигания жира и нормализации липидного профиля.',
       en: 'Dual GIP/GLP-1 receptor agonist for advanced fat burning and lipid normalization.',
@@ -107,7 +104,6 @@ export const MEDICINES_DATA: Medicine[] = [
     id: 'bpc-157',
     name: { ru: 'BPC-157 5mg', en: 'BPC-157 5mg', ar: 'بي بي سي-157 5 ملغ' },
     category: 'healing',
-    activeSubstance: { ru: 'Body Protection Compound (Пентадекапептид)', en: 'Pentadecapeptide BPC-157', ar: 'بي بي سي-157' },
     description: {
       ru: 'Пептид экстремальной тканевой регенерации: ускоряет заживление связок, сухожилий и слизистой ЖКТ.',
       en: 'Extreme tissue regeneration peptide. Promotes fast ligament, tendon, and gut lining healing.',
@@ -149,7 +145,6 @@ export const MEDICINES_DATA: Medicine[] = [
     id: 'tb-500',
     name: { ru: 'TB-500 5mg', en: 'TB-500 5mg', ar: 'تي بي-500 5 ملغ' },
     category: 'healing',
-    activeSubstance: { ru: 'Thymosin Beta-4 Ac-SDKP', en: 'Thymosin Beta-4 active fragment', ar: 'تيموسين بيتا-4' },
     description: {
       ru: 'Стимулятор клеточной подвижности для восстановления кровеносной системы и мышечных волокон.',
       en: 'Cellular motility stimulator for cardiovascular tissue repair and skeletal muscle health.',
@@ -191,7 +186,6 @@ export const MEDICINES_DATA: Medicine[] = [
     id: 'melanotan-2',
     name: { ru: 'Melanotan II 10mg', en: 'Melanotan II 10mg', ar: 'ميلانوتان 2 10 ملغ' },
     category: 'antiaging',
-    activeSubstance: { ru: 'Melanotan II (Меланотан 2)', en: 'Melanotan 2', ar: 'ميلانوتان 2' },
     description: {
       ru: 'Пептид глубокого загара без ожогов с эффектом подавления аппетита и стимуляции либидо.',
       en: 'Deep safe tanning peptide without sunburn. Upregulates melanin, enhances libido, and diminishes appetite.',
@@ -233,7 +227,6 @@ export const MEDICINES_DATA: Medicine[] = [
     id: 'ipamorelin',
     name: { ru: 'Ipamorelin 5mg', en: 'Ipamorelin 5mg', ar: 'إيباموريلين 5 ملغ' },
     category: 'antiaging',
-    activeSubstance: { ru: 'Ipamorelin (Ипаморелин)', en: 'Ipamorelin', ar: 'إيباموريلين' },
     description: {
       ru: 'Высокоселективный стимулятор выброса гормона роста для омоложения кожи и прироста мускулатуры.',
       en: 'Highly selective growth hormone secretagogue for skin collagen optimization and lean muscles.',

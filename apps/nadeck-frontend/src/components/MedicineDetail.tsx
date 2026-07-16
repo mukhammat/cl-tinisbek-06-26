@@ -125,10 +125,6 @@ export default function MedicineDetail({
 
             <div className="flex flex-col gap-1 text-xs text-slate-500 font-medium">
               <p>
-                <span className="text-slate-400 font-semibold">{t('activeSubstanceLabel')}:</span>{' '}
-                <span className="text-nadeck-700 font-bold">{medicine.activeSubstance[currentLang]}</span>
-              </p>
-              <p>
                 <span className="text-slate-400 font-semibold">
                   {currentLang === 'ru' ? 'Форма выпуска' : currentLang === 'ar' ? 'شكل الدواء' : 'Dosage Form'}:
                 </span>{' '}
