@@ -21,7 +21,8 @@ import {
   DollarSign,
   AlertTriangle,
   Languages,
-  Loader2
+  Loader2,
+  Upload
 } from 'lucide-react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
 import { motion, AnimatePresence } from 'motion/react';
@@ -66,6 +67,8 @@ export default function AdminPanel({
   const [locCategoryNames, setLocCategoryNames] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
   const [isTranslatingCategory, setIsTranslatingCategory] = useState(false);
   const [isTranslatingProduct, setIsTranslatingProduct] = useState(false);
+  const [isUploadingCategoryIcon, setIsUploadingCategoryIcon] = useState(false);
+  const [isUploadingProductImage, setIsUploadingProductImage] = useState(false);
 
   // Volumes list (mg + own price) available for the product, plus the pending "new volume" inputs
   const [volumesList, setVolumesList] = useState<{ mgPerUnit: number; price: number }[]>([]);
@@ -122,6 +125,25 @@ export default function AdminPanel({
       setErrorMsg(text);
       setTimeout(() => setErrorMsg(''), 4000);
     }
+  };
+
+  // Uploads a single image file to R2 (via the backend) and resolves with its public URL.
+  const uploadImage = (file: File, folder: 'categories' | 'medicines'): Promise<string> => {
+    const body = new FormData();
+    body.append('file', file);
+
+    return fetch(`/api/upload?folder=${folder}`, {
+      method: 'POST',
+      headers: authHeaders,
+      body,
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.message || 'Upload failed');
+      }
+      const data = await res.json();
+      return data.url as string;
+    });
   };
 
   // Toggle Stock Status
@@ -1043,29 +1065,58 @@ export default function AdminPanel({
 
               <div>
                 <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                  {currentLang === 'ru' ? 'Ссылка на иконку' : 'Icon URL'}
+                  {currentLang === 'ru' ? 'Иконка категории' : 'Category icon'}
                 </label>
                 <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-11 h-11 rounded-xl border border-slate-200 bg-slate-50 shrink-0 overflow-hidden">
-                    <img
-                      src={categoryForm.icon || defaultCategoryIcon}
-                      alt=""
-                      className="w-7 h-7 object-contain"
-                    />
+                  <span className="flex items-center justify-center w-14 h-14 rounded-2xl border border-slate-200 bg-slate-50 shrink-0 overflow-hidden">
+                    {isUploadingCategoryIcon ? (
+                      <Loader2 className="w-5 h-5 text-nadeck-600 animate-spin" />
+                    ) : (
+                      <img src={categoryForm.icon || defaultCategoryIcon} alt="" className="w-9 h-9 object-contain" />
+                    )}
                   </span>
+                  <label
+                    htmlFor="category-icon-upload"
+                    className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors ${
+                      isUploadingCategoryIcon ? 'opacity-50 pointer-events-none' : 'cursor-pointer'
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    {currentLang === 'ru' ? 'Загрузить иконку' : 'Upload icon'}
+                  </label>
                   <input
-                    id="category-icon-url"
-                    type="text"
-                    placeholder="https://..."
-                    value={categoryForm.icon || ''}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value || null })}
-                    className="flex-1 px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none font-mono"
+                    id="category-icon-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={isUploadingCategoryIcon}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (!file) return;
+                      setIsUploadingCategoryIcon(true);
+                      uploadImage(file, 'categories')
+                        .then((url) => setCategoryForm((prev) => ({ ...prev, icon: url })))
+                        .catch((err) => showFeedback('error', err.message || (currentLang === 'ru' ? 'Не удалось загрузить иконку' : 'Could not upload icon')))
+                        .finally(() => setIsUploadingCategoryIcon(false));
+                    }}
                   />
+                  {categoryForm.icon && (
+                    <button
+                      type="button"
+                      id="category-icon-remove"
+                      onClick={() => setCategoryForm({ ...categoryForm, icon: null })}
+                      title={currentLang === 'ru' ? 'Сбросить (использовать логотип по умолчанию)' : 'Reset (use the default logo)'}
+                      className="p-2 rounded-xl hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1.5">
                   {currentLang === 'ru'
-                    ? 'Если оставить пустым — используется логотип Nadeck красного цвета.'
-                    : 'If left empty, the red Nadeck logo mark is used by default.'}
+                    ? 'PNG/SVG/WEBP до 5 МБ. Если не загрузить — используется логотип Nadeck красного цвета.'
+                    : 'PNG/SVG/WEBP up to 5MB. If left empty, the red Nadeck logo mark is used by default.'}
                 </p>
               </div>
 
@@ -1299,17 +1350,46 @@ export default function AdminPanel({
               {/* Grid 2 Block: Images, Form, and Ratings */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5 animate-pulse">
-                    {currentLang === 'ru' ? 'Ссылка на Изображение' : 'Unsplash / Image URL'}
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+                    {currentLang === 'ru' ? 'Изображение товара' : 'Product image'}
                   </label>
-                  <input
-                    id="form-input-image"
-                    type="text"
-                    placeholder="https://..."
-                    value={formData.image || ''}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none font-mono"
-                  />
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center justify-center w-14 h-14 rounded-2xl border border-slate-200 bg-slate-50 shrink-0 overflow-hidden">
+                      {isUploadingProductImage ? (
+                        <Loader2 className="w-5 h-5 text-nadeck-600 animate-spin" />
+                      ) : formData.image ? (
+                        <img src={formData.image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <Upload className="w-5 h-5 text-slate-300" />
+                      )}
+                    </span>
+                    <label
+                      htmlFor="form-input-image-upload"
+                      className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors ${
+                        isUploadingProductImage ? 'opacity-50 pointer-events-none' : 'cursor-pointer'
+                      }`}
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      {currentLang === 'ru' ? 'Загрузить изображение' : 'Upload image'}
+                    </label>
+                    <input
+                      id="form-input-image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isUploadingProductImage}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        setIsUploadingProductImage(true);
+                        uploadImage(file, 'medicines')
+                          .then((url) => setFormData((prev) => ({ ...prev, image: url })))
+                          .catch((err) => showFeedback('error', err.message || (currentLang === 'ru' ? 'Не удалось загрузить изображение' : 'Could not upload image')))
+                          .finally(() => setIsUploadingProductImage(false));
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div>
