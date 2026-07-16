@@ -41,36 +41,40 @@ export default function App() {
   const [medicinesList, setMedicinesList] = useState<Medicine[]>([]);
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
 
-  const fetchMedicinesList = () => {
-    fetch('/api/medicines')
+  // Retries a couple of times with backoff before giving up - covers the brief window right
+  // after a deploy where the backend container is still restarting/migrating and a single
+  // failed request would otherwise strand the page on static fallback data until a manual refresh.
+  const fetchWithRetry = (url: string, onSuccess: (data: any) => void, attempt = 0) => {
+    fetch(url)
       .then((res) => {
-        if (!res.ok) throw new Error('Database loading failed');
+        if (!res.ok) throw new Error(`Request to ${url} failed`);
         return res.json();
       })
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setMedicinesList(data);
-        }
-      })
+      .then(onSuccess)
       .catch((err) => {
-        console.error('Error loading medicines from db, using fallback list:', err);
+        if (attempt < 5) {
+          const delay = Math.min(1000 * 2 ** attempt, 15000);
+          setTimeout(() => fetchWithRetry(url, onSuccess, attempt + 1), delay);
+        } else {
+          console.error(`Error loading ${url} after retries:`, err);
+        }
       });
   };
 
+  const fetchMedicinesList = () => {
+    fetchWithRetry('/api/medicines', (data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setMedicinesList(data);
+      }
+    });
+  };
+
   const fetchCategoriesList = () => {
-    fetch('/api/categories')
-      .then((res) => {
-        if (!res.ok) throw new Error('Category loading failed');
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setCategoriesList(data);
-        }
-      })
-      .catch((err) => {
-        console.error('Error loading categories from db:', err);
-      });
+    fetchWithRetry('/api/categories', (data) => {
+      if (Array.isArray(data)) {
+        setCategoriesList(data);
+      }
+    });
   };
 
   useEffect(() => {
