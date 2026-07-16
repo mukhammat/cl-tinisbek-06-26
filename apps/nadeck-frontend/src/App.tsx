@@ -19,6 +19,7 @@ import AdminPanel from './components/AdminPanel';
 import { ShoppingCart, Calculator, MapPin, Heart, Clock, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import nadeckIconWhite from './assets/nadeck-icon-white.png';
+import heroBannerBg from './assets/hero-banner-office.png';
 
 export default function App() {
   // Lang state (initializes from localStorage if available, fallback to Russian 'ru')
@@ -389,10 +390,13 @@ export default function App() {
             
             {/* Visual Hero Banner: show only on landing Catalog with NO query filters */}
             {activeTab === 'catalog' && !selectedMedicine && !searchQuery && (
-              <div 
-                className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-nadeck-700 to-slate-900 text-white p-6 sm:p-10 lg:p-12 shadow-xl border border-nadeck-800 flex flex-col md:flex-row items-center justify-between gap-6" 
+              <div
+                className="relative rounded-3xl overflow-hidden text-white p-6 sm:p-10 lg:p-12 border border-nadeck-800 flex flex-col md:flex-row items-center justify-between gap-6 bg-cover bg-center"
+                style={{ backgroundImage: `url(${heroBannerBg})` }}
                 id="hero-banner"
               >
+                {/* Darkening overlay for text legibility over the photo */}
+                <div className="absolute inset-0 bg-slate-950/20 pointer-events-none" />
                 {/* Visual back glow */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(20,184,166,0.15),transparent)] pointer-events-none" />
                 
@@ -401,18 +405,18 @@ export default function App() {
                     ✔ 3-язычный сервис: RU • EN • AR
                   </span> */}
                   <h2 id="hero-title" className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-                    {currentLang === 'ru' 
-                      ? 'Сертифицированные лекарства и точный расчет' 
+                    {currentLang === 'ru'
+                      ? 'Высококачественные пептиды и аминокислоты для здоровья и развития научного прогресса.'
                       : currentLang === 'ar'
-                      ? 'أدوية معتمدة وحاسبة جرعات دقيقة'
-                      : 'Certified Medicines & Precision Dosage Calculator'}
+                      ? 'ببتيدات وأحماض أمينية عالية الجودة من أجل الصحة وتطور التقدم العلمي.'
+                      : 'Premium-grade peptides and amino acids for health and the advancement of scientific progress.'}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
                     {currentLang === 'ru'
-                      ? 'Выбирайте необходимые препараты, рассчитывайте безопасную дозировку по весу на нашем калькуляторе и оформляйте быструю доставку до двери.'
+                      ? 'Быстрая доставка по всему Казахстану и странам СНГ — от 24 часов.'
                       : currentLang === 'ar'
-                      ? 'اكتشف الأدوية المعتمدة، واحسب الجرعة الآمنة بناءً على الوزن باستخدام الحاسبة، واطلب التوصيل السريع إلى باب منزلك.'
-                      : 'Explore certified medical items, safely calculate individual weight-based schedules, and place home delivery in minutes.'}
+                      ? 'توصيل سريع في جميع أنحاء كازاخستان ودول رابطة الدول المستقلة — خلال 24 ساعة.'
+                      : 'Fast delivery across Kazakhstan and the CIS countries — starting from 24 hours.'}
                   </p>
                   
                   <div className="pt-2 flex flex-wrap gap-2.5 sm:gap-4">
