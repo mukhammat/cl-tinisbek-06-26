@@ -86,20 +86,20 @@ export default function DosageCalculator({
     if (selectedMed) {
       setVialMg(selectedMed.mgPerUnit);
       
-      // Auto-set comfortable default dosage & dosing regimen based on peptide profile
+      // Auto-set comfortable default dosage based on peptide profile
       if (selectedMed.category === 'weightloss') {
         setDesiredMcg(250);
-        setFrequencyMode('weekly');
       } else if (selectedMed.id === 'bpc-157') {
         setDesiredMcg(250);
-        setFrequencyMode('twice_daily');
       } else if (selectedMed.id === 'tb-500') {
         setDesiredMcg(500);
-        setFrequencyMode('every_other_day');
       } else {
         setDesiredMcg(150);
-        setFrequencyMode('daily');
       }
+
+      // Default dosing schedule now comes from the admin-configured field,
+      // not from hardcoded category/id checks.
+      setFrequencyMode(selectedMed.dosageRules?.defaultFrequency || 'daily');
     }
   }, [selectedMedId, selectedMed]);
 

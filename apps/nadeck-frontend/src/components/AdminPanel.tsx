@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Medicine, Order, Language, SUPPORTED_LANGUAGES, Category } from '../types';
+import { Medicine, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency } from '../types';
 import {
   Package,
   ShoppingBag,
@@ -1431,7 +1431,7 @@ export default function AdminPanel({
                 <span className="text-[10px] uppercase font-bold text-nadeck-800 tracking-wider">
                   🧪 Настройки расчёта дозировок (Dosage Calculation Parameters)
                 </span>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">
                       {currentLang === 'ru' ? 'Активного вещества во флаконе (мг)' : 'Vial strength (mg)'}
@@ -1459,8 +1459,8 @@ export default function AdminPanel({
                       onChange={(e) => setFormData({
                         ...formData,
                         dosageRules: {
-                          mgPerKgPerDay: Number(e.target.value),
-                          defaultDailyDoses: formData.dosageRules?.defaultDailyDoses || 1
+                          ...(formData.dosageRules || { defaultDailyDoses: 1 }),
+                          mgPerKgPerDay: Number(e.target.value)
                         }
                       })}
                       className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
@@ -1479,12 +1479,35 @@ export default function AdminPanel({
                       onChange={(e) => setFormData({
                         ...formData,
                         dosageRules: {
-                          mgPerKgPerDay: formData.dosageRules?.mgPerKgPerDay || 0.005,
+                          ...(formData.dosageRules || { mgPerKgPerDay: 0.005 }),
                           defaultDailyDoses: Number(e.target.value)
                         }
                       })}
                       className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      {currentLang === 'ru' ? 'Частота приёма по умолчанию' : 'Default dosing frequency'}
+                    </label>
+                    <select
+                      id="form-input-rules-frequency"
+                      value={formData.dosageRules?.defaultFrequency || 'daily'}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        dosageRules: {
+                          ...(formData.dosageRules || { mgPerKgPerDay: 0.005, defaultDailyDoses: 1 }),
+                          defaultFrequency: e.target.value as DosageFrequency
+                        }
+                      })}
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none bg-white"
+                    >
+                      <option value="daily">{currentLang === 'ru' ? 'Раз в день' : 'Once daily'}</option>
+                      <option value="twice_daily">{currentLang === 'ru' ? '2 раза в день' : 'Twice daily'}</option>
+                      <option value="every_other_day">{currentLang === 'ru' ? 'Через день' : 'Every other day'}</option>
+                      <option value="weekly">{currentLang === 'ru' ? 'Раз в неделю' : 'Once weekly'}</option>
+                    </select>
                   </div>
                 </div>
 
