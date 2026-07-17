@@ -468,9 +468,9 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     ar: 'تسجيل جديد'
   },
   categoriesAll: {
-    ru: 'Все пептиды',
-    en: 'All Peptides',
-    ar: 'جميع الببتيدات'
+    ru: 'Все',
+    en: 'All',
+    ar: 'الجميع'
   },
   catWeightloss: {
     ru: 'Похудение & GLP-1',
