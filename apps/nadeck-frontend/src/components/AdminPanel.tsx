@@ -806,7 +806,7 @@ export default function AdminPanel({
                               {med.price.toLocaleString()} ₸
                             </span>
                             <span className="text-[10px] font-bold text-slate-400 block">
-                              ${med.priceUsd.toLocaleString()}
+                              ${(med.priceUsd || 0).toLocaleString()}
                             </span>
                           </td>
 
@@ -1586,7 +1586,7 @@ export default function AdminPanel({
                         id={`form-volume-chip-${vol.mgPerUnit}`}
                         className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full bg-white border border-nadeck-500/20 text-xs font-bold text-nadeck-800"
                       >
-                        {vol.mgPerUnit} мг — {vol.price.toLocaleString()} ₸ / ${vol.priceUsd.toLocaleString()}
+                        {vol.mgPerUnit} мг — {vol.price.toLocaleString()} ₸ / ${(vol.priceUsd || 0).toLocaleString()}
                         <button
                           id={`form-volume-remove-${vol.mgPerUnit}`}
                           type="button"
