@@ -299,7 +299,8 @@ export default function AdminPanel({
     setIsEditing(false);
   };
 
-  // Add a new volume (mg + its own KZT/USD price) option to the pending list, ignoring duplicates/invalid values
+  // Add a new volume (mg + its own KZT/USD price) to the pending list, or update the prices
+  // of an existing volume when the mg value already matches one in the list.
   const handleAddVolume = () => {
     const mg = Number(newVolumeMg);
     const price = Number(newVolumePrice);
@@ -316,13 +317,12 @@ export default function AdminPanel({
       showFeedback('error', currentLang === 'ru' ? 'Введите корректную цену в долларах для этого объёма' : 'Enter a valid USD price for this volume');
       return;
     }
-    if (volumesList.some((v) => v.mgPerUnit === mg)) {
-      setNewVolumeMg('');
-      setNewVolumePrice('');
-      setNewVolumePriceUsd('');
-      return;
+    const existingIndex = volumesList.findIndex((v) => v.mgPerUnit === mg);
+    if (existingIndex >= 0) {
+      setVolumesList(volumesList.map((v, i) => (i === existingIndex ? { mgPerUnit: mg, price, priceUsd } : v)));
+    } else {
+      setVolumesList([...volumesList, { mgPerUnit: mg, price, priceUsd }].sort((a, b) => a.mgPerUnit - b.mgPerUnit));
     }
-    setVolumesList([...volumesList, { mgPerUnit: mg, price, priceUsd }].sort((a, b) => a.mgPerUnit - b.mgPerUnit));
     setNewVolumeMg('');
     setNewVolumePrice('');
     setNewVolumePriceUsd('');
@@ -1574,6 +1574,11 @@ export default function AdminPanel({
                   <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
                     {currentLang === 'ru' ? 'Доступные объёмы и цены' : 'Available Volumes & Prices'}
                   </label>
+                  <p className="text-[10px] text-slate-400 mb-2">
+                    {currentLang === 'ru'
+                      ? 'Чтобы изменить цену уже добавленного объёма — введите тот же вес (мг) с новыми ценами и нажмите «Добавить».'
+                      : 'To change an existing volume’s price, re-enter the same mg value with new prices and press "Add".'}
+                  </p>
                   <div className="flex flex-wrap gap-2 mb-2" id="form-volumes-list">
                     {volumesList.length === 0 && (
                       <span className="text-[11px] text-slate-400">
