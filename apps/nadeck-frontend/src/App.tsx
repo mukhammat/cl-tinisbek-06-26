@@ -415,7 +415,7 @@ export default function App() {
                       ? 'ببتيدات وأحماض أمينية عالية الجودة من أجل الصحة وتطور التقدم العلمي.'
                       : 'Premium-grade peptides and amino acids for health and the advancement of scientific progress.'}
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+                  <p className="text-xs sm:text-sm text-white/90 font-medium leading-relaxed">
                     {currentLang === 'ru'
                       ? 'Быстрая доставка по всему Казахстану и странам СНГ — от 24 часов.'
                       : currentLang === 'ar'
