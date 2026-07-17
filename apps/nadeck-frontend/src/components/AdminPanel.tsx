@@ -767,7 +767,6 @@ export default function AdminPanel({
                         <th className="py-4 px-5">{currentLang === 'ru' ? 'Товар' : 'Product'}</th>
                         <th className="py-4 px-4">{currentLang === 'ru' ? 'Раздел' : 'Category'}</th>
                         <th className="py-4 px-4">{currentLang === 'ru' ? 'Фасовка' : 'Formulation'}</th>
-                        <th className="py-4 px-4">{currentLang === 'ru' ? 'Цена' : 'Price'}</th>
                         <th className="py-4 px-4 text-center">{currentLang === 'ru' ? 'Наличие' : 'Availability'}</th>
                         <th className="py-4 px-5 text-right">{currentLang === 'ru' ? 'Опции' : 'Actions'}</th>
                       </tr>
@@ -808,17 +807,7 @@ export default function AdminPanel({
                             </p>
                           </td>
 
-                          {/* Col 4 Price point */}
-                          <td className="py-4 px-4">
-                            <span className="text-xs font-black text-slate-900 block">
-                              {med.price.toLocaleString()} ₸
-                            </span>
-                            <span className="text-[10px] font-bold text-slate-400 block">
-                              ${(med.priceUsd || 0).toLocaleString()}
-                            </span>
-                          </td>
-
-                          {/* Col 5 Stock switcher ("что продана что нет") */}
+                          {/* Col 4 Stock switcher ("что продана что нет") */}
                           <td className="py-4 px-4 text-center">
                             <button
                               id={`toggle-stock-btn-${med.id}`}
@@ -834,7 +823,7 @@ export default function AdminPanel({
                             </button>
                           </td>
 
-                          {/* Col 6 Buttons */}
+                          {/* Col 5 Buttons */}
                           <td className="py-4 px-5 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <button
