@@ -395,7 +395,7 @@ export default function App() {
             {/* Visual Hero Banner: show only on landing Catalog with NO query filters */}
             {activeTab === 'catalog' && !selectedMedicine && !searchQuery && (
               <div
-                className="relative rounded-3xl overflow-hidden text-white p-6 sm:p-10 lg:p-12 border border-nadeck-800 flex flex-col md:flex-row items-center justify-between gap-6 bg-cover bg-center"
+                className="relative rounded-3xl overflow-hidden text-white p-6 sm:p-10 lg:p-12 border border-nadeck-800 flex flex-col md:flex-row items-center justify-between gap-6 bg-cover bg-center shadow-[0_20px_35px_-5px_rgba(15,23,42,0.15)]"
                 style={{ backgroundImage: `url(${heroBannerBg})` }}
                 id="hero-banner"
               >
@@ -427,7 +427,7 @@ export default function App() {
                     <button
                       id="hero-btn-calc"
                       onClick={handleHeroGoToCalculator}
-                      className="px-5 py-2.5 bg-nadeck-500 hover:bg-nadeck-400 text-slate-950 font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-lg shadow-nadeck-500/10 active:scale-95 transition-all"
+                      className="px-5 py-2.5 bg-nadeck-600 hover:bg-nadeck-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-lg shadow-nadeck-500/10 active:scale-95 transition-all"
                     >
                       <Calculator className="w-4 h-4" />
                       <span>{t('calcTab')}</span>
@@ -442,7 +442,7 @@ export default function App() {
                       <button
                         id="hero-btn-profile"
                         onClick={() => setAuthModalOpen(true)}
-                        className="px-4 py-2.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold text-xs rounded-xl transition-all"
+                        className="px-4 py-2.5 bg-white hover:bg-slate-50 rounded-xl font-bold text-xs text-nadeck-700 shadow-sm active:scale-95 transition-all duration-300"
                       >
                         {t('loginBtn')} / {t('registerBtn')}
                       </button>

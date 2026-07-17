@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  --radius-3xl: 1.25rem; /* 20px — was 1.5rem (24px), dialed back for a less "bubbly" look */
   --color-nadeck-50: #f1f9fe;
   --color-nadeck-100: #def0fc;
   --color-nadeck-200: #b9dff8;
