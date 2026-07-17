@@ -70,10 +70,11 @@ export default function AdminPanel({
   const [isUploadingCategoryIcon, setIsUploadingCategoryIcon] = useState(false);
   const [isUploadingProductImage, setIsUploadingProductImage] = useState(false);
 
-  // Volumes list (mg + own price) available for the product, plus the pending "new volume" inputs
-  const [volumesList, setVolumesList] = useState<{ mgPerUnit: number; price: number }[]>([]);
+  // Volumes list (mg + own price in KZT and USD) available for the product, plus the pending "new volume" inputs
+  const [volumesList, setVolumesList] = useState<{ mgPerUnit: number; price: number; priceUsd: number }[]>([]);
   const [newVolumeMg, setNewVolumeMg] = useState('');
   const [newVolumePrice, setNewVolumePrice] = useState('');
+  const [newVolumePriceUsd, setNewVolumePriceUsd] = useState('');
 
   // Localized form inputs
   const [locNames, setLocNames] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
@@ -221,6 +222,7 @@ export default function AdminPanel({
     setVolumesList([...(med.volumes || [])]);
     setNewVolumeMg('');
     setNewVolumePrice('');
+    setNewVolumePriceUsd('');
     setLocNames({ ...med.name });
     setLocDescs({ ...med.description });
     setLocFullDescs({ ...med.fullDescription });
@@ -247,6 +249,7 @@ export default function AdminPanel({
       id: '',
       category: defaultCategoryId,
       price: 15000,
+      priceUsd: 50,
       image: 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
       rating: 5.0,
       form: 'vial',
@@ -257,9 +260,10 @@ export default function AdminPanel({
       },
       inStock: true
     });
-    setVolumesList([{ mgPerUnit: 5, price: 15000 }]);
+    setVolumesList([{ mgPerUnit: 5, price: 15000, priceUsd: 50 }]);
     setNewVolumeMg('');
     setNewVolumePrice('');
+    setNewVolumePriceUsd('');
     setLocNames({ ru: '', en: '', ar: '' });
     setLocDescs({ ru: '', en: '', ar: '' });
     setLocFullDescs({ ru: '', en: '', ar: '' });
@@ -295,26 +299,33 @@ export default function AdminPanel({
     setIsEditing(false);
   };
 
-  // Add a new volume (mg + its own price) option to the pending list, ignoring duplicates/invalid values
+  // Add a new volume (mg + its own KZT/USD price) option to the pending list, ignoring duplicates/invalid values
   const handleAddVolume = () => {
     const mg = Number(newVolumeMg);
     const price = Number(newVolumePrice);
+    const priceUsd = Number(newVolumePriceUsd);
     if (!newVolumeMg || Number.isNaN(mg) || mg <= 0) {
       showFeedback('error', currentLang === 'ru' ? 'Введите корректное значение объёма (мг)' : 'Enter a valid volume value (mg)');
       return;
     }
     if (!newVolumePrice || Number.isNaN(price) || price < 0) {
-      showFeedback('error', currentLang === 'ru' ? 'Введите корректную цену для этого объёма' : 'Enter a valid price for this volume');
+      showFeedback('error', currentLang === 'ru' ? 'Введите корректную цену в тенге для этого объёма' : 'Enter a valid KZT price for this volume');
+      return;
+    }
+    if (!newVolumePriceUsd || Number.isNaN(priceUsd) || priceUsd < 0) {
+      showFeedback('error', currentLang === 'ru' ? 'Введите корректную цену в долларах для этого объёма' : 'Enter a valid USD price for this volume');
       return;
     }
     if (volumesList.some((v) => v.mgPerUnit === mg)) {
       setNewVolumeMg('');
       setNewVolumePrice('');
+      setNewVolumePriceUsd('');
       return;
     }
-    setVolumesList([...volumesList, { mgPerUnit: mg, price }].sort((a, b) => a.mgPerUnit - b.mgPerUnit));
+    setVolumesList([...volumesList, { mgPerUnit: mg, price, priceUsd }].sort((a, b) => a.mgPerUnit - b.mgPerUnit));
     setNewVolumeMg('');
     setNewVolumePrice('');
+    setNewVolumePriceUsd('');
   };
 
   const handleRemoveVolume = (mg: number) => {
@@ -364,6 +375,7 @@ export default function AdminPanel({
       },
       usage: locUsages,
       price: Number(formData.price || 10000),
+      priceUsd: Number(formData.priceUsd || 0),
       image: formData.image || 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
       rating: Number(formData.rating || 5.0),
       form: formData.form || 'vial',
@@ -565,6 +577,7 @@ export default function AdminPanel({
   // KPI Calculations
   const stats = {
     totalRevenue: orders.reduce((sum, o) => sum + o.totalPrice, 0),
+    totalRevenueUsd: orders.reduce((sum, o) => sum + (o.totalPriceUsd || 0), 0),
     orderCount: orders.length,
     pendingCount: orders.filter((o) => o.status === 'pending').length,
     totalMeds: allMedicines.length
@@ -611,6 +624,7 @@ export default function AdminPanel({
             <div>
               <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{currentLang === 'ru' ? 'ВЫРУЧКА СЕРВИСА' : 'TOTAL REVENUE'}</span>
               <span className="text-sm sm:text-base font-extrabold text-slate-900">{stats.totalRevenue.toLocaleString()} ₸</span>
+              <span className="block text-[10px] font-bold text-slate-400">${stats.totalRevenueUsd.toLocaleString()}</span>
             </div>
           </div>
 
@@ -788,8 +802,11 @@ export default function AdminPanel({
 
                           {/* Col 4 Price point */}
                           <td className="py-4 px-4">
-                            <span className="text-xs font-black text-slate-900">
+                            <span className="text-xs font-black text-slate-900 block">
                               {med.price.toLocaleString()} ₸
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400 block">
+                              ${med.priceUsd.toLocaleString()}
                             </span>
                           </td>
 
@@ -1223,6 +1240,7 @@ export default function AdminPanel({
                         <div className="text-right">
                           <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{currentLang === 'ru' ? 'ИТОГО К ОПЛАТЕ' : 'ORDER GRAND TOTAL'}</span>
                           <span className="text-base sm:text-lg font-black text-slate-900">{order.totalPrice.toLocaleString()} ₸</span>
+                          <span className="block text-[10px] font-bold text-slate-400">${(order.totalPriceUsd || 0).toLocaleString()}</span>
                           <span className="block text-[9px] text-nadeck-600 font-bold uppercase mt-0.5">{order.paymentMethod}</span>
                         </div>
 
@@ -1294,7 +1312,7 @@ export default function AdminPanel({
               <fieldset disabled={isTranslatingProduct} className="space-y-6">
 
               {/* Grid 1 Block: Basic numeric identifiers and pricing */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
                     {currentLang === 'ru' ? 'Уникальный ID (slug)' : 'Unique String ID (Slug)'} *
@@ -1342,6 +1360,22 @@ export default function AdminPanel({
                     placeholder="18500"
                     value={formData.price || ''}
                     onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none text-slate-900 font-extrabold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+                    {currentLang === 'ru' ? 'Стоимость в долларах ($)' : 'Price ($)'} *
+                  </label>
+                  <input
+                    id="form-input-price-usd"
+                    type="number"
+                    required
+                    min="0"
+                    placeholder="60"
+                    value={formData.priceUsd ?? ''}
+                    onChange={(e) => setFormData({ ...formData, priceUsd: Number(e.target.value) })}
                     className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none text-slate-900 font-extrabold"
                   />
                 </div>
@@ -1552,7 +1586,7 @@ export default function AdminPanel({
                         id={`form-volume-chip-${vol.mgPerUnit}`}
                         className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full bg-white border border-nadeck-500/20 text-xs font-bold text-nadeck-800"
                       >
-                        {vol.mgPerUnit} мг — {vol.price.toLocaleString()} ₸
+                        {vol.mgPerUnit} мг — {vol.price.toLocaleString()} ₸ / ${vol.priceUsd.toLocaleString()}
                         <button
                           id={`form-volume-remove-${vol.mgPerUnit}`}
                           type="button"
@@ -1590,6 +1624,22 @@ export default function AdminPanel({
                       placeholder={currentLang === 'ru' ? 'Цена, ₸' : 'Price, ₸'}
                       value={newVolumePrice}
                       onChange={(e) => setNewVolumePrice(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddVolume();
+                        }
+                      }}
+                      className="w-28 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
+                    />
+                    <input
+                      id="form-input-new-volume-price-usd"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder={currentLang === 'ru' ? 'Цена, $' : 'Price, $'}
+                      value={newVolumePriceUsd}
+                      onChange={(e) => setNewVolumePriceUsd(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();

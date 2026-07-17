@@ -72,6 +72,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
               contraindications: med.contraindications,
               usage: med.usage,
               price: Number(med.price),
+              priceUsd: Number(med.priceUsd || 0),
               image: med.image,
               rating: Number(med.rating),
               form: med.form,

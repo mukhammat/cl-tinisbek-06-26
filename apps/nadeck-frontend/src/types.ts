@@ -22,7 +22,8 @@ export type DosageFrequency = 'daily' | 'twice_daily' | 'every_other_day' | 'wee
 
 export interface MedicineVolume {
   mgPerUnit: number;
-  price: number; // this volume's own price, may differ from other volumes of the same product
+  price: number; // this volume's own price in KZT (₸), may differ from other volumes of the same product
+  priceUsd: number; // this volume's own price in USD ($), shown for non-Russian languages
 }
 
 export interface Category {
@@ -42,7 +43,8 @@ export interface Medicine {
   indications: Record<Language, string[]>;
   contraindications: Record<Language, string[]>;
   usage: Record<Language, string>;
-  price: number; // in Tengue or Dollars, let's support symbol toggle or local Currency ($ / ₸ / ₽). Let's use ₸ and $!
+  price: number; // price in KZT (tenge) - shown when the site language is Russian
+  priceUsd: number; // price in USD - shown for all other languages
   image: string;
   rating: number;
   form: 'tablet' | 'capsule' | 'liquid' | 'vial';
@@ -69,7 +71,8 @@ export interface CartItem {
   medicine: Medicine;
   quantity: number;
   selectedStrength?: number; // the chosen volume's mgPerUnit
-  unitPrice?: number; // resolved price for the chosen volume, falls back to medicine.price when absent
+  unitPrice?: number; // resolved KZT price for the chosen volume, falls back to medicine.price when absent
+  unitPriceUsd?: number; // resolved USD price for the chosen volume, falls back to medicine.priceUsd when absent
 }
 
 export interface User {
@@ -87,10 +90,12 @@ export interface Order {
   date: string;
   items: {
     medicineName: Record<Language, string>;
-    price: number;
+    price: number; // unit price in KZT
+    priceUsd: number; // unit price in USD
     quantity: number;
   }[];
-  totalPrice: number;
+  totalPrice: number; // grand total in KZT
+  totalPriceUsd: number; // grand total in USD
   address: {
     city: string;
     street: string;

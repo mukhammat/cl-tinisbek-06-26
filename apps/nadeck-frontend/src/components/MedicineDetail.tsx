@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { Medicine, Language, CartItem, User } from '../types';
 import { TRANSLATIONS } from '../data';
+import { resolvePrice } from '../currency';
 import { Star, ArrowLeft, Plus, Minus, ShoppingCart, ShieldAlert, Award, FileText, Check, BellRing, BellOff, ChevronDown } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -14,7 +15,7 @@ interface MedicineDetailProps {
   medicine: Medicine;
   onBack: () => void;
   cart: CartItem[];
-  onAddToCart: (medicine: Medicine, quantity: number, selectedVolume?: number, unitPrice?: number) => void;
+  onAddToCart: (medicine: Medicine, quantity: number, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => void;
   user: User;
   setAuthModalOpen: (open: boolean) => void;
   subscribedIds: string[];
@@ -35,7 +36,7 @@ export default function MedicineDetail({
   categoryLabelById
 }: MedicineDetailProps) {
   const [qty, setQty] = useState<number>(1);
-  const availableVolumes = medicine.volumes && medicine.volumes.length > 0 ? medicine.volumes : [{ mgPerUnit: medicine.mgPerUnit, price: medicine.price }];
+  const availableVolumes = medicine.volumes && medicine.volumes.length > 0 ? medicine.volumes : [{ mgPerUnit: medicine.mgPerUnit, price: medicine.price, priceUsd: medicine.priceUsd }];
   const [selectedVolume, setSelectedVolume] = useState<number>(medicine.mgPerUnit);
   const currentVolumeInfo = availableVolumes.find((v) => v.mgPerUnit === selectedVolume) || availableVolumes[0];
 
@@ -54,7 +55,7 @@ export default function MedicineDetail({
   const isSubscribed = subscribedIds.includes(medicine.id);
 
   const handleAddToCart = () => {
-    onAddToCart(medicine, qty, currentVolumeInfo.mgPerUnit, currentVolumeInfo.price);
+    onAddToCart(medicine, qty, currentVolumeInfo.mgPerUnit, currentVolumeInfo.price, currentVolumeInfo.priceUsd);
     setQty(1); // Reset local quantity
   };
 
@@ -175,7 +176,7 @@ export default function MedicineDetail({
             <div>
               <span className="text-xs text-slate-400 font-semibold uppercase">{t('priceLabel')}</span>
               <div id="detail-product-price" className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {currentVolumeInfo.price.toLocaleString()} {t('currencySymbol')}
+                {resolvePrice(currentVolumeInfo.price, currentVolumeInfo.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')}
               </div>
             </div>
 

@@ -304,7 +304,7 @@ export default function App() {
 
   // Cart operations. Different volumes of the same product carry different prices, so
   // cart lines are keyed by (medicine id + selected volume), not just the product id.
-  const handleAddToCart = (medicine: Medicine, qtyToAdd: number = 1, selectedVolume?: number, unitPrice?: number) => {
+  const handleAddToCart = (medicine: Medicine, qtyToAdd: number = 1, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => {
     setCart((prevCart) => {
       const existing = prevCart.find((item) => item.medicine.id === medicine.id && item.selectedStrength === selectedVolume);
       if (existing) {
@@ -314,7 +314,7 @@ export default function App() {
             : item
         );
       }
-      return [...prevCart, { medicine, quantity: qtyToAdd, selectedStrength: selectedVolume, unitPrice }];
+      return [...prevCart, { medicine, quantity: qtyToAdd, selectedStrength: selectedVolume, unitPrice, unitPriceUsd }];
     });
   };
 

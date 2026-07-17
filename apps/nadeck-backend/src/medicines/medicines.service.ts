@@ -18,12 +18,12 @@ export class MedicinesService {
     @Inject(NotificationsService) private readonly notificationsService: NotificationsService,
   ) {}
 
-  // Normalizes the admin-submitted volumes list into { mgPerUnit, price } pairs, dropping anything invalid
-  private normalizeVolumes(volumes: any): { mgPerUnit: number; price: number }[] {
+  // Normalizes the admin-submitted volumes list into { mgPerUnit, price, priceUsd } triples, dropping anything invalid
+  private normalizeVolumes(volumes: any): { mgPerUnit: number; price: number; priceUsd: number }[] {
     if (!Array.isArray(volumes)) return [];
     return volumes
-      .map((v) => ({ mgPerUnit: Number(v?.mgPerUnit), price: Number(v?.price) }))
-      .filter((v) => Number.isFinite(v.mgPerUnit) && v.mgPerUnit > 0 && Number.isFinite(v.price) && v.price >= 0);
+      .map((v) => ({ mgPerUnit: Number(v?.mgPerUnit), price: Number(v?.price), priceUsd: Number(v?.priceUsd || 0) }))
+      .filter((v) => Number.isFinite(v.mgPerUnit) && v.mgPerUnit > 0 && Number.isFinite(v.price) && v.price >= 0 && Number.isFinite(v.priceUsd) && v.priceUsd >= 0);
   }
 
   // Resolves the category id from either the current `categoryId` field or the legacy
@@ -50,6 +50,7 @@ export class MedicinesService {
         contraindications: m.contraindications,
         usage: m.usage,
         price: m.price,
+        priceUsd: m.priceUsd,
         image: m.image,
         rating: m.rating,
         form: m.form,
@@ -67,7 +68,7 @@ export class MedicinesService {
   async create(body: any) {
     const {
       id, name, categoryId, category, description, fullDescription,
-      indications, contraindications, usage, price, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
+      indications, contraindications, usage, price, priceUsd, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
     } = body;
 
     if (!id || !name || !price) {
@@ -88,6 +89,7 @@ export class MedicinesService {
           contraindications: contraindications || { ru: [], en: [], ar: [] },
           usage: usage || { ru: '', en: '', ar: '' },
           price: Number(price),
+          priceUsd: Number(priceUsd || 0),
           image: image || 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
           rating: Number(rating || 5.0),
           form: form || 'vial',
@@ -107,7 +109,7 @@ export class MedicinesService {
   async update(id: string, body: any) {
     const {
       name, categoryId, category, description, fullDescription,
-      indications, contraindications, usage, price, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
+      indications, contraindications, usage, price, priceUsd, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
     } = body;
 
     const resolvedCategoryId = await this.resolveCategoryId(categoryId, category);
@@ -127,6 +129,7 @@ export class MedicinesService {
           contraindications,
           usage,
           price: Number(price),
+          priceUsd: Number(priceUsd || 0),
           image,
           rating: Number(rating),
           form,

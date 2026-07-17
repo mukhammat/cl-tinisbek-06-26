@@ -65,11 +65,12 @@ export const MEDICINES_DATA: Medicine[] = [
       ar: 'للحقن تحت الجلد في البطن أو الفخذ مرة واحدة في الأسبوع. يوصى بجرعات علاجية تدريجية تبدأ من 0.25 ملغ في المرة لتجنب أي مشاكل.'
     },
     price: 18500,
+    priceUsd: 60,
     image: 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
     rating: 4.9,
     form: 'vial',
     mgPerUnit: 5,
-    volumes: [{ mgPerUnit: 2, price: 9000 }, { mgPerUnit: 5, price: 18500 }, { mgPerUnit: 10, price: 32000 }],
+    volumes: [{ mgPerUnit: 2, price: 9000, priceUsd: 30 }, { mgPerUnit: 5, price: 18500, priceUsd: 60 }, { mgPerUnit: 10, price: 32000, priceUsd: 105 }],
     dosageRules: {
       mgPerKgPerDay: 0.005,
       defaultDailyDoses: 1,
@@ -134,11 +135,12 @@ export const MEDICINES_DATA: Medicine[] = [
       ar: 'يحقن تحت الجلد في منطقة البطن أو الفخذ مرة واحدة أسبوعياً بقوة بداية 2.5 ملغ لأول 4 أسابيع ثم يمكن رفعها إلى 5 ملغ.'
     },
     price: 32000,
+    priceUsd: 105,
     image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&auto=format&fit=crop&q=80',
     rating: 4.95,
     form: 'vial',
     mgPerUnit: 10,
-    volumes: [{ mgPerUnit: 5, price: 19500 }, { mgPerUnit: 10, price: 32000 }, { mgPerUnit: 15, price: 42000 }],
+    volumes: [{ mgPerUnit: 5, price: 19500, priceUsd: 65 }, { mgPerUnit: 10, price: 32000, priceUsd: 105 }, { mgPerUnit: 15, price: 42000, priceUsd: 140 }],
     dosageRules: {
       mgPerKgPerDay: 0.007,
       defaultDailyDoses: 1,
@@ -200,11 +202,12 @@ export const MEDICINES_DATA: Medicine[] = [
       ar: 'يحقن تحت الجلد في البطن أو موضعياً قرب العضلة المصابة بجرعات تبدأ من 250 إلى 500 ميكروغرام مرتين باليوم لمدة 15-30 يوماً.'
     },
     price: 15000,
+    priceUsd: 50,
     image: 'https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=600&auto=format&fit=crop&q=80',
     rating: 4.88,
     form: 'vial',
     mgPerUnit: 5,
-    volumes: [{ mgPerUnit: 2, price: 8000 }, { mgPerUnit: 5, price: 15000 }, { mgPerUnit: 10, price: 26000 }],
+    volumes: [{ mgPerUnit: 2, price: 8000, priceUsd: 25 }, { mgPerUnit: 5, price: 15000, priceUsd: 50 }, { mgPerUnit: 10, price: 26000, priceUsd: 85 }],
     dosageRules: {
       mgPerKgPerDay: 0.004,
       defaultDailyDoses: 2,
@@ -266,11 +269,12 @@ export const MEDICINES_DATA: Medicine[] = [
       ar: 'حقن تحت الجلد في دهون البطن. مرحلة التحميل: 2-5 ملغ مرتين أسبوعياً لأول 4-6 أسابيع ثم للوقاية 2-4 ملغ كل 14 يوماً.'
     },
     price: 16500,
+    priceUsd: 55,
     image: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=600&auto=format&fit=crop&q=80',
     rating: 4.82,
     form: 'vial',
     mgPerUnit: 5,
-    volumes: [{ mgPerUnit: 2, price: 8500 }, { mgPerUnit: 5, price: 16500 }, { mgPerUnit: 10, price: 28000 }],
+    volumes: [{ mgPerUnit: 2, price: 8500, priceUsd: 30 }, { mgPerUnit: 5, price: 16500, priceUsd: 55 }, { mgPerUnit: 10, price: 28000, priceUsd: 95 }],
     dosageRules: {
       mgPerKgPerDay: 0.005,
       defaultDailyDoses: 1,
@@ -335,11 +339,12 @@ export const MEDICINES_DATA: Medicine[] = [
       ar: 'حقن تحت الجلد في منطقة البطن. مرحلة البناء والتراكم الحبيبي: 150-300 ميكروغرام يومياً، وللوقاية 300-500 ميكروغرام أسبوعياً.'
     },
     price: 14000,
+    priceUsd: 45,
     image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=600&auto=format&fit=crop&q=80',
     rating: 4.79,
     form: 'vial',
     mgPerUnit: 10,
-    volumes: [{ mgPerUnit: 5, price: 8500 }, { mgPerUnit: 10, price: 14000 }, { mgPerUnit: 15, price: 19500 }],
+    volumes: [{ mgPerUnit: 5, price: 8500, priceUsd: 30 }, { mgPerUnit: 10, price: 14000, priceUsd: 45 }, { mgPerUnit: 15, price: 19500, priceUsd: 65 }],
     dosageRules: {
       mgPerKgPerDay: 0.003,
       defaultDailyDoses: 1
@@ -400,11 +405,12 @@ export const MEDICINES_DATA: Medicine[] = [
       ar: 'يحقن تحت الجلد في منطقة البطن قبل النوم أو قبل التدريب بـ 40 دقيقة بجرعات 100-200 ميكروغرام على معدة فارغة.'
     },
     price: 12500,
+    priceUsd: 40,
     image: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=600&auto=format&fit=crop&q=80',
     rating: 4.85,
     form: 'vial',
     mgPerUnit: 5,
-    volumes: [{ mgPerUnit: 2, price: 6500 }, { mgPerUnit: 5, price: 12500 }, { mgPerUnit: 10, price: 21000 }],
+    volumes: [{ mgPerUnit: 2, price: 6500, priceUsd: 20 }, { mgPerUnit: 5, price: 12500, priceUsd: 40 }, { mgPerUnit: 10, price: 21000, priceUsd: 70 }],
     dosageRules: {
       mgPerKgPerDay: 0.003,
       defaultDailyDoses: 3

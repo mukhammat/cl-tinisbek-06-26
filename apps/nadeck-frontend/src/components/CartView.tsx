@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { Medicine, Language, CartItem, User, Order } from '../types';
 import { TRANSLATIONS } from '../data';
+import { resolvePrice, FREE_DELIVERY_THRESHOLD, DELIVERY_COST } from '../currency';
 import { Trash2, Phone, ShoppingBag, Plus, Minus, ArrowRight, MessageCircle, CheckCircle2, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -51,27 +52,37 @@ export default function CartView({
     return TRANSLATIONS[key]?.[currentLang] || key;
   };
 
-  const calculateSubtotal = () => {
-    return cart.reduce((total, item) => total + ((item.unitPrice ?? item.medicine.price) * item.quantity), 0);
-  };
+  const unitPriceKzt = (item: CartItem) => item.unitPrice ?? item.medicine.price;
+  const unitPriceUsdOf = (item: CartItem) => item.unitPriceUsd ?? item.medicine.priceUsd ?? 0;
+  const unitPriceDisplay = (item: CartItem) => resolvePrice(unitPriceKzt(item), unitPriceUsdOf(item), currentLang);
 
-  const isFreeDelivery = () => {
-    return calculateSubtotal() >= 15000;
-  };
+  const calculateSubtotalKzt = () => cart.reduce((total, item) => total + unitPriceKzt(item) * item.quantity, 0);
+  const calculateSubtotalUsd = () => cart.reduce((total, item) => total + unitPriceUsdOf(item) * item.quantity, 0);
+  const calculateSubtotal = () => resolvePrice(calculateSubtotalKzt(), calculateSubtotalUsd(), currentLang);
 
-  const getDeliveryCost = () => {
+  // Flat delivery fee kept in both currencies (not a straight FX conversion), so KZT and
+  // USD checkouts can each cross their own free-delivery threshold independently.
+  const getDeliveryCostForCurrency = (isKzt: boolean) => {
     if (cart.length === 0) return 0;
-    return isFreeDelivery() ? 0 : 1500; // 1500 Tenge flat delivery
+    const subtotal = isKzt ? calculateSubtotalKzt() : calculateSubtotalUsd();
+    const threshold = isKzt ? FREE_DELIVERY_THRESHOLD.kzt : FREE_DELIVERY_THRESHOLD.usd;
+    if (subtotal >= threshold) return 0;
+    return isKzt ? DELIVERY_COST.kzt : DELIVERY_COST.usd;
   };
 
-  const grandTotal = calculateSubtotal() + getDeliveryCost();
+  const getDeliveryCost = () => getDeliveryCostForCurrency(currentLang === 'ru');
+  const isFreeDelivery = () => getDeliveryCost() === 0;
+
+  const grandTotalKzt = calculateSubtotalKzt() + getDeliveryCostForCurrency(true);
+  const grandTotalUsd = calculateSubtotalUsd() + getDeliveryCostForCurrency(false);
+  const grandTotal = resolvePrice(grandTotalKzt, grandTotalUsd, currentLang);
 
   const buildWhatsAppMessage = () => {
     const heading = currentLang === 'ru' ? 'Новый заказ с сайта Nadeck' : currentLang === 'ar' ? 'طلب جديد من موقع Nadeck' : 'New order from Nadeck website';
     const lines = [heading, ''];
 
     cart.forEach((item) => {
-      const unitPrice = item.unitPrice ?? item.medicine.price;
+      const unitPrice = unitPriceDisplay(item);
       lines.push(`• ${item.medicine.name[currentLang]}${item.selectedStrength ? ` (${item.selectedStrength} мг)` : ''} x${item.quantity} — ${(unitPrice * item.quantity).toLocaleString()} ${t('currencySymbol')}`);
     });
 
@@ -107,10 +118,12 @@ export default function CartView({
       email: user.email || 'guest',
       items: cart.map(item => ({
         medicineName: item.medicine.name,
-        price: item.unitPrice ?? item.medicine.price,
+        price: unitPriceKzt(item),
+        priceUsd: unitPriceUsdOf(item),
         quantity: item.quantity
       })),
-      totalPrice: grandTotal,
+      totalPrice: grandTotalKzt,
+      totalPriceUsd: grandTotalUsd,
       address: {
         city,
         street,
@@ -192,7 +205,7 @@ export default function CartView({
           </div>
           <div className="flex justify-between font-extrabold text-sm text-slate-900 pt-2 border-t border-slate-200">
             <span>Итого к оплате:</span>
-            <span>{orderConfirmed.totalPrice.toLocaleString()} {t('currencySymbol')}</span>
+            <span>{resolvePrice(orderConfirmed.totalPrice, orderConfirmed.totalPriceUsd, currentLang).toLocaleString()} {t('currencySymbol')}</span>
           </div>
         </div>
 
@@ -239,7 +252,7 @@ export default function CartView({
           <div className="divide-y divide-slate-100" id="cart-items-list">
             {cart.map((item) => {
               const lineKey = `${item.medicine.id}-${item.selectedStrength ?? 'base'}`;
-              const unitPrice = item.unitPrice ?? item.medicine.price;
+              const unitPrice = unitPriceDisplay(item);
               return (
               <div
                 key={lineKey}

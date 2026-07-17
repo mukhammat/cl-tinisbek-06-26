@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Medicine, Language, CartItem, DosageFrequency } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
+import { resolvePrice } from '../currency';
 import { 
   Calculator, 
   AlertTriangle, 
@@ -25,7 +26,7 @@ import { motion } from 'motion/react';
 
 interface DosageCalculatorProps {
   currentLang: Language;
-  onAddToCart: (medicine: Medicine, quantity: number, selectedVolume?: number, unitPrice?: number) => void;
+  onAddToCart: (medicine: Medicine, quantity: number, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => void;
   cart: CartItem[];
   allMedicines?: Medicine[];
   searchQuery?: string;
@@ -122,7 +123,7 @@ export default function DosageCalculator({
   const totalInjectionsPerVial = desiredMcg > 0 ? Math.floor(totalMcgInVial / desiredMcg) : 0;
   
   // Cost per injection / single shot cost
-  const costPerInjection = totalInjectionsPerVial > 0 ? Math.round(selectedMed.price / totalInjectionsPerVial) : 0;
+  const costPerInjection = totalInjectionsPerVial > 0 ? Math.round(resolvePrice(selectedMed.price, selectedMed.priceUsd, currentLang) / totalInjectionsPerVial) : 0;
 
   // Lasting duration estimation based on chosen active frequency
   const calculateDuration = () => {
@@ -917,7 +918,7 @@ export default function DosageCalculator({
             <div>
               <span className="text-[10px] lg:text-xs text-slate-400 font-bold uppercase">{getLocalText('vialPriceLabel')}</span>
               <div id="calc-res-cost" className="text-2xl lg:text-3xl font-black text-slate-950 flex items-baseline gap-1">
-                <span>{selectedMed.price.toLocaleString()} {t('currencySymbol')}</span>
+                <span>{resolvePrice(selectedMed.price, selectedMed.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')}</span>
                 <span className="text-xs lg:text-sm text-slate-400 font-medium">/ {currentLang === 'ru' ? 'за флакон (vial)' : 'per active vial'}</span>
               </div>
             </div>

@@ -36,7 +36,8 @@ model Medicine {
   indications       Json // { ru: string[], en: string[], ar: string[] }
   contraindications Json // { ru: string[], en: string[], ar: string[] }
   usage             Json // { ru, en, ar }
-  price             Float
+  price             Float // KZT (tenge) price
+  priceUsd          Float @default(0) // USD price, shown for non-Russian site languages
   image             String
   rating            Float
   form              String
@@ -51,8 +52,9 @@ model Order {
   id            String @id
   date          String
   userEmail     String
-  items         Json // [{ medicineName, price, quantity }]
-  totalPrice    Float
+  items         Json // [{ medicineName, price, priceUsd, quantity }]
+  totalPrice    Float // KZT grand total
+  totalPriceUsd Float @default(0) // USD grand total
   address       Json // { city, street, apartment, postalCode }
   paymentMethod String
   status        String @default("pending")

@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { Medicine, Language, CartItem, User } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
+import { resolvePrice } from '../currency';
 import { Star, Check, Plus, ShoppingCart, HelpCircle, BellRing, BellOff, ChevronDown, LayoutGrid } from 'lucide-react';
 import { motion } from 'motion/react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
@@ -15,7 +16,7 @@ interface MedicineGridProps {
   currentLang: Language;
   onSelectMedicine: (medicine: Medicine) => void;
   cart: CartItem[];
-  onAddToCart: (medicine: Medicine, quantity?: number, selectedVolume?: number, unitPrice?: number) => void;
+  onAddToCart: (medicine: Medicine, quantity?: number, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => void;
   searchQuery: string;
   allMedicines?: Medicine[];
   user: User;
@@ -127,7 +128,7 @@ export default function MedicineGrid({
           {filteredMedicines.map((med, index) => {
             const isOutOfStock = med.inStock === false;
             const isSubscribed = subscribedIds.includes(med.id);
-            const availableVolumes = med.volumes && med.volumes.length > 0 ? med.volumes : [{ mgPerUnit: med.mgPerUnit, price: med.price }];
+            const availableVolumes = med.volumes && med.volumes.length > 0 ? med.volumes : [{ mgPerUnit: med.mgPerUnit, price: med.price, priceUsd: med.priceUsd }];
             const currentVolume = selectedVolumes[med.id] ?? med.mgPerUnit;
             const currentVolumeInfo = availableVolumes.find((v) => v.mgPerUnit === currentVolume) || availableVolumes[0];
             const cartQty = cart.find(item => item.medicine.id === med.id && item.selectedStrength === currentVolumeInfo.mgPerUnit)?.quantity || 0;
@@ -205,7 +206,7 @@ export default function MedicineGrid({
                   {/* Price and Volume selector */}
                   <div className="flex items-end justify-between gap-3">
                     <span id={`price-${med.id}`} className="text-xl font-black text-slate-900">
-                      {currentVolumeInfo.price.toLocaleString()} {t('currencySymbol')}
+                      {resolvePrice(currentVolumeInfo.price, currentVolumeInfo.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')}
                     </span>
                     <div className="space-y-1.5 w-28 shrink-0">
                       <span className="block text-[10px] text-slate-400 font-medium text-right">{t('volumeLabel')}</span>
@@ -265,7 +266,7 @@ export default function MedicineGrid({
                     ) : (
                       <button
                         id={`add-to-cart-btn-${med.id}`}
-                        onClick={() => onAddToCart(med, 1, currentVolumeInfo.mgPerUnit, currentVolumeInfo.price)}
+                        onClick={() => onAddToCart(med, 1, currentVolumeInfo.mgPerUnit, currentVolumeInfo.price, currentVolumeInfo.priceUsd)}
                         className={`flex-1 px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-300 ${
                           inCart
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100/60'
