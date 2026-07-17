@@ -227,7 +227,7 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
       {/* Telegram Button */}
       <motion.a
         id="btn-telegram-launcher"
-        href="https://t.me/nadeck"
+        href="https://t.me/+iN29UxUYCsM4ZTNk"
         target="_blank"
         rel="noopener noreferrer"
         whileHover={{ scale: 1.05 }}
