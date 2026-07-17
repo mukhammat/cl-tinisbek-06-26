@@ -248,8 +248,6 @@ export default function AdminPanel({
     setFormData({
       id: '',
       category: defaultCategoryId,
-      price: 15000,
-      priceUsd: 50,
       image: 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
       rating: 5.0,
       form: 'vial',
@@ -348,6 +346,16 @@ export default function AdminPanel({
       return;
     }
 
+    if (volumesList.length === 0) {
+      showFeedback('error', currentLang === 'ru' ? 'Добавьте хотя бы один объём с ценой в тенге и долларах' : 'Add at least one volume with a KZT/USD price');
+      return;
+    }
+
+    // The card's headline price always mirrors its primary volume (the mg strength set
+    // below in Dosage Calculation Parameters), so price never drifts from what's actually sold.
+    const primaryMgPerUnit = Number(formData.mgPerUnit || volumesList[0].mgPerUnit);
+    const primaryVolume = volumesList.find((v) => v.mgPerUnit === primaryMgPerUnit) || volumesList[0];
+
     const nameVal = { ...locNames };
     // Make sure we have English name as fallback
     if (!nameVal.en && nameVal.ru) nameVal.en = nameVal.ru;
@@ -374,8 +382,8 @@ export default function AdminPanel({
         ar: parseList(locContras.ar)
       },
       usage: locUsages,
-      price: Number(formData.price || 10000),
-      priceUsd: Number(formData.priceUsd || 0),
+      price: primaryVolume.price,
+      priceUsd: primaryVolume.priceUsd,
       image: formData.image || 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
       rating: Number(formData.rating || 5.0),
       form: formData.form || 'vial',
@@ -1311,8 +1319,11 @@ export default function AdminPanel({
 
               <fieldset disabled={isTranslatingProduct} className="space-y-6">
 
-              {/* Grid 1 Block: Basic numeric identifiers and pricing */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+              {/* Grid 1 Block: Basic identifiers. Pricing lives only in the volumes manager
+                  below - price is tied to a specific mg strength, so a separate top-level
+                  price field would just invite the KZT/USD figures to fall out of sync with
+                  the actual volume being sold. */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
                     {currentLang === 'ru' ? 'Уникальный ID (slug)' : 'Unique String ID (Slug)'} *
@@ -1346,38 +1357,6 @@ export default function AdminPanel({
                       </option>
                     ))}
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                    {currentLang === 'ru' ? 'Стоимость в тенге (₸)' : 'Price (₸)'} *
-                  </label>
-                  <input
-                    id="form-input-price"
-                    type="number"
-                    required
-                    min="0"
-                    placeholder="18500"
-                    value={formData.price || ''}
-                    onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none text-slate-900 font-extrabold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                    {currentLang === 'ru' ? 'Стоимость в долларах ($)' : 'Price ($)'} *
-                  </label>
-                  <input
-                    id="form-input-price-usd"
-                    type="number"
-                    required
-                    min="0"
-                    placeholder="60"
-                    value={formData.priceUsd ?? ''}
-                    onChange={(e) => setFormData({ ...formData, priceUsd: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none text-slate-900 font-extrabold"
-                  />
                 </div>
               </div>
 
