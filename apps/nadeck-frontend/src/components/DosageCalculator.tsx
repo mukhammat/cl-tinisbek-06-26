@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Medicine, Language, CartItem } from '../types';
+import { Medicine, Language, CartItem, DosageFrequency } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
 import { 
   Calculator, 
@@ -69,8 +69,8 @@ export default function DosageCalculator({
   const [syringeType, setSyringeType] = useState<100 | 50 | 30>(100); // 100 U (1ml), 50 U (0.5ml), 30 U (0.3ml)
   const [desiredMcg, setDesiredMcg] = useState<number>(250);
   
-  // Custom user schedule choice: 'daily' | 'twice_daily' | 'every_other_day' | 'weekly'
-  const [frequencyMode, setFrequencyMode] = useState<'daily' | 'twice_daily' | 'every_other_day' | 'weekly'>('weekly');
+  // Custom user schedule choice: 'daily' | 'twice_daily' | 'every_other_day' | 'weekly' | 'custom'
+  const [frequencyMode, setFrequencyMode] = useState<DosageFrequency>('weekly');
 
   // Feedback status
   const [successMsg, setSuccessMsg] = useState<boolean>(false);
@@ -137,6 +137,8 @@ export default function DosageCalculator({
         return { count: totalInjectionsPerVial * 2, key: 'daysLabel' };
       case 'weekly':
         return { count: totalInjectionsPerVial, key: 'weeksLabel' };
+      case 'custom':
+        return { count: totalInjectionsPerVial * (selectedMed.dosageRules?.customIntervalDays || 1), key: 'daysLabel' };
       default:
         return { count: totalInjectionsPerVial, key: 'daysLabel' };
     }
@@ -694,7 +696,15 @@ export default function DosageCalculator({
                 { value: 'weekly', text: getLocalText('frequencyOnceWeekly') },
                 { value: 'daily', text: getLocalText('frequencyDaily') },
                 { value: 'twice_daily', text: getLocalText('frequencyTwiceDaily') },
-                { value: 'every_other_day', text: getLocalText('frequencyEveryOtherDay') }
+                { value: 'every_other_day', text: getLocalText('frequencyEveryOtherDay') },
+                ...(selectedMed.dosageRules?.defaultFrequency === 'custom' && selectedMed.dosageRules?.customIntervalDays
+                  ? [{
+                      value: 'custom',
+                      text: currentLang === 'ru'
+                        ? `Раз в ${selectedMed.dosageRules.customIntervalDays} дн. (рекомендовано)`
+                        : `Every ${selectedMed.dosageRules.customIntervalDays} days (recommended)`
+                    }]
+                  : [])
               ].map((item) => (
                 <label 
                   key={item.value} 

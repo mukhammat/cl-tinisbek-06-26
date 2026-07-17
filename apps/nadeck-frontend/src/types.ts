@@ -18,7 +18,7 @@ export const SUPPORTED_LANGUAGES: LanguageConfig[] = [
   { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' }
 ];
 
-export type DosageFrequency = 'daily' | 'twice_daily' | 'every_other_day' | 'weekly';
+export type DosageFrequency = 'daily' | 'twice_daily' | 'every_other_day' | 'weekly' | 'custom';
 
 export interface MedicineVolume {
   mgPerUnit: number;
@@ -52,6 +52,7 @@ export interface Medicine {
     mgPerKgPerDay: number; // Dosage factor
     defaultDailyDoses: number; // times per day
     defaultFrequency?: DosageFrequency; // administration schedule shown by default in the calculator
+    customIntervalDays?: number; // only meaningful when defaultFrequency === 'custom': e.g. 20 for "once every 20 days"
   };
   inStock?: boolean;
 }

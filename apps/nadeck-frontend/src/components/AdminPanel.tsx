@@ -1467,25 +1467,48 @@ export default function AdminPanel({
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      {currentLang === 'ru' ? 'Раз в день (базово)' : 'Default administrations / day'}
-                    </label>
-                    <input
-                      id="form-input-rules-doses"
-                      type="number"
-                      placeholder="1"
-                      value={formData.dosageRules?.defaultDailyDoses || 1}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        dosageRules: {
-                          ...(formData.dosageRules || { mgPerKgPerDay: 0.005 }),
-                          defaultDailyDoses: Number(e.target.value)
-                        }
-                      })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
-                    />
-                  </div>
+                  {formData.dosageRules?.defaultFrequency === 'custom' ? (
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        {currentLang === 'ru' ? 'Раз в сколько дней' : 'Interval (every N days)'}
+                      </label>
+                      <input
+                        id="form-input-rules-interval"
+                        type="number"
+                        min="1"
+                        placeholder="20"
+                        value={formData.dosageRules?.customIntervalDays || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          dosageRules: {
+                            ...(formData.dosageRules || { mgPerKgPerDay: 0.005, defaultDailyDoses: 1 }),
+                            customIntervalDays: Number(e.target.value)
+                          }
+                        })}
+                        className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        {currentLang === 'ru' ? 'Раз в день (базово)' : 'Default administrations / day'}
+                      </label>
+                      <input
+                        id="form-input-rules-doses"
+                        type="number"
+                        placeholder="1"
+                        value={formData.dosageRules?.defaultDailyDoses || 1}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          dosageRules: {
+                            ...(formData.dosageRules || { mgPerKgPerDay: 0.005 }),
+                            defaultDailyDoses: Number(e.target.value)
+                          }
+                        })}
+                        className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -1507,6 +1530,7 @@ export default function AdminPanel({
                       <option value="twice_daily">{currentLang === 'ru' ? '2 раза в день' : 'Twice daily'}</option>
                       <option value="every_other_day">{currentLang === 'ru' ? 'Через день' : 'Every other day'}</option>
                       <option value="weekly">{currentLang === 'ru' ? 'Раз в неделю' : 'Once weekly'}</option>
+                      <option value="custom">{currentLang === 'ru' ? 'Другое (задать интервал)' : 'Other (custom interval)'}</option>
                     </select>
                   </div>
                 </div>
