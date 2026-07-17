@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Medicine, Language, CartItem, DosageFrequency } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
-import { resolvePrice } from '../currency';
+import { resolvePrice, getPrimaryVolume } from '../currency';
 import { 
   Calculator, 
   AlertTriangle, 
@@ -81,6 +81,7 @@ export default function DosageCalculator({
   };
 
   const selectedMed = activeMedicines.find((m) => m.id === selectedMedId) || activeMedicines[0];
+  const selectedMedVolume = getPrimaryVolume(selectedMed);
 
   // Sync default vial weight (mg) and optimal frequency when selected medicine changes
   useEffect(() => {
@@ -123,7 +124,7 @@ export default function DosageCalculator({
   const totalInjectionsPerVial = desiredMcg > 0 ? Math.floor(totalMcgInVial / desiredMcg) : 0;
   
   // Cost per injection / single shot cost
-  const costPerInjection = totalInjectionsPerVial > 0 ? Math.round(resolvePrice(selectedMed.price, selectedMed.priceUsd, currentLang) / totalInjectionsPerVial) : 0;
+  const costPerInjection = totalInjectionsPerVial > 0 ? Math.round(resolvePrice(selectedMedVolume.price, selectedMedVolume.priceUsd, currentLang) / totalInjectionsPerVial) : 0;
 
   // Lasting duration estimation based on chosen active frequency
   const calculateDuration = () => {
@@ -918,7 +919,7 @@ export default function DosageCalculator({
             <div>
               <span className="text-[10px] lg:text-xs text-slate-400 font-bold uppercase">{getLocalText('vialPriceLabel')}</span>
               <div id="calc-res-cost" className="text-2xl lg:text-3xl font-black text-slate-950 flex items-baseline gap-1">
-                <span>{resolvePrice(selectedMed.price, selectedMed.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')}</span>
+                <span>{resolvePrice(selectedMedVolume.price, selectedMedVolume.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')}</span>
                 <span className="text-xs lg:text-sm text-slate-400 font-medium">/ {currentLang === 'ru' ? 'за флакон (vial)' : 'per active vial'}</span>
               </div>
             </div>

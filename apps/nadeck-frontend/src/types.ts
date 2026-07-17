@@ -43,13 +43,11 @@ export interface Medicine {
   indications: Record<Language, string[]>;
   contraindications: Record<Language, string[]>;
   usage: Record<Language, string>;
-  price: number; // price in KZT (tenge) - shown when the site language is Russian
-  priceUsd: number; // price in USD - shown for all other languages
   image: string;
   rating: number;
   form: 'tablet' | 'capsule' | 'liquid' | 'vial';
   mgPerUnit: number; // e.g. 5 for 5mg vial (default/primary volume)
-  volumes: MedicineVolume[]; // all available package volumes, each with its own price
+  volumes: MedicineVolume[]; // all available package volumes; the price lives here, per volume (see getPrimaryVolume)
   dosageRules: {
     mgPerKgPerDay: number; // Dosage factor
     defaultDailyDoses: number; // times per day
@@ -71,8 +69,8 @@ export interface CartItem {
   medicine: Medicine;
   quantity: number;
   selectedStrength?: number; // the chosen volume's mgPerUnit
-  unitPrice?: number; // resolved KZT price for the chosen volume, falls back to medicine.price when absent
-  unitPriceUsd?: number; // resolved USD price for the chosen volume, falls back to medicine.priceUsd when absent
+  unitPrice?: number; // resolved KZT price for the chosen volume, falls back to its primary volume's price when absent
+  unitPriceUsd?: number; // resolved USD price for the chosen volume, falls back to its primary volume's price when absent
 }
 
 export interface User {

@@ -351,11 +351,6 @@ export default function AdminPanel({
       return;
     }
 
-    // The card's headline price always mirrors its primary volume (the mg strength set
-    // below in Dosage Calculation Parameters), so price never drifts from what's actually sold.
-    const primaryMgPerUnit = Number(formData.mgPerUnit || volumesList[0].mgPerUnit);
-    const primaryVolume = volumesList.find((v) => v.mgPerUnit === primaryMgPerUnit) || volumesList[0];
-
     const nameVal = { ...locNames };
     // Make sure we have English name as fallback
     if (!nameVal.en && nameVal.ru) nameVal.en = nameVal.ru;
@@ -382,8 +377,6 @@ export default function AdminPanel({
         ar: parseList(locContras.ar)
       },
       usage: locUsages,
-      price: primaryVolume.price,
-      priceUsd: primaryVolume.priceUsd,
       image: formData.image || 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
       rating: Number(formData.rating || 5.0),
       form: formData.form || 'vial',

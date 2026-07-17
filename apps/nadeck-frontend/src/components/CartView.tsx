@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { Medicine, Language, CartItem, User, Order } from '../types';
 import { TRANSLATIONS } from '../data';
-import { resolvePrice, FREE_DELIVERY_THRESHOLD, DELIVERY_COST } from '../currency';
+import { resolvePrice, getPrimaryVolume, FREE_DELIVERY_THRESHOLD, DELIVERY_COST } from '../currency';
 import { Trash2, Phone, ShoppingBag, Plus, Minus, ArrowRight, MessageCircle, CheckCircle2, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -52,8 +52,8 @@ export default function CartView({
     return TRANSLATIONS[key]?.[currentLang] || key;
   };
 
-  const unitPriceKzt = (item: CartItem) => item.unitPrice ?? item.medicine.price;
-  const unitPriceUsdOf = (item: CartItem) => item.unitPriceUsd ?? item.medicine.priceUsd ?? 0;
+  const unitPriceKzt = (item: CartItem) => item.unitPrice ?? getPrimaryVolume(item.medicine).price;
+  const unitPriceUsdOf = (item: CartItem) => item.unitPriceUsd ?? getPrimaryVolume(item.medicine).priceUsd ?? 0;
   const unitPriceDisplay = (item: CartItem) => resolvePrice(unitPriceKzt(item), unitPriceUsdOf(item), currentLang);
 
   const calculateSubtotalKzt = () => cart.reduce((total, item) => total + unitPriceKzt(item) * item.quantity, 0);

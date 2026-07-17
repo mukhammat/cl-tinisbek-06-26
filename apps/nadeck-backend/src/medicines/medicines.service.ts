@@ -49,8 +49,6 @@ export class MedicinesService {
         indications: m.indications,
         contraindications: m.contraindications,
         usage: m.usage,
-        price: m.price,
-        priceUsd: m.priceUsd,
         image: m.image,
         rating: m.rating,
         form: m.form,
@@ -68,11 +66,16 @@ export class MedicinesService {
   async create(body: any) {
     const {
       id, name, categoryId, category, description, fullDescription,
-      indications, contraindications, usage, price, priceUsd, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
+      indications, contraindications, usage, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
     } = body;
 
-    if (!id || !name || !price) {
+    if (!id || !name) {
       throw new BadRequestException('Missing required medicine info');
+    }
+
+    const normalizedVolumes = this.normalizeVolumes(volumes);
+    if (normalizedVolumes.length === 0) {
+      throw new BadRequestException('At least one priced volume is required');
     }
 
     const resolvedCategoryId = await this.resolveCategoryId(categoryId, category);
@@ -88,13 +91,11 @@ export class MedicinesService {
           indications: indications || { ru: [], en: [], ar: [] },
           contraindications: contraindications || { ru: [], en: [], ar: [] },
           usage: usage || { ru: '', en: '', ar: '' },
-          price: Number(price),
-          priceUsd: Number(priceUsd || 0),
           image: image || 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
           rating: Number(rating || 5.0),
           form: form || 'vial',
           mgPerUnit: Number(mgPerUnit || 5),
-          volumes: this.normalizeVolumes(volumes),
+          volumes: normalizedVolumes,
           dosageRules: dosageRules || { mgPerKgPerDay: 0.005, defaultDailyDoses: 1 },
           inStock: inStock === false ? 0 : 1,
         }
@@ -109,8 +110,13 @@ export class MedicinesService {
   async update(id: string, body: any) {
     const {
       name, categoryId, category, description, fullDescription,
-      indications, contraindications, usage, price, priceUsd, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
+      indications, contraindications, usage, image, rating, form, mgPerUnit, volumes, dosageRules, inStock
     } = body;
+
+    const normalizedVolumes = this.normalizeVolumes(volumes);
+    if (normalizedVolumes.length === 0) {
+      throw new BadRequestException('At least one priced volume is required');
+    }
 
     const resolvedCategoryId = await this.resolveCategoryId(categoryId, category);
 
@@ -128,13 +134,11 @@ export class MedicinesService {
           indications,
           contraindications,
           usage,
-          price: Number(price),
-          priceUsd: Number(priceUsd || 0),
           image,
           rating: Number(rating),
           form,
           mgPerUnit: Number(mgPerUnit),
-          volumes: this.normalizeVolumes(volumes),
+          volumes: normalizedVolumes,
           dosageRules,
           inStock: newInStock,
         }

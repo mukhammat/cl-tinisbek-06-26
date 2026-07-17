@@ -64,8 +64,6 @@ export const MEDICINES_DATA: Medicine[] = [
       en: 'Subcutaneous injection into the abdomen or thigh adipose tissue once weekly. Recommended starter dose of 0.25mg per week to minimize initial gastrointestinal adaptation side effects.',
       ar: 'للحقن تحت الجلد في البطن أو الفخذ مرة واحدة في الأسبوع. يوصى بجرعات علاجية تدريجية تبدأ من 0.25 ملغ في المرة لتجنب أي مشاكل.'
     },
-    price: 18500,
-    priceUsd: 60,
     image: 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
     rating: 4.9,
     form: 'vial',
@@ -134,8 +132,6 @@ export const MEDICINES_DATA: Medicine[] = [
       en: 'Subcutaneously in the abdomen or thigh once weekly. Initiated with 2.5mg once weekly for the first 4 weeks, then escalated to 5mg or more based on clinical tolerance.',
       ar: 'يحقن تحت الجلد في منطقة البطن أو الفخذ مرة واحدة أسبوعياً بقوة بداية 2.5 ملغ لأول 4 أسابيع ثم يمكن رفعها إلى 5 ملغ.'
     },
-    price: 32000,
-    priceUsd: 105,
     image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&auto=format&fit=crop&q=80',
     rating: 4.95,
     form: 'vial',
@@ -201,8 +197,6 @@ export const MEDICINES_DATA: Medicine[] = [
       en: 'Subcutaneously in abdomen fat or locally intramuscularly close to injury site. Standard systemic dosing is 250 mcg to 500 mcg twice daily for 15-30 continuous days.',
       ar: 'يحقن تحت الجلد في البطن أو موضعياً قرب العضلة المصابة بجرعات تبدأ من 250 إلى 500 ميكروغرام مرتين باليوم لمدة 15-30 يوماً.'
     },
-    price: 15000,
-    priceUsd: 50,
     image: 'https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=600&auto=format&fit=crop&q=80',
     rating: 4.88,
     form: 'vial',
@@ -268,8 +262,6 @@ export const MEDICINES_DATA: Medicine[] = [
       en: 'Subcutaneously in abdominal fat. Loading phase: 2-5mg twice weekly during first 4-6 weeks. Maintenance phase: 2-4mg single injection every 14 days.',
       ar: 'حقن تحت الجلد في دهون البطن. مرحلة التحميل: 2-5 ملغ مرتين أسبوعياً لأول 4-6 أسابيع ثم للوقاية 2-4 ملغ كل 14 يوماً.'
     },
-    price: 16500,
-    priceUsd: 55,
     image: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=600&auto=format&fit=crop&q=80',
     rating: 4.82,
     form: 'vial',
@@ -338,8 +330,6 @@ export const MEDICINES_DATA: Medicine[] = [
       en: 'Subcutaneously in the abdomen. Regimen includes: Loading phase (150-300 mcg daily until target shade is reached) and Maintenance phase (300-500 mcg once weekly before tanning exposure).',
       ar: 'حقن تحت الجلد في منطقة البطن. مرحلة البناء والتراكم الحبيبي: 150-300 ميكروغرام يومياً، وللوقاية 300-500 ميكروغرام أسبوعياً.'
     },
-    price: 14000,
-    priceUsd: 45,
     image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=600&auto=format&fit=crop&q=80',
     rating: 4.79,
     form: 'vial',
@@ -404,8 +394,6 @@ export const MEDICINES_DATA: Medicine[] = [
       en: 'Subcutaneously in abdominal fat. Taken prior to sleep or 40 minutes before workout sessions. Standard dosage is 100 mcg to 200 mcg up to three times per day on empty stomach.',
       ar: 'يحقن تحت الجلد في منطقة البطن قبل النوم أو قبل التدريب بـ 40 دقيقة بجرعات 100-200 ميكروغرام على معدة فارغة.'
     },
-    price: 12500,
-    priceUsd: 40,
     image: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=600&auto=format&fit=crop&q=80',
     rating: 4.85,
     form: 'vial',

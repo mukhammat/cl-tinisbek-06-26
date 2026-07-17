@@ -36,13 +36,12 @@ model Medicine {
   indications       Json // { ru: string[], en: string[], ar: string[] }
   contraindications Json // { ru: string[], en: string[], ar: string[] }
   usage             Json // { ru, en, ar }
-  price             Float // KZT (tenge) price
-  priceUsd          Float @default(0) // USD price, shown for non-Russian site languages
   image             String
   rating            Float
   form              String
   mgPerUnit         Float
-  // [{ mgPerUnit, price }] volume options for the medicine
+  // [{ mgPerUnit, price, priceUsd }] volume options for the medicine - price lives only here,
+  // tied to the mg strength, not on the medicine itself
   volumes           Json @default("[]")
   dosageRules       Json // { mgPerKgPerDay, defaultDailyDoses }
   inStock           Int

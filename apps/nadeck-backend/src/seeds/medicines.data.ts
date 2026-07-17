@@ -7,8 +7,6 @@ export interface Medicine {
   indications: Record<string, string[]>;
   contraindications: Record<string, string[]>;
   usage: Record<string, string>;
-  price: number;
-  priceUsd: number;
   image: string;
   rating: number;
   form: string;
@@ -48,8 +46,6 @@ export const MEDICINES_DATA: Medicine[] = [
       en: 'Subcutaneous injection once weekly. Starter dose 0.25mg per week.',
       ar: 'للحقن تحت الجلد مرة أسبوعياً. يوصى بـ 0.25 ملغ أسبوعياً للبداية.'
     },
-    price: 18500,
-    priceUsd: 60,
     image: 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
     rating: 4.9,
     form: 'vial',
@@ -90,8 +86,6 @@ export const MEDICINES_DATA: Medicine[] = [
       en: 'Subcutaneously once weekly. Start with 2.5mg for 4 weeks, then escalate to 5mg.',
       ar: 'تحت الجلد مرة أسبوعياً. 2.5 ملغ لأول 4 أسابيع ثم 5 ملغ.'
     },
-    price: 32000,
-    priceUsd: 105,
     image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&auto=format&fit=crop&q=80',
     rating: 4.95,
     form: 'vial',
@@ -132,8 +126,6 @@ export const MEDICINES_DATA: Medicine[] = [
       en: 'Subcutaneously or intramuscularly near injury. 250-500 mcg twice daily for 15-30 days.',
       ar: 'تحت الجلد أو موضعياً 250-500 ميكروغرام مرتين يومياً لمدة 15-30 يوماً.'
     },
-    price: 15000,
-    priceUsd: 50,
     image: 'https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=600&auto=format&fit=crop&q=80',
     rating: 4.88,
     form: 'vial',
@@ -174,8 +166,6 @@ export const MEDICINES_DATA: Medicine[] = [
       en: 'Subcutaneously. Loading: 2-5mg twice weekly for 4-6 weeks. Maintenance: 2-4mg every 14 days.',
       ar: 'تحت الجلد. التحميل: 2-5 ملغ مرتين أسبوعياً لـ 4-6 أسابيع. الوقاية: 2-4 ملغ كل 14 يوماً.'
     },
-    price: 16500,
-    priceUsd: 55,
     image: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=600&auto=format&fit=crop&q=80',
     rating: 4.82,
     form: 'vial',
@@ -216,8 +206,6 @@ export const MEDICINES_DATA: Medicine[] = [
       en: 'Subcutaneously in abdomen. Loading phase: 150-300 mcg daily. Maintenance: 300-500 mcg once weekly.',
       ar: 'تحت الجلد في البطن. التراكم: 150-300 ميكروغرام يومياً. الوقاية: 300-500 ميكروغرام أسبوعياً.'
     },
-    price: 14000,
-    priceUsd: 45,
     image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=600&auto=format&fit=crop&q=80',
     rating: 4.79,
     form: 'vial',
@@ -258,8 +246,6 @@ export const MEDICINES_DATA: Medicine[] = [
       en: 'Subcutaneously in abdomen before sleep or 40 min before workout. 100-200 mcg up to 3 times daily on empty stomach.',
       ar: 'تحت الجلد في البطن قبل النوم أو التدريب. 100-200 ميكروغرام حتى 3 مرات على معدة فارغة.'
     },
-    price: 12500,
-    priceUsd: 40,
     image: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=600&auto=format&fit=crop&q=80',
     rating: 4.85,
     form: 'vial',
