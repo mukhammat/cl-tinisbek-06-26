@@ -6,8 +6,10 @@
 import { Language } from './types';
 
 // Russian UI shows tenge (₸), every other supported language shows dollars ($).
+// A missing USD price is stored as 0 (not undefined), so fall back on falsy, not just nullish -
+// otherwise unpriced volumes would display a literal "$0" instead of the tenge figure.
 export function resolvePrice(kzt: number, usd: number | undefined, lang: Language): number {
-  return lang === 'ru' ? kzt : (usd ?? kzt);
+  return lang === 'ru' ? kzt : (usd || kzt);
 }
 
 // Flat delivery fee rules, kept in both currencies since the free-delivery threshold
