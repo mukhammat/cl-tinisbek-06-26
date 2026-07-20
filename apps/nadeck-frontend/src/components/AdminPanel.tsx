@@ -1398,7 +1398,7 @@ export default function AdminPanel({
               </div>
 
               {/* Grid 2 Block: Images, Form, and Ratings */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+              <div className={`grid grid-cols-1 gap-5 ${isPeptideForm ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
                 <div className="md:col-span-2">
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
                     {currentLang === 'ru' ? 'Изображение товара' : 'Product image'}
@@ -1442,6 +1442,7 @@ export default function AdminPanel({
                   </div>
                 </div>
 
+                {isPeptideForm && (
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
                     {currentLang === 'ru' ? 'Форма выпуска' : 'Packaging Form'}
@@ -1458,6 +1459,7 @@ export default function AdminPanel({
                     <option value="liquid">Liquid (Жидкий раствор)</option>
                   </select>
                 </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
