@@ -8,7 +8,7 @@ import { Product, Language, CartItem, User } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume, unitLabel } from '../currency';
 import { renderRichText } from '../richText';
-import { Star, Check, Plus, ShoppingCart, HelpCircle, BellRing, BellOff, ChevronDown, LayoutGrid } from 'lucide-react';
+import { Star, Check, Plus, ShoppingCart, HelpCircle, BellRing, BellOff, ChevronDown, ChevronLeft, ChevronRight, LayoutGrid } from 'lucide-react';
 import { motion } from 'motion/react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
 import defaultCategoryIconActive from '../assets/nadeck-icon-blue.png';
@@ -49,6 +49,9 @@ export default function MedicineGrid({
   onSelectCategory
 }: MedicineGridProps) {
   const [selectedVolumes, setSelectedVolumes] = useState<Record<string, number>>({});
+  // Which photo each card is currently showing - lets shoppers flip through a product's
+  // gallery right from the catalog card, without opening the detail page.
+  const [cardImageIndex, setCardImageIndex] = useState<Record<string, number>>({});
 
   const t = (key: string) => {
     return TRANSLATIONS[key]?.[currentLang] || key;
@@ -129,6 +132,12 @@ export default function MedicineGrid({
           {filteredMedicines.map((med, index) => {
             const isOutOfStock = med.inStock === false;
             const isSubscribed = subscribedIds.includes(med.id);
+            const images = med.images && med.images.length > 0 ? med.images : [''];
+            const activeImageIndex = cardImageIndex[med.id] ?? 0;
+            const showPrevImage = () =>
+              setCardImageIndex((prev) => ({ ...prev, [med.id]: activeImageIndex === 0 ? images.length - 1 : activeImageIndex - 1 }));
+            const showNextImage = () =>
+              setCardImageIndex((prev) => ({ ...prev, [med.id]: activeImageIndex === images.length - 1 ? 0 : activeImageIndex + 1 }));
             const availableVolumes = med.volumes && med.volumes.length > 0 ? med.volumes : [getPrimaryVolume(med)];
             const volumeUnitLabel = unitLabel(med.unit);
             const currentVolume = selectedVolumes[med.id] ?? med.mgPerUnit;
@@ -163,7 +172,7 @@ export default function MedicineGrid({
                   id={`thumbnail-${med.id}`}
                 >
                   <img
-                    src={med.images?.[0]}
+                    src={images[activeImageIndex]}
                     alt={med.name[currentLang]}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
@@ -177,6 +186,42 @@ export default function MedicineGrid({
                     <Star className="w-3.5 h-3.5 fill-current" />
                     <span className="text-slate-800 text-[10.5px]">{med.rating}</span>
                   </div>
+                  {/* Photo gallery controls - flip through a product's photos right from the card */}
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        id={`thumbnail-prev-${med.id}`}
+                        type="button"
+                        aria-label="Previous photo"
+                        onClick={(e) => { e.stopPropagation(); showPrevImage(); }}
+                        className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        id={`thumbnail-next-${med.id}`}
+                        type="button"
+                        aria-label="Next photo"
+                        onClick={(e) => { e.stopPropagation(); showNextImage(); }}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="absolute bottom-2.5 inset-x-0 flex items-center justify-center gap-1 z-10">
+                        {images.map((_, imgIdx) => (
+                          <button
+                            key={imgIdx}
+                            type="button"
+                            aria-label={`Photo ${imgIdx + 1}`}
+                            onClick={(e) => { e.stopPropagation(); setCardImageIndex((prev) => ({ ...prev, [med.id]: imgIdx })); }}
+                            className={`h-1.5 rounded-full transition-all ${
+                              imgIdx === activeImageIndex ? 'w-3.5 bg-nadeck-600' : 'w-1.5 bg-slate-300 hover:bg-slate-400'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
                   {/* Out of stock overlay */}
                   {isOutOfStock && (
                     <div className="absolute inset-0 bg-slate-950/55 flex items-center justify-center">
