@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.5
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import type { TouchEvent } from 'react';
 import { Product, Language, CartItem, User } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume, unitLabel } from '../currency';
@@ -52,6 +53,37 @@ export default function MedicineGrid({
   // Which photo each card is currently showing - lets shoppers flip through a product's
   // gallery right from the catalog card, without opening the detail page.
   const [cardImageIndex, setCardImageIndex] = useState<Record<string, number>>({});
+
+  // Swipe-to-flip on touch devices. A swipe should switch the photo instead of navigating
+  // into the product, so a completed swipe suppresses the click that follows it on mobile.
+  const touchStartRef = useRef<{ id: string; x: number } | null>(null);
+  const swipedRef = useRef(false);
+
+  const handleThumbTouchStart = (medId: string) => (e: TouchEvent) => {
+    touchStartRef.current = { id: medId, x: e.touches[0].clientX };
+  };
+
+  const handleThumbTouchEnd = (medId: string, images: string[], activeIndex: number) => (e: TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start || start.id !== medId || images.length < 2) return;
+    const delta = e.changedTouches[0].clientX - start.x;
+    if (Math.abs(delta) > 40) {
+      swipedRef.current = true;
+      const nextIndex = delta > 0
+        ? (activeIndex === 0 ? images.length - 1 : activeIndex - 1)
+        : (activeIndex === images.length - 1 ? 0 : activeIndex + 1);
+      setCardImageIndex((prev) => ({ ...prev, [medId]: nextIndex }));
+    }
+  };
+
+  const handleThumbClick = (med: Product) => {
+    if (swipedRef.current) {
+      swipedRef.current = false;
+      return;
+    }
+    onSelectMedicine(med);
+  };
 
   const t = (key: string) => {
     return TRANSLATIONS[key]?.[currentLang] || key;
@@ -168,7 +200,9 @@ export default function MedicineGrid({
                 {/* Visual Thumbnail (product-shot style) */}
                 <div
                   className="aspect-[4/3] w-full relative bg-slate-50 cursor-pointer overflow-hidden p-6"
-                  onClick={() => onSelectMedicine(med)}
+                  onClick={() => handleThumbClick(med)}
+                  onTouchStart={handleThumbTouchStart(med.id)}
+                  onTouchEnd={handleThumbTouchEnd(med.id, images, activeImageIndex)}
                   id={`thumbnail-${med.id}`}
                 >
                   <img
