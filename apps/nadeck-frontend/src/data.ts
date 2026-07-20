@@ -570,9 +570,9 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     ar: '← العودة إلى الكتالوج'
   },
   aboutDrug: {
-    ru: 'Описание пептида',
-    en: 'Peptide Profile',
-    ar: 'تفاصيل الببتيد'
+    ru: 'Описание',
+    en: 'Profile',
+    ar: 'تفاصيل'
   },
   indicationsTitle: {
     ru: 'Показания и эффекты',
