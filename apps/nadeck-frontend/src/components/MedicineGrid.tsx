@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { Product, Language, CartItem, User } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
-import { resolvePrice, getPrimaryVolume } from '../currency';
+import { resolvePrice, getPrimaryVolume, unitLabel } from '../currency';
 import { Star, Check, Plus, ShoppingCart, HelpCircle, BellRing, BellOff, ChevronDown, LayoutGrid } from 'lucide-react';
 import { motion } from 'motion/react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
@@ -129,7 +129,7 @@ export default function MedicineGrid({
             const isOutOfStock = med.inStock === false;
             const isSubscribed = subscribedIds.includes(med.id);
             const availableVolumes = med.volumes && med.volumes.length > 0 ? med.volumes : [getPrimaryVolume(med)];
-            const volumeUnitLabel = med.type === 'additional_good' ? 'шт' : 'мг';
+            const volumeUnitLabel = unitLabel(med.unit);
             const currentVolume = selectedVolumes[med.id] ?? med.mgPerUnit;
             const currentVolumeInfo = availableVolumes.find((v) => v.mgPerUnit === currentVolume) || availableVolumes[0];
             const cartQty = cart.find(item => item.medicine.id === med.id && item.selectedStrength === currentVolumeInfo.mgPerUnit)?.quantity || 0;

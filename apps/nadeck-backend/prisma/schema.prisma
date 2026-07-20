@@ -31,6 +31,15 @@ enum ProductType {
   additional_good
 }
 
+// The measurement unit each volume/price entry is denominated in. Independent of ProductType -
+// a peptide can be sold as powder (mg) or pre-mixed liquid (ml), and an additional good can be
+// unit-counted (pcs, e.g. syringes) or volume-based (ml, e.g. bacteriostatic water).
+enum ProductUnit {
+  mg
+  ml
+  pcs
+}
+
 // Base catalog entity shared by every sellable item, regardless of type. Type-specific
 // attributes live on a details table (MedicineDetails today; more will follow as new
 // product types need their own strongly-typed fields) so adding a new type never requires
@@ -38,6 +47,7 @@ enum ProductType {
 model Product {
   id              String      @id
   type            ProductType @default(peptide)
+  unit            ProductUnit @default(mg)
   name            Json // { ru, en, ar }
   categoryId      String      @default("weightloss")
   category        Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)

@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Product, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency } from '../types';
+import { unitLabel } from '../currency';
 import {
   Package,
   ShoppingBag,
@@ -94,7 +95,7 @@ export default function AdminPanel({
   // Clinical/dosing fields (indications, dosageRules, mg strength, ...) only apply to peptides -
   // additional goods (syringes, vitamins, protein, ...) only need a name, image and a priced volume.
   const isPeptideForm = (formData.type || 'peptide') === 'peptide';
-  const volumeUnitLabel = isPeptideForm ? 'мг' : 'шт';
+  const volumeUnitLabel = unitLabel(formData.unit || 'mg');
 
   // Fetch orders
   const fetchAllOrders = () => {
@@ -253,6 +254,7 @@ export default function AdminPanel({
     setFormData({
       id: '',
       type: 'peptide',
+      unit: 'mg',
       category: defaultCategoryId,
       image: 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
       rating: 5.0,
@@ -369,6 +371,7 @@ export default function AdminPanel({
     const payload = {
       id: targetId,
       type: formData.type || 'peptide',
+      unit: formData.unit || 'mg',
       name: nameVal,
       categoryId: formData.category || defaultCategoryId,
       description: locDescs,
@@ -1320,7 +1323,7 @@ export default function AdminPanel({
                   below - price is tied to a specific mg strength, so a separate top-level
                   price field would just invite the KZT/USD figures to fall out of sync with
                   the actual volume being sold. */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
                     {currentLang === 'ru' ? 'Уникальный ID (slug)' : 'Unique String ID (Slug)'} *
@@ -1345,11 +1348,33 @@ export default function AdminPanel({
                   <select
                     id="form-select-type"
                     value={formData.type || 'peptide'}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as Product['type'] })}
+                    onChange={(e) => {
+                      const nextType = e.target.value as Product['type'];
+                      // Nudge the unit toward the common case for the new type - still freely
+                      // overridable right next to it (a peptide can be ml, a good can be mg).
+                      const nextUnit = nextType === 'peptide' ? 'mg' : 'pcs';
+                      setFormData({ ...formData, type: nextType, unit: nextUnit });
+                    }}
                     className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
                   >
                     <option value="peptide">{currentLang === 'ru' ? 'Пептид' : 'Peptide'}</option>
                     <option value="additional_good">{currentLang === 'ru' ? 'Доп. товар (шприцы, витамины и т.д.)' : 'Additional Good (syringes, vitamins, ...)'}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+                    {currentLang === 'ru' ? 'Единица измерения' : 'Unit'} *
+                  </label>
+                  <select
+                    id="form-select-unit"
+                    value={formData.unit || 'mg'}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value as Product['unit'] })}
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
+                  >
+                    <option value="mg">{currentLang === 'ru' ? 'мг (порошок/капсулы)' : 'mg (powder/capsules)'}</option>
+                    <option value="ml">{currentLang === 'ru' ? 'мл (жидкость)' : 'ml (liquid)'}</option>
+                    <option value="pcs">{currentLang === 'ru' ? 'шт (поштучно)' : 'pcs (unit count)'}</option>
                   </select>
                 </div>
 
@@ -1607,7 +1632,7 @@ export default function AdminPanel({
                       type="number"
                       min="0"
                       step="0.1"
-                      placeholder={isPeptideForm ? (currentLang === 'ru' ? 'Объём, мг' : 'Volume, mg') : (currentLang === 'ru' ? 'Кол-во, шт' : 'Pack size, units')}
+                      placeholder={currentLang === 'ru' ? `Объём, ${volumeUnitLabel}` : `Volume, ${volumeUnitLabel}`}
                       value={newVolumeMg}
                       onChange={(e) => setNewVolumeMg(e.target.value)}
                       onKeyDown={(e) => {

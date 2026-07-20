@@ -25,6 +25,10 @@ export type DosageFrequency = 'daily' | 'twice_daily' | 'every_other_day' | 'wee
 // kind of good needs fields none of the others do, at which point it earns its own type.
 export type ProductType = 'peptide' | 'additional_good';
 
+// Measurement unit the volumes/prices are denominated in. Independent of ProductType - a
+// peptide can be mg powder or ml liquid, an additional good can be pcs (syringes) or ml (water).
+export type ProductUnit = 'mg' | 'ml' | 'pcs';
+
 export interface ProductVolume {
   mgPerUnit: number; // for peptides: strength in mg. For additional goods: units/pack size.
   price: number; // this volume's own price in KZT (₸), may differ from other volumes of the same product
@@ -42,6 +46,7 @@ export interface Category {
 export interface Product {
   id: string;
   type: ProductType;
+  unit: ProductUnit;
   name: Record<Language, string>;
   category: string; // category id from database
   description: Record<Language, string>;

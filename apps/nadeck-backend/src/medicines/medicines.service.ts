@@ -13,6 +13,7 @@ const DEFAULT_CATEGORY_ID = 'weightloss';
 
 type ProductVolume = { mgPerUnit: number; price: number; priceUsd: number };
 type ProductType = 'peptide' | 'additional_good';
+type ProductUnit = 'mg' | 'ml' | 'pcs';
 
 @Injectable()
 export class MedicinesService {
@@ -31,6 +32,10 @@ export class MedicinesService {
 
   private resolveProductType(type: any): ProductType {
     return type === 'additional_good' ? 'additional_good' : 'peptide';
+  }
+
+  private resolveProductUnit(unit: any): ProductUnit {
+    return unit === 'ml' || unit === 'pcs' ? unit : 'mg';
   }
 
   // Resolves the category id from either the current `categoryId` field or the legacy
@@ -53,6 +58,7 @@ export class MedicinesService {
       name: p.name,
       category: p.categoryId,
       type: p.type as ProductType,
+      unit: p.unit as ProductUnit,
       description: p.description,
       fullDescription: p.fullDescription,
       image: p.image,
@@ -94,7 +100,7 @@ export class MedicinesService {
   async create(body: any) {
     const {
       id, name, categoryId, category, description, fullDescription,
-      indications, contraindications, usage, image, rating, form, mgPerUnit, volumes, dosageRules, inStock, type
+      indications, contraindications, usage, image, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit
     } = body;
 
     if (!id || !name) {
@@ -102,6 +108,7 @@ export class MedicinesService {
     }
 
     const productType = this.resolveProductType(type);
+    const productUnit = this.resolveProductUnit(unit);
     const normalizedVolumes = this.normalizeVolumes(volumes);
     if (normalizedVolumes.length === 0) {
       throw new BadRequestException('At least one priced volume is required');
@@ -114,6 +121,7 @@ export class MedicinesService {
         data: {
           id,
           type: productType,
+          unit: productUnit,
           name,
           categoryId: resolvedCategoryId,
           description: description || { ru: '', en: '', ar: '' },
@@ -154,10 +162,11 @@ export class MedicinesService {
   async update(id: string, body: any) {
     const {
       name, categoryId, category, description, fullDescription,
-      indications, contraindications, usage, image, rating, form, mgPerUnit, volumes, dosageRules, inStock, type
+      indications, contraindications, usage, image, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit
     } = body;
 
     const productType = this.resolveProductType(type);
+    const productUnit = this.resolveProductUnit(unit);
     const normalizedVolumes = this.normalizeVolumes(volumes);
     if (normalizedVolumes.length === 0) {
       throw new BadRequestException('At least one priced volume is required');
@@ -183,6 +192,7 @@ export class MedicinesService {
         where: { id },
         data: {
           type: productType,
+          unit: productUnit,
           name,
           categoryId: resolvedCategoryId,
           description,

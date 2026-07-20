@@ -10,6 +10,7 @@ export const MEDICINES_DATA: Product[] = [
   {
     id: 'semaglutide',
     type: 'peptide',
+    unit: 'mg',
     name: {
       ru: 'Semaglutide 5mg',
       en: 'Semaglutide 5mg',
@@ -79,6 +80,7 @@ export const MEDICINES_DATA: Product[] = [
   {
     id: 'tirzepatide',
     type: 'peptide',
+    unit: 'mg',
     name: {
       ru: 'Tirzepatide 10mg',
       en: 'Tirzepatide 10mg',
@@ -148,6 +150,7 @@ export const MEDICINES_DATA: Product[] = [
   {
     id: 'bpc-157',
     type: 'peptide',
+    unit: 'mg',
     name: {
       ru: 'BPC-157 5mg',
       en: 'BPC-157 5mg',
@@ -214,6 +217,7 @@ export const MEDICINES_DATA: Product[] = [
   {
     id: 'tb-500',
     type: 'peptide',
+    unit: 'mg',
     name: {
       ru: 'TB-500 5mg',
       en: 'TB-500 5mg',
@@ -280,6 +284,7 @@ export const MEDICINES_DATA: Product[] = [
   {
     id: 'melanotan-2',
     type: 'peptide',
+    unit: 'mg',
     name: {
       ru: 'Melanotan II 10mg',
       en: 'Melanotan II 10mg',
@@ -348,6 +353,7 @@ export const MEDICINES_DATA: Product[] = [
   {
     id: 'ipamorelin',
     type: 'peptide',
+    unit: 'mg',
     name: {
       ru: 'Ipamorelin 5mg',
       en: 'Ipamorelin 5mg',

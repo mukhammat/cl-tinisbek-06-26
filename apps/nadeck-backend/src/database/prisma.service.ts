@@ -65,6 +65,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             data: {
               id: med.id,
               type: 'peptide',
+              unit: 'mg',
               name: med.name,
               categoryId: med.category,
               description: med.description,

@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { Product, Language, CartItem, User } from '../types';
 import { TRANSLATIONS } from '../data';
-import { resolvePrice, getPrimaryVolume } from '../currency';
+import { resolvePrice, getPrimaryVolume, unitLabel } from '../currency';
 import { Star, ArrowLeft, Plus, Minus, ShoppingCart, ShieldAlert, Award, FileText, Check, BellRing, BellOff, ChevronDown } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -37,7 +37,7 @@ export default function MedicineDetail({
 }: MedicineDetailProps) {
   const [qty, setQty] = useState<number>(1);
   const isPeptide = medicine.type === 'peptide';
-  const volumeUnitLabel = isPeptide ? 'мг' : 'шт';
+  const volumeUnitLabel = unitLabel(medicine.unit);
   const availableVolumes = medicine.volumes && medicine.volumes.length > 0 ? medicine.volumes : [getPrimaryVolume(medicine)];
   const [selectedVolume, setSelectedVolume] = useState<number>(getPrimaryVolume(medicine).mgPerUnit);
   const currentVolumeInfo = availableVolumes.find((v) => v.mgPerUnit === selectedVolume) || availableVolumes[0];

@@ -3,7 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Language, Product, ProductVolume } from './types';
+import { Language, Product, ProductVolume, ProductUnit } from './types';
+
+// Cyrillic display label for a product's measurement unit.
+const UNIT_LABELS: Record<ProductUnit, string> = { mg: 'мг', ml: 'мл', pcs: 'шт' };
+export function unitLabel(unit: ProductUnit): string {
+  return UNIT_LABELS[unit] || 'мг';
+}
 
 // Russian UI shows tenge (₸), every other supported language shows dollars ($).
 // A missing USD price is stored as 0 (not undefined), so fall back on falsy, not just nullish -
