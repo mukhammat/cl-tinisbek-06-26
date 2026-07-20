@@ -38,11 +38,12 @@ bot.on("message:new_chat_members", async (ctx) => {
     if (member.is_bot) continue;
 
     const name = member.first_name || member.username || "друг";
-    // The user's id is baked into callback_data so only the person who joined can answer
-    // for themselves - anyone else tapping the button gets rejected in the handler below.
+    // "url" buttons open the chat immediately on tap - Telegram handles that client-side,
+    // there's no round trip through the bot (and so no per-user click restriction or
+    // "who picked what" logging like a callback-based flow would give us).
     const keyboard = new InlineKeyboard()
-      .text("👨 Мужчина", `gender:male:${member.id}`)
-      .text("👩 Женщина", `gender:female:${member.id}`);
+      .url("👨 Мужчина", MALE_CHAT_LINK)
+      .url("👩 Женщина", FEMALE_CHAT_LINK);
 
     await ctx.reply(`👋 Добро пожаловать, ${name}!\n\nВыберите ваш пол:`, {
       reply_markup: keyboard,
@@ -50,33 +51,6 @@ bot.on("message:new_chat_members", async (ctx) => {
 
     logInteraction({ event: "welcomed", userId: member.id, username: member.username, chatId: ctx.chat.id });
   }
-});
-
-bot.on("callback_query:data", async (ctx) => {
-  const match = ctx.callbackQuery.data.match(/^gender:(male|female):(\d+)$/);
-  if (!match) {
-    await ctx.answerCallbackQuery();
-    return;
-  }
-
-  const [, gender, targetUserId] = match;
-  if (String(ctx.callbackQuery.from.id) !== targetUserId) {
-    await ctx.answerCallbackQuery({ text: "Эта кнопка не для вас 🙂", show_alert: true });
-    return;
-  }
-
-  const isMale = gender === "male";
-  const link = isMale ? MALE_CHAT_LINK : FEMALE_CHAT_LINK;
-  const label = isMale ? "👨 Мужчина" : "👩 Женщина";
-
-  await ctx.answerCallbackQuery();
-  // Clear the buttons explicitly - editMessageText alone leaves the old inline keyboard
-  // attached, since text and reply_markup are edited independently on Telegram's side.
-  await ctx.editMessageText(`${label}\n\n✅ Отлично! Вот ваша ссылка:\n${link}`, {
-    reply_markup: { inline_keyboard: [] },
-  });
-
-  logInteraction({ event: "routed", userId: ctx.callbackQuery.from.id, gender, chatId: ctx.chat?.id });
 });
 
 bot.catch((err) => console.error("Bot error:", err));
