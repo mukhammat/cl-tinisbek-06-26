@@ -2,12 +2,13 @@
   "name": "pharmacy-monorepo",
   "private": true,
   "version": "0.0.0",
-  "workspaces": ["apps/nadeck-frontend", "apps/nadeck-backend", "apps/nadeck-bot"],
+  "workspaces": ["apps/nadeck-frontend", "apps/nadeck-backend", "apps/nadeck-bot", "apps/gender-router-bot"],
   "scripts": {
-    "dev": "concurrently -n backend,frontend,bot -c cyan,magenta,yellow \"npm run dev -w @pharmacy/backend\" \"npm run dev -w @pharmacy/frontend\" \"npm run dev -w nadeck-bot\"",
+    "dev": "concurrently -n backend,frontend,bot,gender-bot -c cyan,magenta,yellow,green \"npm run dev -w @pharmacy/backend\" \"npm run dev -w @pharmacy/frontend\" \"npm run dev -w nadeck-bot\" \"npm run dev -w gender-router-bot\"",
     "dev:backend": "npm run dev -w @pharmacy/backend",
     "dev:frontend": "npm run dev -w @pharmacy/frontend",
     "dev:bot": "npm run dev -w nadeck-bot",
+    "dev:gender-bot": "npm run dev -w gender-router-bot",
     "build": "npm run build -w @pharmacy/frontend && npm run build -w @pharmacy/backend"
   },
   "devDependencies": {

@@ -74,5 +74,17 @@ services:
     volumes:
       - ./apps/nadeck-bot/data:/app/apps/nadeck-bot/data
 
+  gender-router-bot:
+    build:
+      context: .
+      dockerfile: apps/gender-router-bot/Dockerfile
+    restart: unless-stopped
+    environment:
+      - GENDER_BOT_TOKEN=${GENDER_BOT_TOKEN}
+      - MALE_CHAT_LINK=${MALE_CHAT_LINK}
+      - FEMALE_CHAT_LINK=${FEMALE_CHAT_LINK}
+    volumes:
+      - ./apps/gender-router-bot/data:/app/apps/gender-router-bot/data
+
 volumes:
   postgres_data:
