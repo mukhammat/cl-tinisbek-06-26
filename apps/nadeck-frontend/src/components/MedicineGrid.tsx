@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Product, Language, CartItem, User } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume, unitLabel } from '../currency';
+import { renderRichText } from '../richText';
 import { Star, Check, Plus, ShoppingCart, HelpCircle, BellRing, BellOff, ChevronDown, LayoutGrid } from 'lucide-react';
 import { motion } from 'motion/react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
@@ -200,7 +201,7 @@ export default function MedicineGrid({
 
                     {/* Brief desc */}
                     <p className="text-xs text-slate-500 leading-relaxed font-normal min-h-[36px] line-clamp-2">
-                      {med.description[currentLang]}
+                      {renderRichText(med.description[currentLang], `desc-${med.id}`)}
                     </p>
                   </div>
 

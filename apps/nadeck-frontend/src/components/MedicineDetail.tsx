@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Product, Language, CartItem, User } from '../types';
 import { TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume, unitLabel } from '../currency';
+import { renderRichText } from '../richText';
 import { Star, ArrowLeft, Plus, Minus, ShoppingCart, ShieldAlert, Award, FileText, Check, BellRing, BellOff, ChevronDown } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -169,7 +170,7 @@ export default function MedicineDetail({
           <div className="space-y-2 bg-slate-50/55 p-4 rounded-2xl border border-slate-100">
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">{t('aboutDrug')}</h4>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-              {medicine.fullDescription[currentLang]}
+              {renderRichText(medicine.fullDescription[currentLang], 'full-desc')}
             </p>
           </div>
 
@@ -300,7 +301,7 @@ export default function MedicineDetail({
             <div className="space-y-3 pt-4 border-t border-slate-50">
               <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest">{t('usageMethod')}</h4>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                {medicine.usage?.[currentLang]}
+                {renderRichText(medicine.usage?.[currentLang], 'usage')}
               </p>
             </div>
 
