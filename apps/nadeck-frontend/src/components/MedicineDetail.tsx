@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { Medicine, Language, CartItem, User } from '../types';
+import { Product, Language, CartItem, User } from '../types';
 import { TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume } from '../currency';
 import { Star, ArrowLeft, Plus, Minus, ShoppingCart, ShieldAlert, Award, FileText, Check, BellRing, BellOff, ChevronDown } from 'lucide-react';
@@ -12,10 +12,10 @@ import { motion } from 'motion/react';
 
 interface MedicineDetailProps {
   currentLang: Language;
-  medicine: Medicine;
+  medicine: Product;
   onBack: () => void;
   cart: CartItem[];
-  onAddToCart: (medicine: Medicine, quantity: number, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => void;
+  onAddToCart: (medicine: Product, quantity: number, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => void;
   user: User;
   setAuthModalOpen: (open: boolean) => void;
   subscribedIds: string[];
@@ -36,8 +36,10 @@ export default function MedicineDetail({
   categoryLabelById
 }: MedicineDetailProps) {
   const [qty, setQty] = useState<number>(1);
+  const isPeptide = medicine.type === 'peptide';
+  const volumeUnitLabel = isPeptide ? 'мг' : 'шт';
   const availableVolumes = medicine.volumes && medicine.volumes.length > 0 ? medicine.volumes : [getPrimaryVolume(medicine)];
-  const [selectedVolume, setSelectedVolume] = useState<number>(medicine.mgPerUnit);
+  const [selectedVolume, setSelectedVolume] = useState<number>(getPrimaryVolume(medicine).mgPerUnit);
   const currentVolumeInfo = availableVolumes.find((v) => v.mgPerUnit === selectedVolume) || availableVolumes[0];
 
   const t = (key: string) => {
@@ -124,21 +126,23 @@ export default function MedicineDetail({
               </span>
             )}
 
-            <div className="flex flex-col gap-1 text-xs text-slate-500 font-medium">
-              <p>
-                <span className="text-slate-400 font-semibold">
-                  {currentLang === 'ru' ? 'Форма выпуска' : currentLang === 'ar' ? 'شكل الدواء' : 'Dosage Form'}:
-                </span>{' '}
-                <span className="text-slate-700 font-bold">
-                  {medicine.form === 'tablet'
-                    ? (currentLang === 'ru' ? 'Таблетки' : currentLang === 'ar' ? 'أقراص' : 'Tablets')
-                    : medicine.form === 'capsule'
-                    ? (currentLang === 'ru' ? 'Капсулы' : currentLang === 'ar' ? 'كبسولات' : 'Capsules')
-                    : (currentLang === 'ru' ? 'Раствор' : currentLang === 'ar' ? 'محلول' : 'Liquid suspension')
-                  }
-                </span>
-              </p>
-            </div>
+            {isPeptide && (
+              <div className="flex flex-col gap-1 text-xs text-slate-500 font-medium">
+                <p>
+                  <span className="text-slate-400 font-semibold">
+                    {currentLang === 'ru' ? 'Форма выпуска' : currentLang === 'ar' ? 'شكل الدواء' : 'Dosage Form'}:
+                  </span>{' '}
+                  <span className="text-slate-700 font-bold">
+                    {medicine.form === 'tablet'
+                      ? (currentLang === 'ru' ? 'Таблетки' : currentLang === 'ar' ? 'أقراص' : 'Tablets')
+                      : medicine.form === 'capsule'
+                      ? (currentLang === 'ru' ? 'Капсулы' : currentLang === 'ar' ? 'كبسولات' : 'Capsules')
+                      : (currentLang === 'ru' ? 'Раствор' : currentLang === 'ar' ? 'محلول' : 'Liquid suspension')
+                    }
+                  </span>
+                </p>
+              </div>
+            )}
 
             {/* Volume selector */}
             <div className="space-y-1.5 max-w-[220px]">
@@ -152,7 +156,7 @@ export default function MedicineDetail({
                 >
                   {availableVolumes.map((vol) => (
                     <option key={vol.mgPerUnit} value={vol.mgPerUnit}>
-                      {vol.mgPerUnit} мг
+                      {vol.mgPerUnit} {volumeUnitLabel}
                     </option>
                   ))}
                 </select>
@@ -255,53 +259,55 @@ export default function MedicineDetail({
         </div>
       </div>
 
-      {/* Complete Usage Reference Instructions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* Indications */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 space-y-4" id="indications-panel">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-50 text-nadeck-800">
-            <FileText className="w-5 h-5 text-nadeck-600" />
-            <h3 className="text-base font-bold">{t('indicationsTitle')}</h3>
-          </div>
-          <ul className="space-y-2.5">
-            {medicine.indications[currentLang]?.map((ind, idx) => (
-              <li key={idx} className="flex gap-2.5 text-xs sm:text-sm text-slate-600">
-                <span className="w-1.5 h-1.5 rounded-full bg-nadeck-500 mt-2 shrink-0" />
-                <span>{ind}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* Complete Usage Reference Instructions - peptide-only, since only peptides carry clinical data */}
+      {isPeptide && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {/* Contraindications & Mode */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 space-y-6" id="contraindications-panel">
-          
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-50 text-rose-800">
-              <ShieldAlert className="w-5 h-5 text-rose-500" />
-              <h3 className="text-base font-bold">{t('contraindicationsTitle')}</h3>
+          {/* Indications */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 space-y-4" id="indications-panel">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-50 text-nadeck-800">
+              <FileText className="w-5 h-5 text-nadeck-600" />
+              <h3 className="text-base font-bold">{t('indicationsTitle')}</h3>
             </div>
             <ul className="space-y-2.5">
-              {medicine.contraindications[currentLang]?.map((con, idx) => (
+              {medicine.indications?.[currentLang]?.map((ind, idx) => (
                 <li key={idx} className="flex gap-2.5 text-xs sm:text-sm text-slate-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-2 shrink-0" />
-                  <span>{con}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-nadeck-500 mt-2 shrink-0" />
+                  <span>{ind}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="space-y-3 pt-4 border-t border-slate-50">
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest">{t('usageMethod')}</h4>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-              {medicine.usage[currentLang]}
-            </p>
+          {/* Contraindications & Mode */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 space-y-6" id="contraindications-panel">
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-50 text-rose-800">
+                <ShieldAlert className="w-5 h-5 text-rose-500" />
+                <h3 className="text-base font-bold">{t('contraindicationsTitle')}</h3>
+              </div>
+              <ul className="space-y-2.5">
+                {medicine.contraindications?.[currentLang]?.map((con, idx) => (
+                  <li key={idx} className="flex gap-2.5 text-xs sm:text-sm text-slate-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-2 shrink-0" />
+                    <span>{con}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="space-y-3 pt-4 border-t border-slate-50">
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest">{t('usageMethod')}</h4>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
+                {medicine.usage?.[currentLang]}
+              </p>
+            </div>
+
           </div>
 
         </div>
-
-      </div>
+      )}
 
     </div>
   );

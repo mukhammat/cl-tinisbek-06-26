@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Language, Medicine, MedicineVolume } from './types';
+import { Language, Product, ProductVolume } from './types';
 
 // Russian UI shows tenge (₸), every other supported language shows dollars ($).
 // A missing USD price is stored as 0 (not undefined), so fall back on falsy, not just nullish -
@@ -12,11 +12,12 @@ export function resolvePrice(kzt: number, usd: number | undefined, lang: Languag
   return lang === 'ru' ? kzt : (usd || kzt);
 }
 
-// Medicine no longer carries its own price - it's always tied to a specific mg strength, so
-// every consumer resolves "the" price through the volume matching the vial's default strength.
-export function getPrimaryVolume(medicine: Medicine): MedicineVolume {
-  const volumes = medicine.volumes || [];
-  return volumes.find((v) => v.mgPerUnit === medicine.mgPerUnit) || volumes[0] || { mgPerUnit: medicine.mgPerUnit, price: 0, priceUsd: 0 };
+// A product no longer carries its own price - it's always tied to a specific volume (mg
+// strength for peptides, pack size for additional goods), so every consumer resolves "the"
+// price through the volume matching mgPerUnit (peptides) or just the first one (everything else).
+export function getPrimaryVolume(product: Product): ProductVolume {
+  const volumes = product.volumes || [];
+  return volumes.find((v) => v.mgPerUnit === product.mgPerUnit) || volumes[0] || { mgPerUnit: product.mgPerUnit ?? 0, price: 0, priceUsd: 0 };
 }
 
 // Flat delivery fee rules, kept in both currencies since the free-delivery threshold

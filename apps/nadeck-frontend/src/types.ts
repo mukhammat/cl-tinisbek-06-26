@@ -20,8 +20,13 @@ export const SUPPORTED_LANGUAGES: LanguageConfig[] = [
 
 export type DosageFrequency = 'daily' | 'twice_daily' | 'every_other_day' | 'weekly' | 'custom';
 
-export interface MedicineVolume {
-  mgPerUnit: number;
+// 'peptide' carries the clinical/dosing fields below; 'additional_good' is everything else
+// (syringes, vitamins, protein, cosmetics, equipment, ...) - a shared bucket until a specific
+// kind of good needs fields none of the others do, at which point it earns its own type.
+export type ProductType = 'peptide' | 'additional_good';
+
+export interface ProductVolume {
+  mgPerUnit: number; // for peptides: strength in mg. For additional goods: units/pack size.
   price: number; // this volume's own price in KZT (₸), may differ from other volumes of the same product
   priceUsd: number; // this volume's own price in USD ($), shown for non-Russian languages
 }
@@ -34,27 +39,30 @@ export interface Category {
   isActive: boolean;
 }
 
-export interface Medicine {
+export interface Product {
   id: string;
+  type: ProductType;
   name: Record<Language, string>;
   category: string; // category id from database
   description: Record<Language, string>;
   fullDescription: Record<Language, string>;
-  indications: Record<Language, string[]>;
-  contraindications: Record<Language, string[]>;
-  usage: Record<Language, string>;
   image: string;
   rating: number;
-  form: 'tablet' | 'capsule' | 'liquid' | 'vial';
-  mgPerUnit: number; // e.g. 5 for 5mg vial (default/primary volume)
-  volumes: MedicineVolume[]; // all available package volumes; the price lives here, per volume (see getPrimaryVolume)
-  dosageRules: {
+  volumes: ProductVolume[]; // all available package volumes; the price lives here, per volume (see getPrimaryVolume)
+  inStock?: boolean;
+
+  // Peptide-only fields - present only when type === 'peptide'.
+  indications?: Record<Language, string[]>;
+  contraindications?: Record<Language, string[]>;
+  usage?: Record<Language, string>;
+  form?: 'tablet' | 'capsule' | 'liquid' | 'vial';
+  mgPerUnit?: number; // e.g. 5 for 5mg vial (default/primary volume)
+  dosageRules?: {
     mgPerKgPerDay: number; // Dosage factor
     defaultDailyDoses: number; // times per day
     defaultFrequency?: DosageFrequency; // administration schedule shown by default in the calculator
     customIntervalDays?: number; // only meaningful when defaultFrequency === 'custom': e.g. 20 for "once every 20 days"
   };
-  inStock?: boolean;
 }
 
 export interface AppNotification {
@@ -66,7 +74,7 @@ export interface AppNotification {
 }
 
 export interface CartItem {
-  medicine: Medicine;
+  medicine: Product;
   quantity: number;
   selectedStrength?: number; // the chosen volume's mgPerUnit
   unitPrice?: number; // resolved KZT price for the chosen volume, falls back to its primary volume's price when absent

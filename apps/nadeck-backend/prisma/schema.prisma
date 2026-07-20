@@ -17,34 +17,62 @@ model User {
 }
 
 model Category {
-  id         String     @id
-  name       Json // { ru, en, ar }
+  id        String    @id
+  name      Json // { ru, en, ar }
   // Uploaded icon for the category filter pill (data URI or URL); null = fall back to the default red logo mark
-  icon       String?
-  sortOrder  Int        @default(0)
-  isActive   Boolean    @default(true)
-  medicines  Medicine[]
+  icon      String?
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  products  Product[]
 }
 
-model Medicine {
-  id                String @id
-  name              Json // { ru, en, ar }
-  categoryId        String @default("weightloss")
-  category          Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  description       Json // { ru, en, ar }
-  fullDescription   Json // { ru, en, ar }
+enum ProductType {
+  peptide
+  additional_good
+}
+
+// Base catalog entity shared by every sellable item, regardless of type. Type-specific
+// attributes live on a details table (MedicineDetails today; more will follow as new
+// product types need their own strongly-typed fields) so adding a new type never requires
+// widening this table with nullable columns nobody else uses.
+model Product {
+  id              String      @id
+  type            ProductType @default(peptide)
+  name            Json // { ru, en, ar }
+  categoryId      String      @default("weightloss")
+  category        Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  description     Json // { ru, en, ar }
+  fullDescription Json // { ru, en, ar }
+  image           String
+  rating          Float
+  inStock         Int
+
+  medicine        MedicineDetails?
+  additionalGood  AdditionalGoodDetails?
+}
+
+// Peptide-specific clinical/dosing fields. Only exists for products with type = peptide.
+model MedicineDetails {
+  productId         String  @id
+  product           Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   indications       Json // { ru: string[], en: string[], ar: string[] }
   contraindications Json // { ru: string[], en: string[], ar: string[] }
   usage             Json // { ru, en, ar }
-  image             String
-  rating            Float
   form              String
   mgPerUnit         Float
-  // [{ mgPerUnit, price, priceUsd }] volume options for the medicine - price lives only here,
-  // tied to the mg strength, not on the medicine itself
-  volumes           Json @default("[]")
   dosageRules       Json // { mgPerKgPerDay, defaultDailyDoses }
-  inStock           Int
+  // [{ mgPerUnit, price, priceUsd }] volume options - price lives only here, tied to the strength
+  volumes           Json @default("[]")
+}
+
+// Everything that isn't a peptide (syringes, vitamins, protein, cosmetics, equipment, ...).
+// A single shared bucket until a specific type needs fields none of the others do - at that
+// point it gets its own details table instead of widening this one.
+model AdditionalGoodDetails {
+  productId String  @id
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // [{ mgPerUnit, price, priceUsd }] pack-size options - mgPerUnit here just means "units per pack"
+  volumes   Json @default("[]")
 }
 
 model Order {

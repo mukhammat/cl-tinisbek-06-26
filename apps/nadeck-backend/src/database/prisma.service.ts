@@ -57,27 +57,32 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   private async seedMedicines() {
     try {
-      const count = await this.medicine.count();
+      const count = await this.product.count();
       if (count === 0) {
         console.log('Seeding medicines...');
         for (const med of MEDICINES_DATA) {
-          await this.medicine.create({
+          await this.product.create({
             data: {
               id: med.id,
+              type: 'peptide',
               name: med.name,
               categoryId: med.category,
               description: med.description,
               fullDescription: med.fullDescription,
-              indications: med.indications,
-              contraindications: med.contraindications,
-              usage: med.usage,
               image: med.image,
               rating: Number(med.rating),
-              form: med.form,
-              mgPerUnit: Number(med.mgPerUnit),
-              volumes: med.volumes || [],
-              dosageRules: med.dosageRules,
               inStock: 1,
+              medicine: {
+                create: {
+                  indications: med.indications,
+                  contraindications: med.contraindications,
+                  usage: med.usage,
+                  form: med.form,
+                  mgPerUnit: Number(med.mgPerUnit),
+                  volumes: med.volumes || [],
+                  dosageRules: med.dosageRules,
+                },
+              },
             },
           });
         }

@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Medicine, Language } from './types';
+import { Product, Language } from './types';
 
 
-export const MEDICINES_DATA: Medicine[] = [
+export const MEDICINES_DATA: Product[] = [
   {
     id: 'semaglutide',
+    type: 'peptide',
     name: {
       ru: 'Semaglutide 5mg',
       en: 'Semaglutide 5mg',
@@ -77,6 +78,7 @@ export const MEDICINES_DATA: Medicine[] = [
   },
   {
     id: 'tirzepatide',
+    type: 'peptide',
     name: {
       ru: 'Tirzepatide 10mg',
       en: 'Tirzepatide 10mg',
@@ -145,6 +147,7 @@ export const MEDICINES_DATA: Medicine[] = [
   },
   {
     id: 'bpc-157',
+    type: 'peptide',
     name: {
       ru: 'BPC-157 5mg',
       en: 'BPC-157 5mg',
@@ -210,6 +213,7 @@ export const MEDICINES_DATA: Medicine[] = [
   },
   {
     id: 'tb-500',
+    type: 'peptide',
     name: {
       ru: 'TB-500 5mg',
       en: 'TB-500 5mg',
@@ -275,6 +279,7 @@ export const MEDICINES_DATA: Medicine[] = [
   },
   {
     id: 'melanotan-2',
+    type: 'peptide',
     name: {
       ru: 'Melanotan II 10mg',
       en: 'Melanotan II 10mg',
@@ -342,6 +347,7 @@ export const MEDICINES_DATA: Medicine[] = [
   },
   {
     id: 'ipamorelin',
+    type: 'peptide',
     name: {
       ru: 'Ipamorelin 5mg',
       en: 'Ipamorelin 5mg',

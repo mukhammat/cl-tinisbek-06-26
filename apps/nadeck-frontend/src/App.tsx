@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, FormEvent } from 'react';
-import { Language, Medicine, CartItem, User, Order, AppNotification, SUPPORTED_LANGUAGES, Category } from './types';
+import { Language, Product, CartItem, User, Order, AppNotification, SUPPORTED_LANGUAGES, Category } from './types';
 import { MEDICINES_DATA, TRANSLATIONS } from './data';
 import Navbar from './components/Navbar';
 import MedicineGrid from './components/MedicineGrid';
@@ -32,13 +32,13 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'catalog' | 'calculator' | 'cart' | 'orders' | 'admin'>('catalog');
   
   // Selected single medicine for details
-  const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
+  const [selectedMedicine, setSelectedMedicine] = useState<Product | null>(null);
 
   // Selected catalog category so external CTAs can jump straight into a filtered section
   const [selectedCatalogCategory, setSelectedCatalogCategory] = useState<string>('all');
 
   // Load medicines list from database, default to empty to allow loading inside Grid
-  const [medicinesList, setMedicinesList] = useState<Medicine[]>([]);
+  const [medicinesList, setMedicinesList] = useState<Product[]>([]);
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
 
   // Retries a couple of times with backoff before giving up - covers the brief window right
@@ -304,7 +304,7 @@ export default function App() {
 
   // Cart operations. Different volumes of the same product carry different prices, so
   // cart lines are keyed by (medicine id + selected volume), not just the product id.
-  const handleAddToCart = (medicine: Medicine, qtyToAdd: number = 1, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => {
+  const handleAddToCart = (medicine: Product, qtyToAdd: number = 1, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => {
     setCart((prevCart) => {
       const existing = prevCart.find((item) => item.medicine.id === medicine.id && item.selectedStrength === selectedVolume);
       if (existing) {

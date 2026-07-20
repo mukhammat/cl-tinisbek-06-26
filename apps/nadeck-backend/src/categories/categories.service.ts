@@ -104,7 +104,7 @@ export class CategoriesService {
 
   async delete(id: string) {
     try {
-      const linkedMedicines = await this.prisma.medicine.count({ where: { categoryId: id } });
+      const linkedMedicines = await this.prisma.product.count({ where: { categoryId: id } });
       if (linkedMedicines > 0) {
         throw new BadRequestException('Move medicines to another category before deleting this one');
       }

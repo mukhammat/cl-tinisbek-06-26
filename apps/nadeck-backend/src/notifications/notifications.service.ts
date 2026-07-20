@@ -16,7 +16,7 @@ export class NotificationsService {
     }
 
     try {
-      const medicine = await this.prisma.medicine.findUnique({ where: { id: medicineId } });
+      const medicine = await this.prisma.product.findUnique({ where: { id: medicineId } });
       if (!medicine) {
         throw new BadRequestException('Medicine not found');
       }

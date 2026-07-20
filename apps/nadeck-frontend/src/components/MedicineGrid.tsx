@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { Medicine, Language, CartItem, User } from '../types';
+import { Product, Language, CartItem, User } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume } from '../currency';
 import { Star, Check, Plus, ShoppingCart, HelpCircle, BellRing, BellOff, ChevronDown, LayoutGrid } from 'lucide-react';
@@ -14,11 +14,11 @@ import defaultCategoryIconActive from '../assets/nadeck-icon-blue.png';
 
 interface MedicineGridProps {
   currentLang: Language;
-  onSelectMedicine: (medicine: Medicine) => void;
+  onSelectMedicine: (medicine: Product) => void;
   cart: CartItem[];
-  onAddToCart: (medicine: Medicine, quantity?: number, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => void;
+  onAddToCart: (medicine: Product, quantity?: number, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => void;
   searchQuery: string;
-  allMedicines?: Medicine[];
+  allMedicines?: Product[];
   user: User;
   setAuthModalOpen: (open: boolean) => void;
   subscribedIds: string[];
@@ -129,6 +129,7 @@ export default function MedicineGrid({
             const isOutOfStock = med.inStock === false;
             const isSubscribed = subscribedIds.includes(med.id);
             const availableVolumes = med.volumes && med.volumes.length > 0 ? med.volumes : [getPrimaryVolume(med)];
+            const volumeUnitLabel = med.type === 'additional_good' ? 'шт' : 'мг';
             const currentVolume = selectedVolumes[med.id] ?? med.mgPerUnit;
             const currentVolumeInfo = availableVolumes.find((v) => v.mgPerUnit === currentVolume) || availableVolumes[0];
             const cartQty = cart.find(item => item.medicine.id === med.id && item.selectedStrength === currentVolumeInfo.mgPerUnit)?.quantity || 0;
@@ -219,7 +220,7 @@ export default function MedicineGrid({
                         >
                           {availableVolumes.map((vol) => (
                             <option key={vol.mgPerUnit} value={vol.mgPerUnit}>
-                              {vol.mgPerUnit} мг
+                              {vol.mgPerUnit} {volumeUnitLabel}
                             </option>
                           ))}
                         </select>

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Medicine, Language, CartItem, DosageFrequency } from '../types';
+import { Product, Language, CartItem, DosageFrequency } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume } from '../currency';
 import { 
@@ -26,9 +26,9 @@ import { motion } from 'motion/react';
 
 interface DosageCalculatorProps {
   currentLang: Language;
-  onAddToCart: (medicine: Medicine, quantity: number, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => void;
+  onAddToCart: (medicine: Product, quantity: number, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => void;
   cart: CartItem[];
-  allMedicines?: Medicine[];
+  allMedicines?: Product[];
   searchQuery?: string;
 }
 
@@ -39,7 +39,9 @@ export default function DosageCalculator({
   allMedicines,
   searchQuery = ''
 }: DosageCalculatorProps) {
-  const activeMedicines = allMedicines && allMedicines.length > 0 ? allMedicines : MEDICINES_DATA;
+  // Dosing math only applies to peptides - additional goods (syringes, vitamins, ...) have
+  // no dosageRules/mgPerUnit and simply don't belong in this calculator.
+  const activeMedicines = (allMedicines && allMedicines.length > 0 ? allMedicines : MEDICINES_DATA).filter((m) => m.type === 'peptide');
 
   const filteredMedicines = searchQuery.trim()
     ? activeMedicines.filter((med) => {
@@ -86,8 +88,8 @@ export default function DosageCalculator({
   // Sync default vial weight (mg) and optimal frequency when selected medicine changes
   useEffect(() => {
     if (selectedMed) {
-      setVialMg(selectedMed.mgPerUnit);
-      
+      setVialMg(selectedMed.mgPerUnit!);
+
       // Auto-set comfortable default dosage based on peptide profile
       if (selectedMed.category === 'weightloss') {
         setDesiredMcg(250);
@@ -160,7 +162,7 @@ export default function DosageCalculator({
 
   const resetToOptimalDefaults = () => {
     if (selectedMed) {
-      setVialMg(selectedMed.mgPerUnit);
+      setVialMg(selectedMed.mgPerUnit!);
       setDiluentMl(2);
       setSyringeType(100);
       if (selectedMed.category === 'weightloss') {
@@ -501,7 +503,7 @@ export default function DosageCalculator({
                   >
                     {filteredMedicines.map((med) => (
                       <option key={med.id} value={med.id}>
-                        {med.name[currentLang]} — {med.mgPerUnit} мг ({t(`cat${med.category.charAt(0).toUpperCase() + med.category.slice(1)}`)})
+                        {med.name[currentLang]} — {med.mgPerUnit!} мг ({t(`cat${med.category.charAt(0).toUpperCase() + med.category.slice(1)}`)})
                       </option>
                     ))}
                   </select>

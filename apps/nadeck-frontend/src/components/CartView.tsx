@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Medicine, Language, CartItem, User, Order } from '../types';
+import { Language, CartItem, User, Order } from '../types';
 import { TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume, FREE_DELIVERY_THRESHOLD, DELIVERY_COST } from '../currency';
 import { Trash2, Phone, ShoppingBag, Plus, Minus, ArrowRight, MessageCircle, CheckCircle2, Ticket } from 'lucide-react';

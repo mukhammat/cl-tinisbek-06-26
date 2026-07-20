@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Medicine, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency } from '../types';
+import { Product, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency } from '../types';
 import {
   Package,
   ShoppingBag,
@@ -31,7 +31,7 @@ interface AdminPanelProps {
   currentLang: Language;
   onRefreshMedicines: () => void;
   onRefreshCategories: () => void;
-  allMedicines: Medicine[];
+  allMedicines: Product[];
   categories: Category[];
   token?: string;
 }
@@ -59,7 +59,7 @@ export default function AdminPanel({
   // CRUD state
   const [isEditing, setIsEditing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const [formData, setFormData] = useState<Partial<Medicine>>({});
+  const [formData, setFormData] = useState<Partial<Product>>({});
 
   const [isEditingCategory, setIsEditingCategory] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -90,6 +90,11 @@ export default function AdminPanel({
   );
   // Single source of truth for "no category picked yet" - reused everywhere a default is needed below.
   const defaultCategoryId = activeCategories[0]?.id || 'weightloss';
+
+  // Clinical/dosing fields (indications, dosageRules, mg strength, ...) only apply to peptides -
+  // additional goods (syringes, vitamins, protein, ...) only need a name, image and a priced volume.
+  const isPeptideForm = (formData.type || 'peptide') === 'peptide';
+  const volumeUnitLabel = isPeptideForm ? 'мг' : 'шт';
 
   // Fetch orders
   const fetchAllOrders = () => {
@@ -148,7 +153,7 @@ export default function AdminPanel({
   };
 
   // Toggle Stock Status
-  const handleToggleStock = (med: Medicine) => {
+  const handleToggleStock = (med: Product) => {
     const updatedMed = {
       ...med,
       inStock: !med.inStock
@@ -217,7 +222,7 @@ export default function AdminPanel({
   };
 
   // Open Edit Form
-  const startEditProduct = (med: Medicine) => {
+  const startEditProduct = (med: Product) => {
     setFormData(med);
     setVolumesList([...(med.volumes || [])]);
     setNewVolumeMg('');
@@ -227,16 +232,16 @@ export default function AdminPanel({
     setLocDescs({ ...med.description });
     setLocFullDescs({ ...med.fullDescription });
     setLocUsages({ ...med.usage || { ru: '', en: '', ar: '' } });
-    
+
     setLocInds({
-      ru: (med.indications.ru || []).join('\n'),
-      en: (med.indications.en || []).join('\n'),
-      ar: (med.indications.ar || []).join('\n')
+      ru: (med.indications?.ru || []).join('\n'),
+      en: (med.indications?.en || []).join('\n'),
+      ar: (med.indications?.ar || []).join('\n')
     });
     setLocContras({
-      ru: (med.contraindications.ru || []).join('\n'),
-      en: (med.contraindications.en || []).join('\n'),
-      ar: (med.contraindications.ar || []).join('\n')
+      ru: (med.contraindications?.ru || []).join('\n'),
+      en: (med.contraindications?.en || []).join('\n'),
+      ar: (med.contraindications?.ar || []).join('\n')
     });
 
     setIsEditing(true);
@@ -247,6 +252,7 @@ export default function AdminPanel({
   const startAddProduct = () => {
     setFormData({
       id: '',
+      type: 'peptide',
       category: defaultCategoryId,
       image: 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
       rating: 5.0,
@@ -362,28 +368,35 @@ export default function AdminPanel({
 
     const payload = {
       id: targetId,
+      type: formData.type || 'peptide',
       name: nameVal,
       categoryId: formData.category || defaultCategoryId,
       description: locDescs,
       fullDescription: locFullDescs,
-      indications: {
-        ru: parseList(locInds.ru),
-        en: parseList(locInds.en),
-        ar: parseList(locInds.ar)
-      },
-      contraindications: {
-        ru: parseList(locContras.ru),
-        en: parseList(locContras.en),
-        ar: parseList(locContras.ar)
-      },
-      usage: locUsages,
       image: formData.image || 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
       rating: Number(formData.rating || 5.0),
-      form: formData.form || 'vial',
-      mgPerUnit: Number(formData.mgPerUnit || 5),
       volumes: volumesList,
-      dosageRules: formData.dosageRules || { mgPerKgPerDay: 0.005, defaultDailyDoses: 1 },
-      inStock: formData.inStock !== false
+      inStock: formData.inStock !== false,
+      // Clinical/dosing fields only mean something for peptides - omitted entirely for
+      // additional goods rather than sent as empty placeholders.
+      ...(isPeptideForm
+        ? {
+            indications: {
+              ru: parseList(locInds.ru),
+              en: parseList(locInds.en),
+              ar: parseList(locInds.ar)
+            },
+            contraindications: {
+              ru: parseList(locContras.ru),
+              en: parseList(locContras.en),
+              ar: parseList(locContras.ar)
+            },
+            usage: locUsages,
+            form: formData.form || 'vial',
+            mgPerUnit: Number(formData.mgPerUnit || 5),
+            dosageRules: formData.dosageRules || { mgPerKgPerDay: 0.005, defaultDailyDoses: 1 },
+          }
+        : {}),
     };
 
     const url = isAdding ? '/api/medicines' : `/api/medicines/${targetId}`;
@@ -796,7 +809,9 @@ export default function AdminPanel({
                           {/* Col 3 Info tag */}
                           <td className="py-4 px-4 text-xs">
                             <p className="text-[10px] text-slate-400 font-bold capitalize">
-                              {med.form} • {med.mgPerUnit} mg
+                              {med.type === 'peptide'
+                                ? `${med.form} • ${med.mgPerUnit} mg`
+                                : (currentLang === 'ru' ? 'Доп. товар' : 'Additional good')}
                             </p>
                           </td>
 
@@ -1305,7 +1320,7 @@ export default function AdminPanel({
                   below - price is tied to a specific mg strength, so a separate top-level
                   price field would just invite the KZT/USD figures to fall out of sync with
                   the actual volume being sold. */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
                     {currentLang === 'ru' ? 'Уникальный ID (slug)' : 'Unique String ID (Slug)'} *
@@ -1321,6 +1336,21 @@ export default function AdminPanel({
                     className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400 font-mono"
                   />
                   {isAdding && <span className="text-[10px] text-slate-400 mt-1 block">Only letters and hyphens, no spaces.</span>}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+                    {currentLang === 'ru' ? 'Тип товара' : 'Product Type'} *
+                  </label>
+                  <select
+                    id="form-select-type"
+                    value={formData.type || 'peptide'}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as Product['type'] })}
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
+                  >
+                    <option value="peptide">{currentLang === 'ru' ? 'Пептид' : 'Peptide'}</option>
+                    <option value="additional_good">{currentLang === 'ru' ? 'Доп. товар (шприцы, витамины и т.д.)' : 'Additional Good (syringes, vitamins, ...)'}</option>
+                  </select>
                 </div>
 
                 <div>
@@ -1421,8 +1451,11 @@ export default function AdminPanel({
                 </div>
               </div>
 
-              {/* Grid 3 Block: Medicine Dose Parameters for precise calculation engine support */}
+              {/* Grid 3 Block: Medicine Dose Parameters for precise calculation engine support -
+                  peptide-only. The volumes/pricing manager below it applies to every product type. */}
               <div className="bg-nadeck-500/5 p-4 rounded-2xl border border-nadeck-500/10 space-y-4" id="form-dosage-rules-box">
+                {isPeptideForm && (
+                <>
                 <span className="text-[10px] uppercase font-bold text-nadeck-800 tracking-wider">
                   🧪 Настройки расчёта дозировок (Dosage Calculation Parameters)
                 </span>
@@ -1529,9 +1562,12 @@ export default function AdminPanel({
                     </select>
                   </div>
                 </div>
+                </>
+                )}
 
-                {/* Available Volumes manager: each volume has its own mg strength AND its own price */}
-                <div className="pt-4 border-t border-nadeck-500/10" id="form-volumes-box">
+                {/* Available Volumes manager: each volume has its own mg strength AND its own price -
+                    applies to every product type, so it's never hidden by the peptide-only toggle above. */}
+                <div className={isPeptideForm ? 'pt-4 border-t border-nadeck-500/10' : ''} id="form-volumes-box">
                   <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
                     {currentLang === 'ru' ? 'Доступные объёмы и цены' : 'Available Volumes & Prices'}
                   </label>
@@ -1552,7 +1588,7 @@ export default function AdminPanel({
                         id={`form-volume-chip-${vol.mgPerUnit}`}
                         className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full bg-white border border-nadeck-500/20 text-xs font-bold text-nadeck-800"
                       >
-                        {vol.mgPerUnit} мг — {vol.price.toLocaleString()} ₸ / ${(vol.priceUsd || 0).toLocaleString()}
+                        {vol.mgPerUnit} {volumeUnitLabel} — {vol.price.toLocaleString()} ₸ / ${(vol.priceUsd || 0).toLocaleString()}
                         <button
                           id={`form-volume-remove-${vol.mgPerUnit}`}
                           type="button"
@@ -1571,7 +1607,7 @@ export default function AdminPanel({
                       type="number"
                       min="0"
                       step="0.1"
-                      placeholder={currentLang === 'ru' ? 'Объём, мг' : 'Volume, mg'}
+                      placeholder={isPeptideForm ? (currentLang === 'ru' ? 'Объём, мг' : 'Volume, mg') : (currentLang === 'ru' ? 'Кол-во, шт' : 'Pack size, units')}
                       value={newVolumeMg}
                       onChange={(e) => setNewVolumeMg(e.target.value)}
                       onKeyDown={(e) => {
@@ -1657,7 +1693,7 @@ export default function AdminPanel({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className={`grid grid-cols-1 gap-4 ${isPeptideForm ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                   <div className="md:col-span-1">
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">Краткое описание (RU)</label>
                     <textarea
@@ -1669,7 +1705,8 @@ export default function AdminPanel({
                       className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none animate-height"
                     />
                   </div>
-                  <td className="md:col-span-1">
+                  {isPeptideForm && (
+                  <div className="md:col-span-1">
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">Инструкция применения (RU)</label>
                     <textarea
                       id="form-ru-usage"
@@ -1679,7 +1716,8 @@ export default function AdminPanel({
                       onChange={(e) => setLocUsages({ ...locUsages, ru: e.target.value })}
                       className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
-                  </td>
+                  </div>
+                  )}
                   <div className="md:col-span-1">
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">Полная аннотация клиническая (RU)</label>
                     <textarea
@@ -1693,6 +1731,7 @@ export default function AdminPanel({
                   </div>
                 </div>
 
+                {isPeptideForm && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">Показания к применению (RU, разделяйте новые строки)</label>
@@ -1717,6 +1756,7 @@ export default function AdminPanel({
                     />
                   </div>
                 </div>
+                )}
               </div>
 
               {/* Grid 5 Block: English (EN) Localized fields */}
@@ -1738,7 +1778,7 @@ export default function AdminPanel({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className={`grid grid-cols-1 gap-4 ${isPeptideForm ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">Brief Description (EN)</label>
                     <textarea
@@ -1750,6 +1790,7 @@ export default function AdminPanel({
                       className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
                   </div>
+                  {isPeptideForm && (
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">Usage / Method (EN)</label>
                     <textarea
@@ -1761,6 +1802,7 @@ export default function AdminPanel({
                       className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
                   </div>
+                  )}
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">Full Description (EN)</label>
                     <textarea
@@ -1774,6 +1816,7 @@ export default function AdminPanel({
                   </div>
                 </div>
 
+                {isPeptideForm && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">Indications (EN, split by newlines)</label>
@@ -1798,6 +1841,7 @@ export default function AdminPanel({
                     />
                   </div>
                 </div>
+                )}
               </div>
 
               {/* Grid 6 Block: Arabic (AR) Localized fields */}
@@ -1818,7 +1862,7 @@ export default function AdminPanel({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-right">
+                <div className={`grid grid-cols-1 gap-4 text-right ${isPeptideForm ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">وصف موجز (AR)</label>
                     <textarea
@@ -1830,6 +1874,7 @@ export default function AdminPanel({
                       className="w-full px-3 py-1.5 text-xs text-right border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
                   </div>
+                  {isPeptideForm && (
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">طريقة الاستخدام (AR)</label>
                     <textarea
@@ -1841,6 +1886,7 @@ export default function AdminPanel({
                       className="w-full px-3 py-1.5 text-xs text-right border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
                     />
                   </div>
+                  )}
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">الوصف الكامل الطبي (AR)</label>
                     <textarea
@@ -1854,6 +1900,7 @@ export default function AdminPanel({
                   </div>
                 </div>
 
+                {isPeptideForm && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-right">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 mb-1">دواعي الاستعمال (AR، كل سطر على حدة)</label>
@@ -1878,6 +1925,7 @@ export default function AdminPanel({
                     />
                   </div>
                 </div>
+                )}
               </div>
 
               {/* Form buttons block */}
