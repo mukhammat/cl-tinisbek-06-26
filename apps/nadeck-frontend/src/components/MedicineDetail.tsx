@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import type { TouchEvent } from 'react';
 import { Product, Language, CartItem, User } from '../types';
 import { TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume, unitLabel } from '../currency';
 import { renderRichText } from '../richText';
-import { Star, ArrowLeft, Plus, Minus, ShoppingCart, ShieldAlert, Award, FileText, Check, BellRing, BellOff, ChevronDown } from 'lucide-react';
+import { Star, ArrowLeft, Plus, Minus, ShoppingCart, ShieldAlert, Award, FileText, Check, BellRing, BellOff, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface MedicineDetailProps {
@@ -42,6 +43,27 @@ export default function MedicineDetail({
   const availableVolumes = medicine.volumes && medicine.volumes.length > 0 ? medicine.volumes : [getPrimaryVolume(medicine)];
   const [selectedVolume, setSelectedVolume] = useState<number>(getPrimaryVolume(medicine).mgPerUnit);
   const currentVolumeInfo = availableVolumes.find((v) => v.mgPerUnit === selectedVolume) || availableVolumes[0];
+
+  // Photo gallery - resets to the cover photo whenever the viewed product changes.
+  const images = medicine.images && medicine.images.length > 0 ? medicine.images : [''];
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [medicine.id]);
+  const showPrevImage = () => setActiveImageIndex((i) => (i === 0 ? images.length - 1 : i - 1));
+  const showNextImage = () => setActiveImageIndex((i) => (i === images.length - 1 ? 0 : i + 1));
+
+  // Basic swipe-to-flip support for touch devices.
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const handleTouchStart = (e: TouchEvent) => setTouchStartX(e.touches[0].clientX);
+  const handleTouchEnd = (e: TouchEvent) => {
+    if (touchStartX === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(delta) > 40) {
+      delta > 0 ? showPrevImage() : showNextImage();
+    }
+    setTouchStartX(null);
+  };
 
   const t = (key: string) => {
     return TRANSLATIONS[key]?.[currentLang] || key;
@@ -88,14 +110,73 @@ export default function MedicineDetail({
         
         {/* Pictures gallery column */}
         <div className="md:col-span-5 flex flex-col gap-4" id="detail-image-col">
-          <div className="aspect-square w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 relative">
+          <div
+            className="aspect-square w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 relative group"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <img
-              src={medicine.image}
+              id={`detail-image-active-${medicine.id}`}
+              src={images[activeImageIndex]}
               alt={medicine.name[currentLang]}
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
             />
+            {images.length > 1 && (
+              <>
+                <button
+                  id="detail-image-prev"
+                  type="button"
+                  onClick={showPrevImage}
+                  aria-label="Previous photo"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  id="detail-image-next"
+                  type="button"
+                  onClick={showNextImage}
+                  aria-label="Next photo"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <div className="absolute bottom-3 inset-x-0 flex items-center justify-center gap-1.5" id="detail-image-dots">
+                  {images.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      aria-label={`Photo ${index + 1}`}
+                      onClick={() => setActiveImageIndex(index)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        index === activeImageIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/60 hover:bg-white/80'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
+
+          {images.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1" id="detail-image-thumbnails">
+              {images.map((url, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  id={`detail-image-thumb-${index}`}
+                  onClick={() => setActiveImageIndex(index)}
+                  className={`w-14 h-14 shrink-0 rounded-xl overflow-hidden border-2 transition-colors ${
+                    index === activeImageIndex ? 'border-nadeck-500' : 'border-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  <img src={url} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center gap-2 justify-center py-2 px-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-500 text-xs text-center font-medium">
             <Award className="w-4 h-4 text-nadeck-600 shrink-0" />
             <span>Сертифицированный оригинальный препарат</span>

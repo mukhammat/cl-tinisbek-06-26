@@ -262,7 +262,7 @@ export default function CartView({
                 {/* Thumb */}
                 <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 shrink-0">
                   <img
-                    src={item.medicine.image}
+                    src={item.medicine.images?.[0]}
                     alt={item.medicine.name[currentLang]}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"

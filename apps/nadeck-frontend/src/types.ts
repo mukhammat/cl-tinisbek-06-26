@@ -51,7 +51,7 @@ export interface Product {
   category: string; // category id from database
   description: Record<Language, string>;
   fullDescription: Record<Language, string>;
-  image: string;
+  images: string[]; // gallery of image URLs; images[0] is the cover photo shown in listings
   rating: number;
   volumes: ProductVolume[]; // all available package volumes; the price lives here, per volume (see getPrimaryVolume)
   inStock?: boolean;

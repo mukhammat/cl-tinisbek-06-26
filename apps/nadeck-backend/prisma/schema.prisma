@@ -53,7 +53,7 @@ model Product {
   category        Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   description     Json // { ru, en, ar }
   fullDescription Json // { ru, en, ar }
-  image           String
+  images          Json @default("[]") // string[] of image URLs - images[0] is the cover photo
   rating          Float
   inStock         Int
 

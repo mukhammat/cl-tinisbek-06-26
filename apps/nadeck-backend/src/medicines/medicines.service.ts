@@ -38,6 +38,11 @@ export class MedicinesService {
     return unit === 'ml' || unit === 'pcs' ? unit : 'mg';
   }
 
+  private normalizeImages(images: any): string[] {
+    if (!Array.isArray(images)) return [];
+    return images.filter((url) => typeof url === 'string' && url.trim().length > 0);
+  }
+
   // Resolves the category id from either the current `categoryId` field or the legacy
   // `category` field, falling back to DEFAULT_CATEGORY_ID, and verifies it actually exists.
   private async resolveCategoryId(categoryId: any, category: any): Promise<string> {
@@ -61,7 +66,7 @@ export class MedicinesService {
       unit: p.unit as ProductUnit,
       description: p.description,
       fullDescription: p.fullDescription,
-      image: p.image,
+      images: p.images,
       rating: p.rating,
       inStock: p.inStock === 1,
     };
@@ -100,7 +105,7 @@ export class MedicinesService {
   async create(body: any) {
     const {
       id, name, categoryId, category, description, fullDescription,
-      indications, contraindications, usage, image, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit
+      indications, contraindications, usage, images, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit
     } = body;
 
     if (!id || !name) {
@@ -112,6 +117,10 @@ export class MedicinesService {
     const normalizedVolumes = this.normalizeVolumes(volumes);
     if (normalizedVolumes.length === 0) {
       throw new BadRequestException('At least one priced volume is required');
+    }
+    const normalizedImages = this.normalizeImages(images);
+    if (normalizedImages.length === 0) {
+      throw new BadRequestException('At least one product image is required');
     }
 
     const resolvedCategoryId = await this.resolveCategoryId(categoryId, category);
@@ -126,7 +135,7 @@ export class MedicinesService {
           categoryId: resolvedCategoryId,
           description: description || { ru: '', en: '', ar: '' },
           fullDescription: fullDescription || { ru: '', en: '', ar: '' },
-          image: image || 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
+          images: normalizedImages,
           rating: Number(rating || 5.0),
           inStock: inStock === false ? 0 : 1,
           ...(productType === 'peptide'
@@ -162,7 +171,7 @@ export class MedicinesService {
   async update(id: string, body: any) {
     const {
       name, categoryId, category, description, fullDescription,
-      indications, contraindications, usage, image, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit
+      indications, contraindications, usage, images, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit
     } = body;
 
     const productType = this.resolveProductType(type);
@@ -170,6 +179,10 @@ export class MedicinesService {
     const normalizedVolumes = this.normalizeVolumes(volumes);
     if (normalizedVolumes.length === 0) {
       throw new BadRequestException('At least one priced volume is required');
+    }
+    const normalizedImages = this.normalizeImages(images);
+    if (normalizedImages.length === 0) {
+      throw new BadRequestException('At least one product image is required');
     }
 
     const resolvedCategoryId = await this.resolveCategoryId(categoryId, category);
@@ -197,7 +210,7 @@ export class MedicinesService {
           categoryId: resolvedCategoryId,
           description,
           fullDescription,
-          image,
+          images: normalizedImages,
           rating: Number(rating),
           inStock: newInStock,
           ...(productType === 'peptide'

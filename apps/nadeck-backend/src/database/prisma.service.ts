@@ -70,7 +70,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
               categoryId: med.category,
               description: med.description,
               fullDescription: med.fullDescription,
-              image: med.image,
+              images: med.image ? [med.image] : [],
               rating: Number(med.rating),
               inStock: 1,
               medicine: {

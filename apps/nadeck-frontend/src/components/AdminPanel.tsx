@@ -153,6 +153,21 @@ export default function AdminPanel({
     });
   };
 
+  // Uploads every selected file (multi-select is allowed) and appends the resulting URLs to
+  // the product's photo gallery - existing photos are kept, not replaced.
+  const handleAddProductImages = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsUploadingProductImage(true);
+    Promise.all(Array.from(files).map((file) => uploadImage(file, 'medicines')))
+      .then((urls) => setFormData((prev) => ({ ...prev, images: [...(prev.images || []), ...urls] })))
+      .catch((err) => showFeedback('error', err.message || (currentLang === 'ru' ? 'Не удалось загрузить изображение' : 'Could not upload image')))
+      .finally(() => setIsUploadingProductImage(false));
+  };
+
+  const handleRemoveProductImage = (index: number) => {
+    setFormData((prev) => ({ ...prev, images: (prev.images || []).filter((_, i) => i !== index) }));
+  };
+
   // Toggle Stock Status
   const handleToggleStock = (med: Product) => {
     const updatedMed = {
@@ -256,7 +271,7 @@ export default function AdminPanel({
       type: 'peptide',
       unit: 'mg',
       category: defaultCategoryId,
-      image: 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
+      images: ['https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80'],
       rating: 5.0,
       form: 'vial',
       mgPerUnit: 5,
@@ -376,7 +391,7 @@ export default function AdminPanel({
       categoryId: formData.category || defaultCategoryId,
       description: locDescs,
       fullDescription: locFullDescs,
-      image: formData.image || 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80',
+      images: formData.images && formData.images.length > 0 ? formData.images : ['https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80'],
       rating: Number(formData.rating || 5.0),
       volumes: volumesList,
       inStock: formData.inStock !== false,
@@ -787,7 +802,7 @@ export default function AdminPanel({
                           <td className="py-4 px-5">
                             <div className="flex items-center gap-3">
                               <img 
-                                src={med.image} 
+                                src={med.images?.[0]}
                                 alt={med.name.en} 
                                 className="w-11 h-11 rounded-lg object-cover bg-slate-50 border border-slate-100 shrink-0" 
                               />
@@ -1401,45 +1416,59 @@ export default function AdminPanel({
               <div className={`grid grid-cols-1 gap-5 ${isPeptideForm ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
                 <div className="md:col-span-2">
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                    {currentLang === 'ru' ? 'Изображение товара' : 'Product image'}
+                    {currentLang === 'ru' ? 'Фото товара (можно несколько)' : 'Product photos (multiple allowed)'}
                   </label>
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center justify-center w-14 h-14 rounded-2xl border border-slate-200 bg-slate-50 shrink-0 overflow-hidden">
-                      {isUploadingProductImage ? (
-                        <Loader2 className="w-5 h-5 text-nadeck-600 animate-spin" />
-                      ) : formData.image ? (
-                        <img src={formData.image} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <Upload className="w-5 h-5 text-slate-300" />
-                      )}
-                    </span>
+                  <div className="flex flex-wrap items-center gap-2" id="form-images-gallery">
+                    {(formData.images || []).map((url, index) => (
+                      <div
+                        key={`${url}-${index}`}
+                        id={`form-image-thumb-${index}`}
+                        className="relative w-14 h-14 rounded-2xl border border-slate-200 bg-slate-50 shrink-0 overflow-hidden group"
+                      >
+                        <img src={url} alt="" className="w-full h-full object-cover" />
+                        {index === 0 && (
+                          <span className="absolute bottom-0 inset-x-0 bg-nadeck-600/90 text-white text-[7px] font-bold text-center leading-tight py-0.5">
+                            {currentLang === 'ru' ? 'Обложка' : 'Cover'}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          id={`form-image-remove-${index}`}
+                          onClick={() => handleRemoveProductImage(index)}
+                          className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-white/90 hover:bg-rose-50 text-slate-500 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title={currentLang === 'ru' ? 'Удалить фото' : 'Remove photo'}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
                     <label
                       htmlFor="form-input-image-upload"
-                      className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors ${
+                      className={`flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-2xl border border-dashed border-slate-300 text-slate-400 hover:border-nadeck-400 hover:text-nadeck-600 text-[9px] font-bold transition-colors ${
                         isUploadingProductImage ? 'opacity-50 pointer-events-none' : 'cursor-pointer'
                       }`}
                     >
-                      <Upload className="w-3.5 h-3.5" />
-                      {currentLang === 'ru' ? 'Загрузить изображение' : 'Upload image'}
+                      {isUploadingProductImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      {currentLang === 'ru' ? 'Добавить' : 'Add'}
                     </label>
                     <input
                       id="form-input-image-upload"
                       type="file"
                       accept="image/*"
+                      multiple
                       className="hidden"
                       disabled={isUploadingProductImage}
                       onChange={(e) => {
-                        const file = e.target.files?.[0];
+                        handleAddProductImages(e.target.files);
                         e.target.value = '';
-                        if (!file) return;
-                        setIsUploadingProductImage(true);
-                        uploadImage(file, 'medicines')
-                          .then((url) => setFormData((prev) => ({ ...prev, image: url })))
-                          .catch((err) => showFeedback('error', err.message || (currentLang === 'ru' ? 'Не удалось загрузить изображение' : 'Could not upload image')))
-                          .finally(() => setIsUploadingProductImage(false));
                       }}
                     />
                   </div>
+                  <p className="text-[10px] text-slate-400 mt-1.5">
+                    {currentLang === 'ru'
+                      ? 'Первое фото — обложка в каталоге. На странице товара покупатель сможет пролистать все фото.'
+                      : 'The first photo is the catalog cover. Shoppers can flip through all photos on the product page.'}
+                  </p>
                 </div>
 
                 {isPeptideForm && (

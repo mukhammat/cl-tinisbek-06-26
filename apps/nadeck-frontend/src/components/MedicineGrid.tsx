@@ -163,7 +163,7 @@ export default function MedicineGrid({
                   id={`thumbnail-${med.id}`}
                 >
                   <img
-                    src={med.image}
+                    src={med.images?.[0]}
                     alt={med.name[currentLang]}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
