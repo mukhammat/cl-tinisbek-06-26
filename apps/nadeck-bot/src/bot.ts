@@ -2,6 +2,9 @@ import { config as loadEnv } from "dotenv";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { Bot, type Context, type Filter } from "grammy";
+import { isChatAdmin } from "./adminCache.js";
+import { startGreetingScheduler } from "./scheduler.js";
+import { rememberGroup, forgetGroup, listGroups } from "./groupStore.js";
 
 // Single shared .env at the repo root (same file backend reads), not a per-app copy.
 loadEnv({ path: join(import.meta.dirname, "..", "..", "..", ".env") });
@@ -37,36 +40,48 @@ bot.command("start", (ctx) =>
   ),
 );
 
-// In groups the bot must only jump in when addressed directly - otherwise every message
-// between members would get an AI reply. Telegram's own privacy-mode filtering on the
-// Bot API side is not reliable enough on its own (depends on BotFather settings and
-// whether the mention was recognized as a proper entity), so we gate here too.
-function extractGroupQuestion(ctx: Filter<Context, "message:text">): string | null {
-  if (ctx.chat.type !== "group" && ctx.chat.type !== "supergroup") return ctx.message.text;
+// The only way the bot learns which groups it belongs to (there's no "list my chats" API
+// call) - fires when it's added/promoted/removed/kicked. Powers the daily greeting list.
+bot.on("my_chat_member", (ctx) => {
+  if (ctx.chat.type !== "group" && ctx.chat.type !== "supergroup") return;
 
-  const isReplyToBot = ctx.message.reply_to_message?.from?.id === ctx.me.id;
+  const status = ctx.myChatMember.new_chat_member.status;
+  if (status === "member" || status === "administrator") {
+    rememberGroup(ctx.chat.id);
+    console.log(`Добавлен в группу "${ctx.chat.title}" (id=${ctx.chat.id}) — включена в ежедневное приветствие.`);
+  } else if (status === "left" || status === "kicked") {
+    forgetGroup(ctx.chat.id);
+    console.log(`Удалён из группы "${ctx.chat.title}" (id=${ctx.chat.id}) — исключена из рассылки.`);
+  }
+});
+
+// Strips an @mention of the bot itself from the message text (cosmetic - so "@nadeck_ai_bot
+// что это пептиды?" is forwarded to the backend as just "что это пептиды?").
+function stripSelfMention(ctx: Filter<Context, "message:text">): string {
   const botUsername = ctx.me.username?.toLowerCase();
   const mentionEntity = ctx.message.entities?.find((e) => {
     if (e.type !== "mention") return false;
-    const mentionText = ctx.message.text.slice(e.offset, e.offset + e.length).toLowerCase();
-    return mentionText === `@${botUsername}`;
+    return ctx.message.text.slice(e.offset, e.offset + e.length).toLowerCase() === `@${botUsername}`;
   });
-
-  if (!isReplyToBot && !mentionEntity) return null;
-
-  if (mentionEntity) {
-    return (ctx.message.text.slice(0, mentionEntity.offset) + ctx.message.text.slice(mentionEntity.offset + mentionEntity.length)).trim();
-  }
-  return ctx.message.text.trim();
+  if (!mentionEntity) return ctx.message.text.trim();
+  return (ctx.message.text.slice(0, mentionEntity.offset) + ctx.message.text.slice(mentionEntity.offset + mentionEntity.length)).trim();
 }
 
 bot.on("message:text", async (ctx) => {
-  const question = extractGroupQuestion(ctx);
-  if (question === null) return;
-  if (!question) {
-    await ctx.reply("Слушаю! Задайте вопрос о пептидах или других товарах Nadeck.");
-    return;
+  // Never answer other bots (avoids reply loops), and never answer group admins - they're
+  // staff talking shop, not customers asking a question.
+  if (ctx.from?.is_bot) return;
+
+  const isGroup = ctx.chat.type === "group" || ctx.chat.type === "supergroup";
+  if (isGroup) {
+    // Fallback for groups the bot already belonged to before this feature existed, where no
+    // my_chat_member event was ever delivered - a regular message is enough to register it too.
+    rememberGroup(ctx.chat.id);
+    if (ctx.from && (await isChatAdmin(bot, ctx.chat.id, ctx.from.id))) return;
   }
+
+  const question = isGroup ? stripSelfMention(ctx) : ctx.message.text.trim();
+  if (!question) return;
 
   const chatId = ctx.chat.id;
   const history = chatHistories.get(chatId) ?? [];
@@ -108,6 +123,8 @@ bot.on("message:text", async (ctx) => {
 });
 
 bot.catch((err) => console.error("Bot error:", err));
+
+startGreetingScheduler(bot, listGroups);
 
 bot.start();
 console.log(`Nadeck bot запущен (backend: ${BACKEND_URL})`);

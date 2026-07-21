@@ -71,6 +71,8 @@ services:
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - BACKEND_URL=http://backend:3001
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL}
     volumes:
       - ./apps/nadeck-bot/data:/app/apps/nadeck-bot/data
 
