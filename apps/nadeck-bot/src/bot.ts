@@ -1,7 +1,7 @@
 import { config as loadEnv } from "dotenv";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { Bot } from "grammy";
+import { Bot, type Context, type Filter } from "grammy";
 
 // Single shared .env at the repo root (same file backend reads), not a per-app copy.
 loadEnv({ path: join(import.meta.dirname, "..", "..", "..", ".env") });
@@ -37,8 +37,37 @@ bot.command("start", (ctx) =>
   ),
 );
 
+// In groups the bot must only jump in when addressed directly - otherwise every message
+// between members would get an AI reply. Telegram's own privacy-mode filtering on the
+// Bot API side is not reliable enough on its own (depends on BotFather settings and
+// whether the mention was recognized as a proper entity), so we gate here too.
+function extractGroupQuestion(ctx: Filter<Context, "message:text">): string | null {
+  if (ctx.chat.type !== "group" && ctx.chat.type !== "supergroup") return ctx.message.text;
+
+  const isReplyToBot = ctx.message.reply_to_message?.from?.id === ctx.me.id;
+  const botUsername = ctx.me.username?.toLowerCase();
+  const mentionEntity = ctx.message.entities?.find((e) => {
+    if (e.type !== "mention") return false;
+    const mentionText = ctx.message.text.slice(e.offset, e.offset + e.length).toLowerCase();
+    return mentionText === `@${botUsername}`;
+  });
+
+  if (!isReplyToBot && !mentionEntity) return null;
+
+  if (mentionEntity) {
+    return (ctx.message.text.slice(0, mentionEntity.offset) + ctx.message.text.slice(mentionEntity.offset + mentionEntity.length)).trim();
+  }
+  return ctx.message.text.trim();
+}
+
 bot.on("message:text", async (ctx) => {
-  const question = ctx.message.text;
+  const question = extractGroupQuestion(ctx);
+  if (question === null) return;
+  if (!question) {
+    await ctx.reply("Слушаю! Задайте вопрос о пептидах или других товарах Nadeck.");
+    return;
+  }
+
   const chatId = ctx.chat.id;
   const history = chatHistories.get(chatId) ?? [];
 
