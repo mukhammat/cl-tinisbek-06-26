@@ -1,0 +1,21 @@
+{
+  "name": "Nadeck",
+  "short_name": "Nadeck",
+  "description": "Пептиды и аминокислоты с доставкой по Казахстану и СНГ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0071bc",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
