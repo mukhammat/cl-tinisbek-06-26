@@ -6,7 +6,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Language, Product, CartItem, User, Order, AppNotification, Category, LANGUAGE_NAME_TRANSLATIONS } from './types';
 import { MEDICINES_DATA, TRANSLATIONS } from './data';
-import { currentMarket, marketLanguages } from './market';
+import { currentMarket, marketLanguages, MARKET } from './market';
 import Navbar from './components/Navbar';
 import MedicineGrid from './components/MedicineGrid';
 import MedicineDetail from './components/MedicineDetail';
@@ -40,6 +40,9 @@ export default function App() {
 
   // Load medicines list from database, default to empty to allow loading inside Grid
   const [medicinesList, setMedicinesList] = useState<Product[]>([]);
+  // Unfiltered catalog (every market) for the admin panel only - so an admin working from
+  // either site can still see/manage products that aren't (yet) visible on that site.
+  const [adminMedicinesList, setAdminMedicinesList] = useState<Product[]>([]);
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
 
   // Retries a couple of times with backoff before giving up - covers the brief window right
@@ -63,9 +66,19 @@ export default function App() {
   };
 
   const fetchMedicinesList = () => {
-    fetchWithRetry('/api/medicines', (data) => {
+    fetchWithRetry(`/api/medicines?market=${MARKET}`, (data) => {
       if (Array.isArray(data) && data.length > 0) {
         setMedicinesList(data);
+      }
+    });
+  };
+
+  // No market filter - the admin panel manages the whole catalog regardless of which site
+  // it's opened from.
+  const fetchAdminMedicinesList = () => {
+    fetchWithRetry('/api/medicines', (data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setAdminMedicinesList(data);
       }
     });
   };
@@ -122,6 +135,10 @@ export default function App() {
   const setCartOpen = (open: boolean) => {
     setActiveTab(open ? 'cart' : 'catalog');
   };
+
+  useEffect(() => {
+    if (user.isAdmin) fetchAdminMedicinesList();
+  }, [user.isAdmin]);
 
   // Sync to local storage
   useEffect(() => {
@@ -575,9 +592,9 @@ export default function App() {
               {activeTab === 'admin' && (
                 <AdminPanel
                   currentLang={currentLang}
-                  onRefreshMedicines={fetchMedicinesList}
+                  onRefreshMedicines={() => { fetchMedicinesList(); fetchAdminMedicinesList(); }}
                   onRefreshCategories={fetchCategoriesList}
-                  allMedicines={medicinesList}
+                  allMedicines={adminMedicinesList}
                   categories={adminCategories}
                   token={user.token}
                 />

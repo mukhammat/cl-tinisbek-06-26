@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Language, LanguageConfig, SUPPORTED_LANGUAGES } from './types';
+import { Language, LanguageConfig, SiteMarket, SUPPORTED_LANGUAGES } from './types';
 
 // Set at build time (Dockerfile builds this bundle twice, once per market) - see
 // apps/nadeck-frontend/Dockerfile and nginx.conf for how each market's dist/ is served
 // under its own domain.
-export type Market = 'main' | 'ar';
+export type Market = SiteMarket;
 
 interface MarketConfig {
   defaultLang: Language;
@@ -34,7 +34,7 @@ const MARKET_CONFIGS: Record<Market, MarketConfig> = {
   },
 };
 
-const MARKET: Market = import.meta.env.VITE_MARKET === 'ar' ? 'ar' : 'main';
+export const MARKET: Market = import.meta.env.VITE_MARKET === 'ar' ? 'ar' : 'main';
 
 export const currentMarket = MARKET_CONFIGS[MARKET];
 

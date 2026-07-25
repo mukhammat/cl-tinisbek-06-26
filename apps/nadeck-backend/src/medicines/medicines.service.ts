@@ -14,6 +14,8 @@ const DEFAULT_CATEGORY_ID = 'weightloss';
 type ProductVolume = { mgPerUnit: number; price: number; priceUsd: number };
 type ProductType = 'peptide' | 'additional_good';
 type ProductUnit = 'mg' | 'ml' | 'pcs';
+type Market = 'main' | 'ar';
+const VALID_MARKETS: Market[] = ['main', 'ar'];
 
 @Injectable()
 export class MedicinesService {
@@ -36,6 +38,13 @@ export class MedicinesService {
 
   private resolveProductUnit(unit: any): ProductUnit {
     return unit === 'ml' || unit === 'pcs' ? unit : 'mg';
+  }
+
+  // Defaults to ['main'] so a product only shows up on ar.nadeck.net once someone explicitly
+  // opts it in, rather than every existing product silently appearing there.
+  private normalizeMarkets(markets: any): Market[] {
+    const valid = Array.isArray(markets) ? markets.filter((m) => VALID_MARKETS.includes(m)) : [];
+    return valid.length > 0 ? Array.from(new Set(valid)) : ['main'];
   }
 
   private normalizeImages(images: any): string[] {
@@ -69,6 +78,7 @@ export class MedicinesService {
       images: p.images,
       rating: p.rating,
       inStock: p.inStock === 1,
+      markets: p.markets,
     };
 
     if (p.type === 'peptide' && p.medicine) {
@@ -90,9 +100,10 @@ export class MedicinesService {
     };
   }
 
-  async getAll() {
+  async getAll(market?: string) {
     try {
       const rows = await this.prisma.product.findMany({
+        where: VALID_MARKETS.includes(market as Market) ? { markets: { has: market as Market } } : undefined,
         include: { medicine: true, additionalGood: true },
       });
       return rows.map((p) => this.flatten(p));
@@ -105,7 +116,7 @@ export class MedicinesService {
   async create(body: any) {
     const {
       id, name, categoryId, category, description, fullDescription,
-      indications, contraindications, usage, images, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit
+      indications, contraindications, usage, images, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit, markets
     } = body;
 
     if (!id || !name) {
@@ -138,6 +149,7 @@ export class MedicinesService {
           images: normalizedImages,
           rating: Number(rating || 5.0),
           inStock: inStock === false ? 0 : 1,
+          markets: this.normalizeMarkets(markets),
           ...(productType === 'peptide'
             ? {
                 medicine: {
@@ -171,7 +183,7 @@ export class MedicinesService {
   async update(id: string, body: any) {
     const {
       name, categoryId, category, description, fullDescription,
-      indications, contraindications, usage, images, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit
+      indications, contraindications, usage, images, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit, markets
     } = body;
 
     const productType = this.resolveProductType(type);
@@ -213,6 +225,7 @@ export class MedicinesService {
           images: normalizedImages,
           rating: Number(rating),
           inStock: newInStock,
+          markets: this.normalizeMarkets(markets),
           ...(productType === 'peptide'
             ? {
                 medicine: {

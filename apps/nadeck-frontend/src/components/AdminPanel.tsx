@@ -279,7 +279,8 @@ export default function AdminPanel({
         mgPerKgPerDay: 0.005,
         defaultDailyDoses: 1
       },
-      inStock: true
+      inStock: true,
+      markets: ['main']
     });
     setVolumesList([{ mgPerUnit: 5, price: 15000, priceUsd: 50 }]);
     setNewVolumeMg('');
@@ -395,6 +396,7 @@ export default function AdminPanel({
       rating: Number(formData.rating || 5.0),
       volumes: volumesList,
       inStock: formData.inStock !== false,
+      markets: formData.markets && formData.markets.length > 0 ? formData.markets : ['main'],
       // Clinical/dosing fields only mean something for peptides - omitted entirely for
       // additional goods rather than sent as empty placeholders.
       ...(isPeptideForm
@@ -819,9 +821,19 @@ export default function AdminPanel({
 
                           {/* Col 2 Category */}
                           <td className="py-4 px-4">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                              {categoryLabelById[med.category] || med.category}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-1">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                {categoryLabelById[med.category] || med.category}
+                              </span>
+                              {(med.markets && med.markets.length > 0 ? med.markets : ['main']).map((market) => (
+                                <span
+                                  key={market}
+                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200"
+                                >
+                                  {market === 'main' ? '🇷🇺 nadeck.net' : '🇸🇦 ar.nadeck.net'}
+                                </span>
+                              ))}
+                            </div>
                           </td>
 
                           {/* Col 3 Info tag */}
@@ -1504,6 +1516,34 @@ export default function AdminPanel({
                     onChange={(e) => setFormData({ ...formData, rating: Number(e.target.value) })}
                     className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
                   />
+                </div>
+              </div>
+
+              {/* Which storefront(s) list this product - independent of translated content. */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50 space-y-2.5" id="form-markets-box">
+                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
+                  {currentLang === 'ru' ? 'Показывать на сайтах' : 'Visible on'}
+                </span>
+                <div className="flex flex-wrap gap-4">
+                  {(['main', 'ar'] as const).map((market) => {
+                    const active = (formData.markets && formData.markets.length > 0 ? formData.markets : ['main']).includes(market);
+                    return (
+                      <label key={market} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
+                        <input
+                          id={`form-checkbox-market-${market}`}
+                          type="checkbox"
+                          checked={active}
+                          onChange={() => {
+                            const current = formData.markets && formData.markets.length > 0 ? formData.markets : ['main'];
+                            const next = active ? current.filter((m) => m !== market) : [...current, market];
+                            setFormData({ ...formData, markets: next });
+                          }}
+                          className="w-4 h-4 rounded border-slate-300 text-nadeck-600 focus:ring-nadeck-500"
+                        />
+                        {market === 'main' ? 'nadeck.net' : 'ar.nadeck.net'}
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 

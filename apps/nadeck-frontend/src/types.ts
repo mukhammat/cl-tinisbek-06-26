@@ -5,6 +5,10 @@
 
 export type Language = 'ru' | 'en' | 'ar';
 
+// Which storefront(s) a product is visible on - independent of Language (a product can be
+// shown in Arabic translation on nadeck.net too; this controls the site, not the wording).
+export type SiteMarket = 'main' | 'ar';
+
 export interface LanguageConfig {
   code: Language;
   name: string;
@@ -63,6 +67,7 @@ export interface Product {
   rating: number;
   volumes: ProductVolume[]; // all available package volumes; the price lives here, per volume (see getPrimaryVolume)
   inStock?: boolean;
+  markets?: SiteMarket[]; // which storefront(s) list this product; defaults to ['main'] server-side
 
   // Peptide-only fields - present only when type === 'peptide'.
   indications?: Record<Language, string[]>;
