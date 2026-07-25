@@ -55,7 +55,7 @@ For production, schedule this daily and copy the output off-host (e.g. to S3/ano
 
 Setup:
 
-1. In Cloudflare → **DNS**, add A records for `nadeck.net` and `www.nadeck.net` pointing to the server's IP (`curl -4 ifconfig.me` on the server), with the proxy status **Proxied** (orange cloud) — this is what makes Cloudflare terminate HTTPS.
+1. In Cloudflare → **DNS**, add A records for `nadeck.net`, `www.nadeck.net`, and `ar.nadeck.net` (the Arabic-audience site — same server, own frontend bundle, see `apps/nadeck-frontend/src/market.ts`) pointing to the server's IP (`curl -4 ifconfig.me` on the server), with the proxy status **Proxied** (orange cloud) — this is what makes Cloudflare terminate HTTPS.
 2. In Cloudflare → **SSL/TLS**, set the encryption mode to **Flexible** (visitor ↔ Cloudflare is HTTPS; Cloudflare ↔ origin is plain HTTP, matching this server's setup).
 3. On the server: `docker compose up -d --build` — nothing else needed, Cloudflare handles the certificate and its renewal entirely on their side.
 

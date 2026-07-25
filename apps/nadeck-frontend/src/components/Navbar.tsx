@@ -4,8 +4,9 @@
  */
 
 import { useState } from 'react';
-import { Language, User, CartItem, AppNotification, SUPPORTED_LANGUAGES } from '../types';
+import { Language, User, CartItem, AppNotification } from '../types';
 import { TRANSLATIONS } from '../data';
+import { marketLanguages } from '../market';
 import { ShoppingCart, Calculator, User as UserIcon, LogIn, Search, Heart, Plus, Bell } from 'lucide-react';
 import nadeckIcon from '../assets/nadeck-icon.png';
 
@@ -127,14 +128,14 @@ export default function Navbar({
           {/* Search Bar - hidden on mobile, responsive inside header */}
           {['catalog', 'calculator', 'orders'].includes(activeTab) && (
             <div className="hidden sm:flex items-center flex-1 max-w-sm relative" id="search-box">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
               <input
                 id="search-input"
                 type="text"
                 placeholder={t('searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-1.5 text-xs sm:text-sm bg-slate-50 hover:bg-slate-100/70 focus:bg-white rounded-xl border border-slate-200 focus:border-nadeck-500 focus:outline-none transition-all duration-200"
+                className="w-full ps-10 pe-4 py-1.5 text-xs sm:text-sm bg-slate-50 hover:bg-slate-100/70 focus:bg-white rounded-xl border border-slate-200 focus:border-nadeck-500 focus:outline-none transition-all duration-200"
               />
             </div>
           )}
@@ -148,15 +149,15 @@ export default function Navbar({
                 id="lang-select"
                 value={currentLang}
                 onChange={(e) => setLang(e.target.value as Language)}
-                className="appearance-none bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-nadeck-500 pr-6 cursor-pointer"
+                className="appearance-none bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-nadeck-500 pe-6 cursor-pointer"
               >
-                {SUPPORTED_LANGUAGES.map((lang) => (
+                {marketLanguages.map((lang) => (
                   <option key={lang.code} value={lang.code}>
                     {lang.flag} {lang.code.toUpperCase()}
                   </option>
                 ))}
               </select>
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] pointer-events-none text-slate-400">▼</span>
+              <span className="absolute end-2 top-1/2 -translate-y-1/2 text-[9px] pointer-events-none text-slate-400">▼</span>
             </div>
 
             {/* Notifications Bell Trigger */}
@@ -173,7 +174,7 @@ export default function Navbar({
                 >
                   <Bell className="w-5 h-5 group-hover:scale-105 transition-transform" />
                   {unreadCount > 0 && (
-                    <span id="notif-badge" className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center animate-pulse border-2 border-white">
+                    <span id="notif-badge" className="absolute -top-1.5 -end-1.5 bg-rose-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center animate-pulse border-2 border-white">
                       {unreadCount}
                     </span>
                   )}
@@ -182,7 +183,7 @@ export default function Navbar({
                 {notifPanelOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setNotifPanelOpen(false)} />
-                    <div id="notif-dropdown-panel" className="absolute right-0 top-full mt-2 w-80 max-w-[90vw] bg-white rounded-2xl border border-slate-100 shadow-xl z-50 overflow-hidden">
+                    <div id="notif-dropdown-panel" className="absolute end-0 top-full mt-2 w-80 max-w-[90vw] bg-white rounded-2xl border border-slate-100 shadow-xl z-50 overflow-hidden">
                       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                         <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">{t('notificationsTitle')}</h4>
                         {unreadCount > 0 && (
@@ -202,7 +203,7 @@ export default function Navbar({
                             <button
                               key={n.id}
                               onClick={() => !n.read && onMarkNotificationRead(n.id)}
-                              className={`w-full text-left px-4 py-3 text-xs flex items-start gap-2.5 transition ${
+                              className={`w-full text-start px-4 py-3 text-xs flex items-start gap-2.5 transition ${
                                 n.read ? 'bg-white text-slate-500' : 'bg-nadeck-50/40 text-slate-800 font-semibold hover:bg-nadeck-50/70'
                               }`}
                             >
@@ -230,7 +231,7 @@ export default function Navbar({
             >
               <ShoppingCart className="w-5 h-5 group-hover:scale-105 transition-transform" />
               {cartCount > 0 && (
-                <span id="cart-badge" className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center animate-pulse border-2 border-white">
+                <span id="cart-badge" className="absolute -top-1.5 -end-1.5 bg-rose-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center animate-pulse border-2 border-white">
                   {cartCount}
                 </span>
               )}
@@ -301,14 +302,14 @@ export default function Navbar({
         {/* Search bar on small mobile screens if on catalog, calculator, orders */}
         {['catalog', 'calculator', 'orders'].includes(activeTab) && (
           <div className="block sm:hidden pb-3 relative" id="mobile-search-box">
-            <Search className="absolute left-3 top-2.5 text-slate-400 w-3.5 h-3.5" />
+            <Search className="absolute start-3 top-2.5 text-slate-400 w-3.5 h-3.5" />
             <input
               id="mobile-search-input"
               type="text"
               placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500"
+              className="w-full ps-9 pe-3 py-2 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500"
             />
           </div>
         )}

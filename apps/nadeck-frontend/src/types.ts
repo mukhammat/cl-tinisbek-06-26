@@ -18,6 +18,14 @@ export const SUPPORTED_LANGUAGES: LanguageConfig[] = [
   { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' }
 ];
 
+// Name of each language (rows) as written in each UI language (columns) - e.g. how to label
+// "English" when the page itself is currently displayed in Arabic ('الإنجليزية', not 'English').
+export const LANGUAGE_NAME_TRANSLATIONS: Record<Language, Record<Language, string>> = {
+  ru: { ru: 'Русский', en: 'Russian', ar: 'الروسية' },
+  en: { ru: 'Английский', en: 'English', ar: 'الإنجليزية' },
+  ar: { ru: 'Арабский', en: 'Arabic', ar: 'العربية' }
+};
+
 export type DosageFrequency = 'daily' | 'twice_daily' | 'every_other_day' | 'weekly' | 'custom';
 
 // 'peptide' carries the clinical/dosing fields below; 'additional_good' is everything else

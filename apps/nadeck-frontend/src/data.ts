@@ -437,7 +437,7 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
   appName: {
     ru: 'Nadeck',
     en: 'Nadeck',
-    ar: 'ناديك'
+    ar: 'Nadeck'
   },
   appSubtitle: {
     ru: 'Премиальные сертифицированные пептиды и точный калькулятор разведения',
@@ -923,5 +923,50 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     ru: 'Не удалось подписаться. Проверьте email и попробуйте снова.',
     en: 'Could not subscribe. Check the email and try again.',
     ar: 'تعذر الاشتراك. تحقق من البريد الإلكتروني وحاول مرة أخرى.'
+  },
+  footerContactsTitle: {
+    ru: 'Контакты',
+    en: 'Contacts',
+    ar: 'التواصل'
+  },
+  footerAddress: {
+    ru: '📍 Астана',
+    en: '📍 Astana',
+    ar: '📍 أستانا'
+  },
+  footerLanguagesTitle: {
+    ru: 'Языки сервиса',
+    en: 'Supported Languages',
+    ar: 'اللغات المتاحة'
+  },
+  footerLicensingTitle: {
+    ru: 'Безопасность',
+    en: 'Licensing',
+    ar: 'الترخيص'
+  },
+  footerLicenseText: {
+    ru: 'Лицензия №1044392 ФК Республики Казахстан.',
+    en: 'License No. 1044392, Pharmacy Committee of the Republic of Kazakhstan.',
+    ar: 'الترخيص رقم 1044392 الصادر عن لجنة الصيدلة بجمهورية كازاخستان.'
+  },
+  footerCopyright: {
+    ru: 'Все права защищены © 2026.',
+    en: 'All rights reserved © 2026.',
+    ar: 'جميع الحقوق محفوظة © 2026.'
+  },
+  footerAppNote: {
+    ru: 'Приложение аптеки • Разработано и развёрнуто на Google Cloud',
+    en: 'Healthy Pharmacy App • Designed & Simulated on Google Cloud platform',
+    ar: 'تطبيق الصيدلية • تصميم وتشغيل على منصة Google Cloud'
+  },
+  footerOtcGuidelines: {
+    ru: 'Правила отпуска',
+    en: 'OTC Guidelines',
+    ar: 'قواعد الصرف'
+  },
+  footerPrivacyCode: {
+    ru: 'Конфиденциальность',
+    en: 'Privacy Code',
+    ar: 'سياسة الخصوصية'
   }
 };

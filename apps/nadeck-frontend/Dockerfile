@@ -10,10 +10,16 @@ COPY apps/nadeck-frontend/package.json ./apps/nadeck-frontend/package.json
 RUN npm ci
 
 COPY apps/nadeck-frontend ./apps/nadeck-frontend
-RUN npm run build -w @pharmacy/frontend
+
+# Two markets, one codebase (see src/market.ts): nadeck.net (ru/en/ar) and ar.nadeck.net
+# (ar/en only, Arabic-first). Each gets its own static bundle at build time so nginx can
+# serve both domains from this one image without a runtime flag - see nginx.conf.
+RUN npm run build -w @pharmacy/frontend -- --outDir dist/main
+RUN VITE_MARKET=ar npm run build -w @pharmacy/frontend -- --outDir dist/ar
 
 FROM nginx:1.27-alpine AS runtime
-COPY --from=builder /app/apps/nadeck-frontend/dist /usr/share/nginx/html
+COPY --from=builder /app/apps/nadeck-frontend/dist/main /usr/share/nginx/html/main
+COPY --from=builder /app/apps/nadeck-frontend/dist/ar /usr/share/nginx/html/ar
 COPY apps/nadeck-frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

@@ -4,8 +4,9 @@
  */
 
 import { useState, useEffect, FormEvent } from 'react';
-import { Language, Product, CartItem, User, Order, AppNotification, SUPPORTED_LANGUAGES, Category } from './types';
+import { Language, Product, CartItem, User, Order, AppNotification, Category, LANGUAGE_NAME_TRANSLATIONS } from './types';
 import { MEDICINES_DATA, TRANSLATIONS } from './data';
+import { currentMarket, marketLanguages } from './market';
 import Navbar from './components/Navbar';
 import MedicineGrid from './components/MedicineGrid';
 import MedicineDetail from './components/MedicineDetail';
@@ -22,10 +23,10 @@ import nadeckIconWhite from './assets/nadeck-icon-white.png';
 import heroBannerBg from './assets/hero-banner-office.png';
 
 export default function App() {
-  // Lang state (initializes from localStorage if available, fallback to Russian 'ru')
+  // Lang state (initializes from localStorage if available, fallback to the current market's default)
   const [currentLang, setLang] = useState<Language>(() => {
-    const saved = localStorage.getItem('pharmacy_lang');
-    return (saved as Language) || 'ru';
+    const saved = localStorage.getItem('pharmacy_lang') as Language | null;
+    return saved && currentMarket.availableLanguages.includes(saved) ? saved : currentMarket.defaultLang;
   });
 
   // Active navigation tab
@@ -125,6 +126,14 @@ export default function App() {
   // Sync to local storage
   useEffect(() => {
     localStorage.setItem('pharmacy_lang', currentLang);
+  }, [currentLang]);
+
+  // Arabic reads right-to-left - flips the whole layout (flex ordering, text alignment) via
+  // the `dir` attribute; components that pin things with physical left/right utilities instead
+  // of logical ones need their own `rtl:` overrides on top of this.
+  useEffect(() => {
+    document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = currentLang;
   }, [currentLang]);
 
   useEffect(() => {
@@ -515,7 +524,7 @@ export default function App() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                     <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                      {currentLang === 'ru' ? 'Калькулятор Курса Лечения' : 'Dosage Schedule & Budgeting'}
+                      {currentLang === 'ru' ? 'Калькулятор Курса Лечения' : currentLang === 'ar' ? 'حاسبة الجرعات والميزانية' : 'Dosage Schedule & Budgeting'}
                     </h3>
                   </div>
                   <DosageCalculator
@@ -539,7 +548,7 @@ export default function App() {
                       onClick={() => setActiveTab('catalog')}
                       className="text-nadeck-600 hover:text-nadeck-800 text-xs sm:text-sm font-semibold flex items-center gap-1 transition-colors"
                     >
-                      ← {currentLang === 'ru' ? 'Вернуться к покупкам' : 'Continue Shopping'}
+                      {currentLang === 'ar' ? '→' : '←'} {currentLang === 'ru' ? 'Вернуться к покупкам' : currentLang === 'ar' ? 'مواصلة التسوق' : 'Continue Shopping'}
                     </button>
                   </div>
                   <CartView
@@ -630,33 +639,37 @@ export default function App() {
             </div>
 
             <div className="space-y-2 text-xs">
-              <h5 className="text-white font-bold">{currentLang === 'ru' ? 'Контакты' : 'Contacts'}</h5>
-              <p className="text-slate-500">📍 Астана</p>
-              <p className="text-slate-500">📞 <a href="tel:+77070222312" className="hover:text-white transition-colors">+7 (707) 022-23-12</a></p>
+              <h5 className="text-white font-bold">{t('footerContactsTitle')}</h5>
+              <p className="text-slate-500">{t('footerAddress')}</p>
+              <p className="text-slate-500">📞 <a href={currentMarket.contactPhoneHref} className="hover:text-white transition-colors">{currentMarket.contactPhone}</a></p>
               <p className="text-slate-500">✉ <a href="mailto:support@nadeck.net" className="hover:text-white transition-colors">support@nadeck.net</a></p>
             </div>
 
             <div className="space-y-2 text-xs">
-              <h5 className="text-white font-bold">{currentLang === 'ru' ? 'Языки сервиса' : 'Supported Languages'}</h5>
-              {SUPPORTED_LANGUAGES.map((lang) => (
-                <p key={lang.code} className="text-slate-500">
-                  {lang.flag} {lang.nativeName} ({lang.name})
-                </p>
-              ))}
+              <h5 className="text-white font-bold">{t('footerLanguagesTitle')}</h5>
+              {marketLanguages.map((lang) => {
+                const translatedName = LANGUAGE_NAME_TRANSLATIONS[lang.code][currentLang];
+                return (
+                  <p key={lang.code} className="text-slate-500">
+                    {lang.flag} {translatedName}
+                    {translatedName !== lang.nativeName ? ` (${lang.nativeName})` : ''}
+                  </p>
+                );
+              })}
             </div>
 
             <div className="space-y-2 text-xs">
-              <h5 className="text-white font-bold">{currentLang === 'ru' ? 'Безопасность' : 'Licensing'}</h5>
-              <p className="text-slate-500">Лицензия №1044392 ФК Республики Казахстан.</p>
-              <p className="text-slate-500">Все права защищены © 2026.</p>
+              <h5 className="text-white font-bold">{t('footerLicensingTitle')}</h5>
+              <p className="text-slate-500">{t('footerLicenseText')}</p>
+              <p className="text-slate-500">{t('footerCopyright')}</p>
             </div>
           </div>
 
           <div className="border-t border-slate-800/60 pt-6 text-center text-[11px] text-slate-600 font-semibold flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p>Healthy Pharmacy App • Designed & Simulated on Google Cloud platform</p>
+            <p>{t('footerAppNote')}</p>
             <div className="flex gap-4">
-              <a href="#rules" className="hover:text-slate-400 transition">{currentLang === 'ru' ? 'Правила отпуска' : 'OTC Guidelines'}</a>
-              <a href="#privacy" className="hover:text-slate-400 transition">{currentLang === 'ru' ? 'Конфиденциальность' : 'Privacy Code'}</a>
+              <a href="#rules" className="hover:text-slate-400 transition">{t('footerOtcGuidelines')}</a>
+              <a href="#privacy" className="hover:text-slate-400 transition">{t('footerPrivacyCode')}</a>
             </div>
           </div>
 
