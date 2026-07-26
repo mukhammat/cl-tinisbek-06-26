@@ -40,6 +40,9 @@ export default function App() {
 
   // Load medicines list from database, default to empty to allow loading inside Grid
   const [medicinesList, setMedicinesList] = useState<Product[]>([]);
+  // Distinguishes "haven't loaded yet" from "loaded and this market legitimately has zero
+  // products" - the latter must not fall back to the static demo catalog below.
+  const [medicinesLoaded, setMedicinesLoaded] = useState(false);
   // Unfiltered catalog (every market) for the admin panel only - so an admin working from
   // either site can still see/manage products that aren't (yet) visible on that site.
   const [adminMedicinesList, setAdminMedicinesList] = useState<Product[]>([]);
@@ -67,8 +70,9 @@ export default function App() {
 
   const fetchMedicinesList = () => {
     fetchWithRetry(`/api/medicines?market=${MARKET}`, (data) => {
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         setMedicinesList(data);
+        setMedicinesLoaded(true);
       }
     });
   };
@@ -295,7 +299,7 @@ export default function App() {
     return TRANSLATIONS[key]?.[currentLang] || key;
   };
 
-  const catalogSourceMedicines = medicinesList.length > 0 ? medicinesList : MEDICINES_DATA;
+  const catalogSourceMedicines = medicinesLoaded ? medicinesList : MEDICINES_DATA;
 
   // Used only until /api/categories has loaded (or if it fails) - derived straight from
   // whatever medicine data is on hand, so it always covers every category id in use.
@@ -438,14 +442,14 @@ export default function App() {
                     {currentLang === 'ru'
                       ? 'Высококачественные пептиды и аминокислоты для здоровья и развития научного прогресса.'
                       : currentLang === 'ar'
-                      ? 'ببتيدات وأحماض أمينية عالية الجودة من أجل الصحة وتطور التقدم العلمي.'
+                      ? 'ببتيدات وأحماض أمينية عالية النقاء والجودة لدعم صحتك والمساهمة في التقدم العلمي.'
                       : 'Premium-grade peptides and amino acids for health and the advancement of scientific progress.'}
                   </h2>
                   <p className="text-xs sm:text-sm text-white/90 font-medium leading-relaxed">
                     {currentLang === 'ru'
                       ? 'Быстрая доставка по всему Казахстану и странам СНГ — от 24 часов.'
                       : currentLang === 'ar'
-                      ? 'توصيل سريع في جميع أنحاء كازاخستان ودول رابطة الدول المستقلة — خلال 24 ساعة.'
+                      ? 'مع توصيل سريع إلى جميع مدن المملكة العربية السعودية ودول الخليج.'
                       : 'Fast delivery across Kazakhstan and the CIS countries — starting from 24 hours.'}
                   </p>
                   
