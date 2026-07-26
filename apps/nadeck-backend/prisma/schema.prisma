@@ -26,6 +26,8 @@ model Category {
   icon      String?
   sortOrder Int       @default(0)
   isActive  Boolean   @default(true)
+  // Which storefront(s) list this category - same semantics as Product.markets.
+  markets   Market[]  @default([main])
   products  Product[]
 }
 

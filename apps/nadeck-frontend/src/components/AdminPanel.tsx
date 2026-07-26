@@ -309,6 +309,7 @@ export default function AdminPanel({
       id: '',
       sortOrder: categories.length,
       isActive: true,
+      markets: [adminMarket || 'main'],
     });
     setLocCategoryNames({ ru: '', en: '', ar: '' });
     setIsAddingCategory(true);
@@ -517,6 +518,7 @@ export default function AdminPanel({
         icon: categoryForm.icon || null,
         sortOrder: Number(categoryForm.sortOrder || 0),
         isActive: categoryForm.isActive !== false,
+        markets: categoryForm.markets && categoryForm.markets.length > 0 ? categoryForm.markets : ['main'],
       }),
     })
       .then((res) => {
@@ -951,7 +953,19 @@ export default function AdminPanel({
                               <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 shrink-0 overflow-hidden">
                                 <img src={category.icon || defaultCategoryIcon} alt="" className="w-4.5 h-4.5 object-contain" />
                               </span>
-                              {category.name[currentLang] || category.name.en}
+                              <div className="flex flex-col gap-1">
+                                <span>{category.name[currentLang] || category.name.en}</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {(category.markets && category.markets.length > 0 ? category.markets : ['main']).map((market) => (
+                                    <span
+                                      key={market}
+                                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200"
+                                    >
+                                      {market === 'main' ? 'nadeck.net' : 'ar.nadeck.net'}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
                           </td>
                           <td className="py-4 px-4 text-sm text-slate-600">{category.sortOrder}</td>
@@ -1118,6 +1132,45 @@ export default function AdminPanel({
                     <span>{currentLang === 'ru' ? 'Категория активна' : 'Category is active'}</span>
                   </label>
                 </div>
+              </div>
+
+              {/* Which storefront(s) list this category - same idea as the product form's
+                  market box. A scoped admin can't change this (the backend pins it), so they
+                  get a locked readout instead of checkboxes. */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50 space-y-2.5" id="category-form-markets-box">
+                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
+                  {currentLang === 'ru' ? 'Показывать на сайтах' : 'Visible on'}
+                </span>
+                {adminMarket ? (
+                  <p className="text-xs font-semibold text-slate-500">
+                    {adminMarket === 'ar' ? 'ar.nadeck.net' : 'nadeck.net'}
+                    {' '}
+                    <span className="font-normal text-slate-400">
+                      {currentLang === 'ru' ? '(закреплено за вашей учётной записью)' : '(fixed for your account)'}
+                    </span>
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-4">
+                    {(['main', 'ar'] as const).map((market) => {
+                      const active = (categoryForm.markets && categoryForm.markets.length > 0 ? categoryForm.markets : ['main']).includes(market);
+                      return (
+                        <label key={market} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={active}
+                            onChange={() => {
+                              const current = categoryForm.markets && categoryForm.markets.length > 0 ? categoryForm.markets : ['main'];
+                              const next = active ? current.filter((m) => m !== market) : [...current, market];
+                              setCategoryForm({ ...categoryForm, markets: next });
+                            }}
+                            className="w-4 h-4 rounded border-slate-300 text-nadeck-600 focus:ring-nadeck-500"
+                          />
+                          {market === 'main' ? 'nadeck.net' : 'ar.nadeck.net'}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div>

@@ -53,6 +53,7 @@ export interface Category {
   icon?: string | null; // uploaded icon (data URI or URL); falls back to the default red logo mark when unset
   sortOrder: number;
   isActive: boolean;
+  markets?: SiteMarket[]; // which storefront(s) list this category; defaults to ['main'] server-side
 }
 
 export interface Product {

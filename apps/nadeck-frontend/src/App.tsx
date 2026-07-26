@@ -47,6 +47,12 @@ export default function App() {
   // either site can still see/manage products that aren't (yet) visible on that site.
   const [adminMedicinesList, setAdminMedicinesList] = useState<Product[]>([]);
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+  // Distinguishes "haven't loaded yet" from "loaded and this market legitimately has zero
+  // categories" - mirrors medicinesLoaded above.
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+  // Scoped catalog (this admin's own market, or everything for a full admin) for the admin
+  // panel only - mirrors adminMedicinesList above.
+  const [adminCategoriesList, setAdminCategoriesList] = useState<Category[]>([]);
 
   // Retries a couple of times with backoff before giving up - covers the brief window right
   // after a deploy where the backend container is still restarting/migrating and a single
@@ -90,11 +96,23 @@ export default function App() {
   };
 
   const fetchCategoriesList = () => {
-    fetchWithRetry('/api/categories', (data) => {
+    fetchWithRetry(`/api/categories?market=${MARKET}`, (data) => {
       if (Array.isArray(data)) {
         setCategoriesList(data);
+        setCategoriesLoaded(true);
       }
     });
+  };
+
+  // Scoped server-side to the logged-in admin's own market (or every category for a full
+  // admin) - mirrors fetchAdminMedicinesList above.
+  const fetchAdminCategoriesList = () => {
+    if (!user.token) return;
+    fetchWithRetry('/api/categories/admin', (data) => {
+      if (Array.isArray(data)) {
+        setAdminCategoriesList(data);
+      }
+    }, 0, { headers: { Authorization: `Bearer ${user.token}` } });
   };
 
   useEffect(() => {
@@ -143,7 +161,10 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (user.isAdmin) fetchAdminMedicinesList();
+    if (user.isAdmin) {
+      fetchAdminMedicinesList();
+      fetchAdminCategoriesList();
+    }
   }, [user.isAdmin, user.token]);
 
   // Sync to local storage
@@ -318,7 +339,7 @@ export default function App() {
 
   // The full category list, including inactive ones, so a medicine's label always resolves
   // even after its category has been deactivated (only filtering/selection should hide it).
-  const allCategories = categoriesList.length > 0 ? categoriesList : fallbackCategories;
+  const allCategories = categoriesLoaded ? categoriesList : fallbackCategories;
   const categoryLabelById: Record<string, string> = Object.fromEntries(
     allCategories.map((category) => [category.id, category.name[currentLang] || category.name.en || category.id])
   );
@@ -332,7 +353,10 @@ export default function App() {
   const categoryIconById: Record<string, string | null | undefined> = Object.fromEntries(
     allCategories.map((category) => [category.id, category.icon])
   );
-  const adminCategories = allCategories;
+  // Admin panel gets its own market-scoped fetch (adminCategoriesList) rather than the
+  // storefront's allCategories, so a market-scoped admin only sees/manages their own market's
+  // categories - mirrors adminMedicinesList vs medicinesList.
+  const adminCategories = adminCategoriesList;
 
   // Cart operations. Different volumes of the same product carry different prices, so
   // cart lines are keyed by (medicine id + selected volume), not just the product id.
@@ -599,7 +623,7 @@ export default function App() {
                 <AdminPanel
                   currentLang={currentLang}
                   onRefreshMedicines={() => { fetchMedicinesList(); fetchAdminMedicinesList(); }}
-                  onRefreshCategories={fetchCategoriesList}
+                  onRefreshCategories={() => { fetchCategoriesList(); fetchAdminCategoriesList(); }}
                   allMedicines={adminMedicinesList}
                   categories={adminCategories}
                   token={user.token}
