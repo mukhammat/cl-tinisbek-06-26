@@ -106,6 +106,9 @@ export interface User {
   address: string;
   isAuthenticated: boolean;
   isAdmin?: boolean;
+  // null/absent = full admin (every market); a specific market confines this admin to only
+  // that storefront's products - see apps/nadeck-backend's User.adminMarket.
+  adminMarket?: SiteMarket | null;
   token?: string;
 }
 

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Product, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency } from '../types';
+import { Product, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency, SiteMarket } from '../types';
 import { unitLabel } from '../currency';
 import {
   Package,
@@ -35,6 +35,10 @@ interface AdminPanelProps {
   allMedicines: Product[];
   categories: Category[];
   token?: string;
+  // Present only for a market-scoped admin (see User.adminMarket) - null/absent means a full
+  // admin with no market restriction. allMedicines is already server-filtered to this market;
+  // this only drives what the product form's market controls look like.
+  adminMarket?: SiteMarket | null;
 }
 
 export default function AdminPanel({
@@ -43,7 +47,8 @@ export default function AdminPanel({
   onRefreshCategories,
   allMedicines,
   categories,
-  token
+  token,
+  adminMarket
 }: AdminPanelProps) {
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
   const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders'>('products');
@@ -280,7 +285,7 @@ export default function AdminPanel({
         defaultDailyDoses: 1
       },
       inStock: true,
-      markets: ['main']
+      markets: [adminMarket || 'main']
     });
     setVolumesList([{ mgPerUnit: 5, price: 15000, priceUsd: 50 }]);
     setNewVolumeMg('');
@@ -1519,32 +1524,44 @@ export default function AdminPanel({
                 </div>
               </div>
 
-              {/* Which storefront(s) list this product - independent of translated content. */}
+              {/* Which storefront(s) list this product - independent of translated content.
+                  A market-scoped admin can't change this (the backend pins it to their own
+                  market regardless), so they get a locked readout instead of checkboxes. */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50 space-y-2.5" id="form-markets-box">
                 <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
                   {currentLang === 'ru' ? 'Показывать на сайтах' : 'Visible on'}
                 </span>
-                <div className="flex flex-wrap gap-4">
-                  {(['main', 'ar'] as const).map((market) => {
-                    const active = (formData.markets && formData.markets.length > 0 ? formData.markets : ['main']).includes(market);
-                    return (
-                      <label key={market} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
-                        <input
-                          id={`form-checkbox-market-${market}`}
-                          type="checkbox"
-                          checked={active}
-                          onChange={() => {
-                            const current = formData.markets && formData.markets.length > 0 ? formData.markets : ['main'];
-                            const next = active ? current.filter((m) => m !== market) : [...current, market];
-                            setFormData({ ...formData, markets: next });
-                          }}
-                          className="w-4 h-4 rounded border-slate-300 text-nadeck-600 focus:ring-nadeck-500"
-                        />
-                        {market === 'main' ? 'nadeck.net' : 'ar.nadeck.net'}
-                      </label>
-                    );
-                  })}
-                </div>
+                {adminMarket ? (
+                  <p className="text-xs font-semibold text-slate-500">
+                    {adminMarket === 'ar' ? 'ar.nadeck.net' : 'nadeck.net'}
+                    {' '}
+                    <span className="font-normal text-slate-400">
+                      {currentLang === 'ru' ? '(закреплено за вашей учётной записью)' : '(fixed for your account)'}
+                    </span>
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-4">
+                    {(['main', 'ar'] as const).map((market) => {
+                      const active = (formData.markets && formData.markets.length > 0 ? formData.markets : ['main']).includes(market);
+                      return (
+                        <label key={market} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
+                          <input
+                            id={`form-checkbox-market-${market}`}
+                            type="checkbox"
+                            checked={active}
+                            onChange={() => {
+                              const current = formData.markets && formData.markets.length > 0 ? formData.markets : ['main'];
+                              const next = active ? current.filter((m) => m !== market) : [...current, market];
+                              setFormData({ ...formData, markets: next });
+                            }}
+                            className="w-4 h-4 rounded border-slate-300 text-nadeck-600 focus:ring-nadeck-500"
+                          />
+                          {market === 'main' ? 'nadeck.net' : 'ar.nadeck.net'}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Grid 3 Block: Medicine Dose Parameters for precise calculation engine support -

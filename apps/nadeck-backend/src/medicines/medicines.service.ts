@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Inject, Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -45,6 +45,24 @@ export class MedicinesService {
   private normalizeMarkets(markets: any): Market[] {
     const valid = Array.isArray(markets) ? markets.filter((m) => VALID_MARKETS.includes(m)) : [];
     return valid.length > 0 ? Array.from(new Set(valid)) : ['main'];
+  }
+
+  // A market-scoped admin's products live only on their own market - this overrides whatever
+  // the client sent instead of merely validating it, so a scoped admin can never publish onto
+  // (or keep a product visible on) a market they don't have access to.
+  private resolveMarkets(markets: any, adminMarket?: string | null): Market[] {
+    if (adminMarket && VALID_MARKETS.includes(adminMarket as Market)) {
+      return [adminMarket as Market];
+    }
+    return this.normalizeMarkets(markets);
+  }
+
+  // Full admins (adminMarket null) can touch any product; a scoped admin only their own
+  // market's products - used before update/delete so they can't act on a product outside it.
+  private assertMarketAccess(productMarkets: Market[], adminMarket?: string | null) {
+    if (adminMarket && !productMarkets.includes(adminMarket as Market)) {
+      throw new ForbiddenException('This product is outside your assigned market');
+    }
   }
 
   private normalizeImages(images: any): string[] {
@@ -113,7 +131,7 @@ export class MedicinesService {
     }
   }
 
-  async create(body: any) {
+  async create(body: any, adminMarket?: string | null) {
     const {
       id, name, categoryId, category, description, fullDescription,
       indications, contraindications, usage, images, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit, markets
@@ -149,7 +167,7 @@ export class MedicinesService {
           images: normalizedImages,
           rating: Number(rating || 5.0),
           inStock: inStock === false ? 0 : 1,
-          markets: this.normalizeMarkets(markets),
+          markets: this.resolveMarkets(markets, adminMarket),
           ...(productType === 'peptide'
             ? {
                 medicine: {
@@ -180,7 +198,7 @@ export class MedicinesService {
     }
   }
 
-  async update(id: string, body: any) {
+  async update(id: string, body: any, adminMarket?: string | null) {
     const {
       name, categoryId, category, description, fullDescription,
       indications, contraindications, usage, images, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit, markets
@@ -199,8 +217,12 @@ export class MedicinesService {
 
     const resolvedCategoryId = await this.resolveCategoryId(categoryId, category);
 
+    const before = await this.prisma.product.findUnique({ where: { id } });
+    if (before) {
+      this.assertMarketAccess(before.markets as Market[], adminMarket);
+    }
+
     try {
-      const before = await this.prisma.product.findUnique({ where: { id } });
       const newInStock = inStock ? 1 : 0;
 
       // A product is only ever one type at a time - if the admin switched it, drop the
@@ -225,7 +247,7 @@ export class MedicinesService {
           images: normalizedImages,
           rating: Number(rating),
           inStock: newInStock,
-          markets: this.normalizeMarkets(markets),
+          markets: this.resolveMarkets(markets, adminMarket),
           ...(productType === 'peptide'
             ? {
                 medicine: {
@@ -273,7 +295,12 @@ export class MedicinesService {
     }
   }
 
-  async delete(id: string) {
+  async delete(id: string, adminMarket?: string | null) {
+    const existing = await this.prisma.product.findUnique({ where: { id } });
+    if (existing) {
+      this.assertMarketAccess(existing.markets as Market[], adminMarket);
+    }
+
     try {
       await this.prisma.product.delete({
         where: { id },

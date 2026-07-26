@@ -51,8 +51,8 @@ export default function App() {
   // Retries a couple of times with backoff before giving up - covers the brief window right
   // after a deploy where the backend container is still restarting/migrating and a single
   // failed request would otherwise strand the page on static fallback data until a manual refresh.
-  const fetchWithRetry = (url: string, onSuccess: (data: any) => void, attempt = 0) => {
-    fetch(url)
+  const fetchWithRetry = (url: string, onSuccess: (data: any) => void, attempt = 0, options?: RequestInit) => {
+    fetch(url, options)
       .then((res) => {
         if (!res.ok) throw new Error(`Request to ${url} failed`);
         return res.json();
@@ -61,7 +61,7 @@ export default function App() {
       .catch((err) => {
         if (attempt < 5) {
           const delay = Math.min(1000 * 2 ** attempt, 15000);
-          setTimeout(() => fetchWithRetry(url, onSuccess, attempt + 1), delay);
+          setTimeout(() => fetchWithRetry(url, onSuccess, attempt + 1, options), delay);
         } else {
           console.error(`Error loading ${url} after retries:`, err);
         }
@@ -77,14 +77,16 @@ export default function App() {
     });
   };
 
-  // No market filter - the admin panel manages the whole catalog regardless of which site
-  // it's opened from.
+  // Scoped server-side to the logged-in admin's own market (or the full catalog for a full
+  // admin) - see MedicinesController.getAllForAdmin. Needs the auth token so the backend knows
+  // which admin is asking.
   const fetchAdminMedicinesList = () => {
-    fetchWithRetry('/api/medicines', (data) => {
-      if (Array.isArray(data) && data.length > 0) {
+    if (!user.token) return;
+    fetchWithRetry('/api/medicines/admin', (data) => {
+      if (Array.isArray(data)) {
         setAdminMedicinesList(data);
       }
-    });
+    }, 0, { headers: { Authorization: `Bearer ${user.token}` } });
   };
 
   const fetchCategoriesList = () => {
@@ -142,7 +144,7 @@ export default function App() {
 
   useEffect(() => {
     if (user.isAdmin) fetchAdminMedicinesList();
-  }, [user.isAdmin]);
+  }, [user.isAdmin, user.token]);
 
   // Sync to local storage
   useEffect(() => {
@@ -601,6 +603,7 @@ export default function App() {
                   allMedicines={adminMedicinesList}
                   categories={adminCategories}
                   token={user.token}
+                  adminMarket={user.adminMarket}
                 />
               )}
             </div>

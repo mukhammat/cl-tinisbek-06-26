@@ -8,12 +8,15 @@ datasource db {
 }
 
 model User {
-  email    String  @id
-  password String
-  fullName String
-  phone    String  @default("")
-  address  String  @default("")
-  isAdmin  Boolean @default(false)
+  email       String  @id
+  password    String
+  fullName    String
+  phone       String  @default("")
+  address     String  @default("")
+  isAdmin     Boolean @default(false)
+  // null = full admin (every market, current behavior); a specific Market scopes this admin
+  // to only that storefront's products - see admin-emails.util.ts and AdminGuard.
+  adminMarket Market?
 }
 
 model Category {

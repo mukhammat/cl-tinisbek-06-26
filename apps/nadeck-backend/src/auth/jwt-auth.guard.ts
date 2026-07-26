@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 export interface AuthTokenPayload {
   email: string;
   isAdmin: boolean;
+  adminMarket?: 'main' | 'ar' | null;
 }
 
 @Injectable()

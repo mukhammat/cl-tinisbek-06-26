@@ -7,7 +7,7 @@ import { Inject, Injectable, BadRequestException, UnauthorizedException, NotFoun
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../database/prisma.service';
-import { isAdminEmail } from './admin-emails.util';
+import { isAdminEmail, getAdminMarket } from './admin-emails.util';
 
 const BCRYPT_ROUNDS = 10;
 
@@ -18,8 +18,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  private buildAuthResponse(user: { email: string; fullName: string; phone: string | null; address: string | null; isAdmin: boolean }) {
-    const token = this.jwtService.sign({ email: user.email, isAdmin: user.isAdmin });
+  private buildAuthResponse(user: { email: string; fullName: string; phone: string | null; address: string | null; isAdmin: boolean; adminMarket: string | null }) {
+    const token = this.jwtService.sign({ email: user.email, isAdmin: user.isAdmin, adminMarket: user.adminMarket });
 
     return {
       email: user.email,
@@ -28,6 +28,7 @@ export class AuthService {
       address: user.address || '',
       isAuthenticated: true,
       isAdmin: user.isAdmin,
+      adminMarket: user.adminMarket,
       token,
     };
   }
@@ -56,6 +57,7 @@ export class AuthService {
           phone: phone || '',
           address: address || '',
           isAdmin: isAdminEmail(emailLower),
+          adminMarket: getAdminMarket(emailLower),
         },
       });
 
