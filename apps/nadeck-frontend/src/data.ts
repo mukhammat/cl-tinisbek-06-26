@@ -554,10 +554,12 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     en: 'Price',
     ar: 'السعر'
   },
+  // 'ar' here only ever renders on ar.nadeck.net (nadeck.net's language switcher dropped
+  // Arabic) - SAR, not tenge, since that bundle's other currency is USD, not KZT.
   currencySymbol: {
     ru: '₸',
     en: '$',
-    ar: '₸'
+    ar: 'SAR'
   },
   ratingLabel: {
     ru: 'Рейтинг',

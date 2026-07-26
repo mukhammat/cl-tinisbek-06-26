@@ -262,7 +262,7 @@ export default function MedicineDetail({
             <div>
               <span className="text-xs text-slate-400 font-semibold uppercase">{t('priceLabel')}</span>
               <div id="detail-product-price" className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {resolvePrice(currentVolumeInfo.price, currentVolumeInfo.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')}
+                {resolvePrice(currentVolumeInfo.price, currentVolumeInfo.priceUsd, currentVolumeInfo.priceSar, currentLang).toLocaleString()} {t('currencySymbol')}
               </div>
             </div>
 

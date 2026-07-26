@@ -76,11 +76,12 @@ export default function AdminPanel({
   const [isUploadingCategoryIcon, setIsUploadingCategoryIcon] = useState(false);
   const [isUploadingProductImage, setIsUploadingProductImage] = useState(false);
 
-  // Volumes list (mg + own price in KZT and USD) available for the product, plus the pending "new volume" inputs
-  const [volumesList, setVolumesList] = useState<{ mgPerUnit: number; price: number; priceUsd: number }[]>([]);
+  // Volumes list (mg + own price in KZT, USD and SAR) available for the product, plus the pending "new volume" inputs
+  const [volumesList, setVolumesList] = useState<{ mgPerUnit: number; price: number; priceUsd: number; priceSar: number }[]>([]);
   const [newVolumeMg, setNewVolumeMg] = useState('');
   const [newVolumePrice, setNewVolumePrice] = useState('');
   const [newVolumePriceUsd, setNewVolumePriceUsd] = useState('');
+  const [newVolumePriceSar, setNewVolumePriceSar] = useState('');
 
   // Localized form inputs
   const [locNames, setLocNames] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
@@ -327,12 +328,15 @@ export default function AdminPanel({
     setIsEditing(false);
   };
 
-  // Add a new volume (mg + its own KZT/USD price) to the pending list, or update the prices
-  // of an existing volume when the mg value already matches one in the list.
+  // Add a new volume (mg + its own KZT/USD/SAR price) to the pending list, or update the
+  // prices of an existing volume when the mg value already matches one in the list. SAR is
+  // optional (unlike KZT/USD) - it's only ever shown on ar.nadeck.net, so a main-only product
+  // has no reason to require one.
   const handleAddVolume = () => {
     const mg = Number(newVolumeMg);
     const price = Number(newVolumePrice);
     const priceUsd = Number(newVolumePriceUsd);
+    const priceSar = newVolumePriceSar ? Number(newVolumePriceSar) : 0;
     if (!newVolumeMg || Number.isNaN(mg) || mg <= 0) {
       showFeedback('error', currentLang === 'ru' ? 'Введите корректное значение объёма (мг)' : 'Enter a valid volume value (mg)');
       return;
@@ -345,15 +349,20 @@ export default function AdminPanel({
       showFeedback('error', currentLang === 'ru' ? 'Введите корректную цену в долларах для этого объёма' : 'Enter a valid USD price for this volume');
       return;
     }
+    if (newVolumePriceSar && (Number.isNaN(priceSar) || priceSar < 0)) {
+      showFeedback('error', currentLang === 'ru' ? 'Введите корректную цену в риалах для этого объёма' : 'Enter a valid SAR price for this volume');
+      return;
+    }
     const existingIndex = volumesList.findIndex((v) => v.mgPerUnit === mg);
     if (existingIndex >= 0) {
-      setVolumesList(volumesList.map((v, i) => (i === existingIndex ? { mgPerUnit: mg, price, priceUsd } : v)));
+      setVolumesList(volumesList.map((v, i) => (i === existingIndex ? { mgPerUnit: mg, price, priceUsd, priceSar } : v)));
     } else {
-      setVolumesList([...volumesList, { mgPerUnit: mg, price, priceUsd }].sort((a, b) => a.mgPerUnit - b.mgPerUnit));
+      setVolumesList([...volumesList, { mgPerUnit: mg, price, priceUsd, priceSar }].sort((a, b) => a.mgPerUnit - b.mgPerUnit));
     }
     setNewVolumeMg('');
     setNewVolumePrice('');
     setNewVolumePriceUsd('');
+    setNewVolumePriceSar('');
   };
 
   const handleRemoveVolume = (mg: number) => {
@@ -1754,7 +1763,7 @@ export default function AdminPanel({
                         id={`form-volume-chip-${vol.mgPerUnit}`}
                         className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full bg-white border border-nadeck-500/20 text-xs font-bold text-nadeck-800"
                       >
-                        {vol.mgPerUnit} {volumeUnitLabel} — {vol.price.toLocaleString()} ₸ / ${(vol.priceUsd || 0).toLocaleString()}
+                        {vol.mgPerUnit} {volumeUnitLabel} — {vol.price.toLocaleString()} ₸ / ${(vol.priceUsd || 0).toLocaleString()}{vol.priceSar ? ` / ${vol.priceSar.toLocaleString()} SAR` : ''}
                         <button
                           id={`form-volume-remove-${vol.mgPerUnit}`}
                           type="button"
@@ -1815,6 +1824,22 @@ export default function AdminPanel({
                         }
                       }}
                       className="w-28 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
+                    />
+                    <input
+                      id="form-input-new-volume-price-sar"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder={currentLang === 'ru' ? 'Цена, SAR (необязательно)' : 'Price, SAR (optional)'}
+                      value={newVolumePriceSar}
+                      onChange={(e) => setNewVolumePriceSar(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddVolume();
+                        }
+                      }}
+                      className="w-32 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
                     />
                     <button
                       id="form-btn-add-volume"

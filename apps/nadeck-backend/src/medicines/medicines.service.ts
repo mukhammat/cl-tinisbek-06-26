@@ -11,7 +11,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 // resolveCategoryId() below instead of repeating the literal.
 const DEFAULT_CATEGORY_ID = 'weightloss';
 
-type ProductVolume = { mgPerUnit: number; price: number; priceUsd: number };
+type ProductVolume = { mgPerUnit: number; price: number; priceUsd: number; priceSar: number };
 type ProductType = 'peptide' | 'additional_good';
 type ProductUnit = 'mg' | 'ml' | 'pcs';
 type Market = 'main' | 'ar';
@@ -24,12 +24,13 @@ export class MedicinesService {
     @Inject(NotificationsService) private readonly notificationsService: NotificationsService,
   ) {}
 
-  // Normalizes the admin-submitted volumes list into { mgPerUnit, price, priceUsd } triples, dropping anything invalid
+  // Normalizes the admin-submitted volumes list into { mgPerUnit, price, priceUsd, priceSar }
+  // quads, dropping anything invalid. priceSar defaults to 0 (unset) same as priceUsd.
   private normalizeVolumes(volumes: any): ProductVolume[] {
     if (!Array.isArray(volumes)) return [];
     return volumes
-      .map((v) => ({ mgPerUnit: Number(v?.mgPerUnit), price: Number(v?.price), priceUsd: Number(v?.priceUsd || 0) }))
-      .filter((v) => Number.isFinite(v.mgPerUnit) && v.mgPerUnit > 0 && Number.isFinite(v.price) && v.price >= 0 && Number.isFinite(v.priceUsd) && v.priceUsd >= 0);
+      .map((v) => ({ mgPerUnit: Number(v?.mgPerUnit), price: Number(v?.price), priceUsd: Number(v?.priceUsd || 0), priceSar: Number(v?.priceSar || 0) }))
+      .filter((v) => Number.isFinite(v.mgPerUnit) && v.mgPerUnit > 0 && Number.isFinite(v.price) && v.price >= 0 && Number.isFinite(v.priceUsd) && v.priceUsd >= 0 && Number.isFinite(v.priceSar) && v.priceSar >= 0);
   }
 
   private resolveProductType(type: any): ProductType {

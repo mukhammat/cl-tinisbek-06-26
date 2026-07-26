@@ -84,7 +84,9 @@ model MedicineDetails {
   form              String
   mgPerUnit         Float
   dosageRules       Json // { mgPerKgPerDay, defaultDailyDoses }
-  // [{ mgPerUnit, price, priceUsd }] volume options - price lives only here, tied to the strength
+  // [{ mgPerUnit, price, priceUsd, priceSar }] volume options - price lives only here, tied to
+  // the strength. priceSar (SAR) is independent of priceUsd, not derived from it - shown on
+  // ar.nadeck.net for the Arabic language (English there still shows priceUsd).
   volumes           Json @default("[]")
 }
 
@@ -94,7 +96,8 @@ model MedicineDetails {
 model AdditionalGoodDetails {
   productId String  @id
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  // [{ mgPerUnit, price, priceUsd }] pack-size options - mgPerUnit here just means "units per pack"
+  // [{ mgPerUnit, price, priceUsd, priceSar }] pack-size options - mgPerUnit here just means
+  // "units per pack"
   volumes   Json @default("[]")
 }
 
@@ -102,9 +105,10 @@ model Order {
   id            String @id
   date          String
   userEmail     String
-  items         Json // [{ medicineName, price, priceUsd, quantity }]
+  items         Json // [{ medicineName, price, priceUsd, priceSar, quantity }]
   totalPrice    Float // KZT grand total
   totalPriceUsd Float @default(0) // USD grand total
+  totalPriceSar Float @default(0) // SAR grand total (ar.nadeck.net, Arabic language)
   address       Json // { city, street, apartment, postalCode }
   paymentMethod String
   status        String @default("pending")

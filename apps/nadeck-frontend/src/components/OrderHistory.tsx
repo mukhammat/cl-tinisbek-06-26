@@ -133,7 +133,7 @@ export default function OrderHistory({
                     <div key={idx} className="flex gap-2 text-xs sm:text-sm text-slate-700 font-medium">
                       <span className="text-slate-400">{item.quantity} шт ×</span>
                       <span className="text-slate-900 font-bold">{item.medicineName[currentLang]}</span>
-                      <span className="text-slate-400 font-semibold">({resolvePrice(item.price, item.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')})</span>
+                      <span className="text-slate-400 font-semibold">({resolvePrice(item.price, item.priceUsd, item.priceSar, currentLang).toLocaleString()} {t('currencySymbol')})</span>
                     </div>
                   ))}
 
@@ -151,7 +151,7 @@ export default function OrderHistory({
                   <div>
                     <span className="block text-[10px] text-slate-400 font-semibold uppercase">{t('totalToPay')}</span>
                     <span id={`order-total-${order.id}`} className="text-base sm:text-lg font-black text-nadeck-800">
-                      {resolvePrice(order.totalPrice, order.totalPriceUsd, currentLang).toLocaleString()} {t('currencySymbol')}
+                      {resolvePrice(order.totalPrice, order.totalPriceUsd, order.totalPriceSar, currentLang).toLocaleString()} {t('currencySymbol')}
                     </span>
                   </div>
                   <span className="text-[10px] text-slate-400 font-medium italic mt-2 block sm:mt-0">

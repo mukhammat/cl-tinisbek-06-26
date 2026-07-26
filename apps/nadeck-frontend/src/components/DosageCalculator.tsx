@@ -126,7 +126,7 @@ export default function DosageCalculator({
   const totalInjectionsPerVial = desiredMcg > 0 ? Math.floor(totalMcgInVial / desiredMcg) : 0;
   
   // Cost per injection / single shot cost
-  const costPerInjection = totalInjectionsPerVial > 0 ? Math.round(resolvePrice(selectedMedVolume.price, selectedMedVolume.priceUsd, currentLang) / totalInjectionsPerVial) : 0;
+  const costPerInjection = totalInjectionsPerVial > 0 ? Math.round(resolvePrice(selectedMedVolume.price, selectedMedVolume.priceUsd, selectedMedVolume.priceSar, currentLang) / totalInjectionsPerVial) : 0;
 
   // Lasting duration estimation based on chosen active frequency
   const calculateDuration = () => {
@@ -921,7 +921,7 @@ export default function DosageCalculator({
             <div>
               <span className="text-[10px] lg:text-xs text-slate-400 font-bold uppercase">{getLocalText('vialPriceLabel')}</span>
               <div id="calc-res-cost" className="text-2xl lg:text-3xl font-black text-slate-950 flex items-baseline gap-1">
-                <span>{resolvePrice(selectedMedVolume.price, selectedMedVolume.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')}</span>
+                <span>{resolvePrice(selectedMedVolume.price, selectedMedVolume.priceUsd, selectedMedVolume.priceSar, currentLang).toLocaleString()} {t('currencySymbol')}</span>
                 <span className="text-xs lg:text-sm text-slate-400 font-medium">/ {currentLang === 'ru' ? 'за флакон (vial)' : 'per active vial'}</span>
               </div>
             </div>

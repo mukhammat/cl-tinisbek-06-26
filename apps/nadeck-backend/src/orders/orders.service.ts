@@ -11,7 +11,7 @@ export class OrdersService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async placeOrder(body: any) {
-    const { email, items, totalPrice, totalPriceUsd, address, paymentMethod } = body;
+    const { email, items, totalPrice, totalPriceUsd, totalPriceSar, address, paymentMethod } = body;
     if (!items || !totalPrice || !address) {
       throw new BadRequestException('Invalid cart or address details');
     }
@@ -29,6 +29,7 @@ export class OrdersService {
           items,
           totalPrice: parseFloat(totalPrice),
           totalPriceUsd: parseFloat(totalPriceUsd || 0),
+          totalPriceSar: parseFloat(totalPriceSar || 0),
           address,
           paymentMethod,
           status: 'pending',
@@ -42,6 +43,7 @@ export class OrdersService {
         items,
         totalPrice: order.totalPrice,
         totalPriceUsd: order.totalPriceUsd,
+        totalPriceSar: order.totalPriceSar,
         address,
         paymentMethod: order.paymentMethod,
         status: order.status,
@@ -71,6 +73,7 @@ export class OrdersService {
         items: o.items,
         totalPrice: o.totalPrice,
         totalPriceUsd: o.totalPriceUsd,
+        totalPriceSar: o.totalPriceSar,
         address: o.address,
         paymentMethod: o.paymentMethod,
         status: o.status,
@@ -95,6 +98,7 @@ export class OrdersService {
         items: o.items,
         totalPrice: o.totalPrice,
         totalPriceUsd: o.totalPriceUsd,
+        totalPriceSar: o.totalPriceSar,
         address: o.address,
         paymentMethod: o.paymentMethod,
         status: o.status,

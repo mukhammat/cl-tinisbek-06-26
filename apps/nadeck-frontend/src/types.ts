@@ -45,6 +45,7 @@ export interface ProductVolume {
   mgPerUnit: number; // for peptides: strength in mg. For additional goods: units/pack size.
   price: number; // this volume's own price in KZT (₸), may differ from other volumes of the same product
   priceUsd: number; // this volume's own price in USD ($), shown for non-Russian languages
+  priceSar?: number; // this volume's own price in SAR - ar.nadeck.net, Arabic language only (English there still shows priceUsd)
 }
 
 export interface Category {
@@ -98,6 +99,7 @@ export interface CartItem {
   selectedStrength?: number; // the chosen volume's mgPerUnit
   unitPrice?: number; // resolved KZT price for the chosen volume, falls back to its primary volume's price when absent
   unitPriceUsd?: number; // resolved USD price for the chosen volume, falls back to its primary volume's price when absent
+  unitPriceSar?: number; // resolved SAR price for the chosen volume, falls back to its primary volume's price when absent
 }
 
 export interface User {
@@ -120,10 +122,12 @@ export interface Order {
     medicineName: Record<Language, string>;
     price: number; // unit price in KZT
     priceUsd: number; // unit price in USD
+    priceSar?: number; // unit price in SAR
     quantity: number;
   }[];
   totalPrice: number; // grand total in KZT
   totalPriceUsd: number; // grand total in USD
+  totalPriceSar?: number; // grand total in SAR
   address: {
     city: string;
     street: string;

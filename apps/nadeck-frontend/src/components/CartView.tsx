@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Language, CartItem, User, Order } from '../types';
 import { TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume, FREE_DELIVERY_THRESHOLD, DELIVERY_COST } from '../currency';
+import { MARKET } from '../market';
 import { Trash2, Phone, ShoppingBag, Plus, Minus, ArrowRight, MessageCircle, CheckCircle2, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -54,28 +55,35 @@ export default function CartView({
 
   const unitPriceKzt = (item: CartItem) => item.unitPrice ?? getPrimaryVolume(item.medicine).price;
   const unitPriceUsdOf = (item: CartItem) => item.unitPriceUsd ?? getPrimaryVolume(item.medicine).priceUsd ?? 0;
-  const unitPriceDisplay = (item: CartItem) => resolvePrice(unitPriceKzt(item), unitPriceUsdOf(item), currentLang);
+  const unitPriceSarOf = (item: CartItem) => item.unitPriceSar ?? getPrimaryVolume(item.medicine).priceSar ?? 0;
+  const unitPriceDisplay = (item: CartItem) => resolvePrice(unitPriceKzt(item), unitPriceUsdOf(item), unitPriceSarOf(item), currentLang);
 
   const calculateSubtotalKzt = () => cart.reduce((total, item) => total + unitPriceKzt(item) * item.quantity, 0);
   const calculateSubtotalUsd = () => cart.reduce((total, item) => total + unitPriceUsdOf(item) * item.quantity, 0);
-  const calculateSubtotal = () => resolvePrice(calculateSubtotalKzt(), calculateSubtotalUsd(), currentLang);
+  const calculateSubtotalSar = () => cart.reduce((total, item) => total + unitPriceSarOf(item) * item.quantity, 0);
+  const calculateSubtotal = () => resolvePrice(calculateSubtotalKzt(), calculateSubtotalUsd(), calculateSubtotalSar(), currentLang);
 
-  // Flat delivery fee kept in both currencies (not a straight FX conversion), so KZT and
-  // USD checkouts can each cross their own free-delivery threshold independently.
-  const getDeliveryCostForCurrency = (isKzt: boolean) => {
+  // Flat delivery fee per currency (not a straight FX conversion), so KZT and USD checkouts
+  // each cross their own free-delivery threshold independently. SAR (ar.nadeck.net) has no
+  // free tier at all - delivery there is always the flat fee, per business decision.
+  type DeliveryCurrency = 'kzt' | 'usd' | 'sar';
+  const getDeliveryCostForCurrency = (currency: DeliveryCurrency) => {
     if (cart.length === 0) return 0;
-    const subtotal = isKzt ? calculateSubtotalKzt() : calculateSubtotalUsd();
-    const threshold = isKzt ? FREE_DELIVERY_THRESHOLD.kzt : FREE_DELIVERY_THRESHOLD.usd;
+    if (currency === 'sar') return DELIVERY_COST.sar;
+    const subtotal = currency === 'kzt' ? calculateSubtotalKzt() : calculateSubtotalUsd();
+    const threshold = currency === 'kzt' ? FREE_DELIVERY_THRESHOLD.kzt : FREE_DELIVERY_THRESHOLD.usd;
     if (subtotal >= threshold) return 0;
-    return isKzt ? DELIVERY_COST.kzt : DELIVERY_COST.usd;
+    return currency === 'kzt' ? DELIVERY_COST.kzt : DELIVERY_COST.usd;
   };
 
-  const getDeliveryCost = () => getDeliveryCostForCurrency(currentLang === 'ru');
+  const activeDeliveryCurrency: DeliveryCurrency = MARKET === 'ar' ? (currentLang === 'ar' ? 'sar' : 'usd') : (currentLang === 'ru' ? 'kzt' : 'usd');
+  const getDeliveryCost = () => getDeliveryCostForCurrency(activeDeliveryCurrency);
   const isFreeDelivery = () => getDeliveryCost() === 0;
 
-  const grandTotalKzt = calculateSubtotalKzt() + getDeliveryCostForCurrency(true);
-  const grandTotalUsd = calculateSubtotalUsd() + getDeliveryCostForCurrency(false);
-  const grandTotal = resolvePrice(grandTotalKzt, grandTotalUsd, currentLang);
+  const grandTotalKzt = calculateSubtotalKzt() + getDeliveryCostForCurrency('kzt');
+  const grandTotalUsd = calculateSubtotalUsd() + getDeliveryCostForCurrency('usd');
+  const grandTotalSar = calculateSubtotalSar() + getDeliveryCostForCurrency('sar');
+  const grandTotal = resolvePrice(grandTotalKzt, grandTotalUsd, grandTotalSar, currentLang);
 
   const buildWhatsAppMessage = () => {
     const heading = currentLang === 'ru' ? 'Новый заказ с сайта Nadeck' : currentLang === 'ar' ? 'طلب جديد من موقع Nadeck' : 'New order from Nadeck website';
@@ -120,10 +128,12 @@ export default function CartView({
         medicineName: item.medicine.name,
         price: unitPriceKzt(item),
         priceUsd: unitPriceUsdOf(item),
+        priceSar: unitPriceSarOf(item),
         quantity: item.quantity
       })),
       totalPrice: grandTotalKzt,
       totalPriceUsd: grandTotalUsd,
+      totalPriceSar: grandTotalSar,
       address: {
         city,
         street,
@@ -205,7 +215,7 @@ export default function CartView({
           </div>
           <div className="flex justify-between font-extrabold text-sm text-slate-900 pt-2 border-t border-slate-200">
             <span>Итого к оплате:</span>
-            <span>{resolvePrice(orderConfirmed.totalPrice, orderConfirmed.totalPriceUsd, currentLang).toLocaleString()} {t('currencySymbol')}</span>
+            <span>{resolvePrice(orderConfirmed.totalPrice, orderConfirmed.totalPriceUsd, orderConfirmed.totalPriceSar, currentLang).toLocaleString()} {t('currencySymbol')}</span>
           </div>
         </div>
 
