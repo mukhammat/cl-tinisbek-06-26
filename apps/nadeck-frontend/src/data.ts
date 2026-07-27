@@ -956,11 +956,6 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     en: 'All rights reserved © 2026.',
     ar: 'جميع الحقوق محفوظة © 2026.'
   },
-  footerAppNote: {
-    ru: 'Приложение аптеки • Разработано и развёрнуто на Google Cloud',
-    en: 'Healthy Pharmacy App • Designed & Simulated on Google Cloud platform',
-    ar: 'تطبيق الصيدلية • تصميم وتشغيل على منصة Google Cloud'
-  },
   footerOtcGuidelines: {
     ru: 'Правила отпуска',
     en: 'OTC Guidelines',

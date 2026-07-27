@@ -712,8 +712,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="border-t border-slate-800/60 pt-6 text-center text-[11px] text-slate-600 font-semibold flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p>{t('footerAppNote')}</p>
+          <div className="border-t border-slate-800/60 pt-6 text-center text-[11px] text-slate-600 font-semibold flex flex-col sm:flex-row justify-end items-center gap-4">
             <div className="flex gap-4">
               <a href="#rules" className="hover:text-slate-400 transition">{t('footerOtcGuidelines')}</a>
               <a href="#privacy" className="hover:text-slate-400 transition">{t('footerPrivacyCode')}</a>
