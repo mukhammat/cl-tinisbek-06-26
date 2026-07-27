@@ -689,7 +689,7 @@ export default function App() {
             <div className="space-y-2 text-xs">
               <h5 className="text-white font-bold">{t('footerContactsTitle')}</h5>
               <p className="text-slate-500">{t('footerAddress')}</p>
-              <p className="text-slate-500">📞 <a href={currentMarket.contactPhoneHref} className="hover:text-white transition-colors">{currentMarket.contactPhone}</a></p>
+              <p className="text-slate-500">📞 <a href={currentMarket.contactPhoneHref} dir="ltr" className="hover:text-white transition-colors inline-block" style={{ unicodeBidi: 'isolate' }}>{currentMarket.contactPhone}</a></p>
               <p className="text-slate-500">✉ <a href="mailto:support@nadeck.net" className="hover:text-white transition-colors">support@nadeck.net</a></p>
             </div>
 
