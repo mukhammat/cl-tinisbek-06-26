@@ -171,7 +171,7 @@ export default function MedicineGrid({
             const showNextImage = () =>
               setCardImageIndex((prev) => ({ ...prev, [med.id]: activeImageIndex === images.length - 1 ? 0 : activeImageIndex + 1 }));
             const availableVolumes = med.volumes && med.volumes.length > 0 ? med.volumes : [getPrimaryVolume(med)];
-            const volumeUnitLabel = unitLabel(med.unit);
+            const volumeUnitLabel = unitLabel(med.unit, currentLang);
             const currentVolume = selectedVolumes[med.id] ?? med.mgPerUnit;
             const currentVolumeInfo = availableVolumes.find((v) => v.mgPerUnit === currentVolume) || availableVolumes[0];
             const cartQty = cart.find(item => item.medicine.id === med.id && item.selectedStrength === currentVolumeInfo.mgPerUnit)?.quantity || 0;

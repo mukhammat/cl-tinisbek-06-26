@@ -101,7 +101,7 @@ export default function AdminPanel({
   // Clinical/dosing fields (indications, dosageRules, mg strength, ...) only apply to peptides -
   // additional goods (syringes, vitamins, protein, ...) only need a name, image and a priced volume.
   const isPeptideForm = (formData.type || 'peptide') === 'peptide';
-  const volumeUnitLabel = unitLabel(formData.unit || 'mg');
+  const volumeUnitLabel = unitLabel(formData.unit || 'mg', currentLang);
 
   // Fetch orders
   const fetchAllOrders = () => {

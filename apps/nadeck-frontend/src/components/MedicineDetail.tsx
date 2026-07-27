@@ -39,7 +39,7 @@ export default function MedicineDetail({
 }: MedicineDetailProps) {
   const [qty, setQty] = useState<number>(1);
   const isPeptide = medicine.type === 'peptide';
-  const volumeUnitLabel = unitLabel(medicine.unit);
+  const volumeUnitLabel = unitLabel(medicine.unit, currentLang);
   const availableVolumes = medicine.volumes && medicine.volumes.length > 0 ? medicine.volumes : [getPrimaryVolume(medicine)];
   const [selectedVolume, setSelectedVolume] = useState<number>(getPrimaryVolume(medicine).mgPerUnit);
   const currentVolumeInfo = availableVolumes.find((v) => v.mgPerUnit === selectedVolume) || availableVolumes[0];

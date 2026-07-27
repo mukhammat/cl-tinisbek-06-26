@@ -6,10 +6,13 @@
 import { Language, Product, ProductVolume, ProductUnit } from './types';
 import { MARKET } from './market';
 
-// Cyrillic display label for a product's measurement unit.
-const UNIT_LABELS: Record<ProductUnit, string> = { mg: 'мг', ml: 'мл', pcs: 'шт' };
-export function unitLabel(unit: ProductUnit): string {
-  return UNIT_LABELS[unit] || 'мг';
+// Cyrillic display label for a product's measurement unit - Russian only, everything else
+// (including ar.nadeck.net's Arabic) shows the English abbreviation.
+const UNIT_LABELS_RU: Record<ProductUnit, string> = { mg: 'мг', ml: 'мл', pcs: 'шт' };
+const UNIT_LABELS_EN: Record<ProductUnit, string> = { mg: 'mg', ml: 'ml', pcs: 'pcs' };
+export function unitLabel(unit: ProductUnit, lang: Language): string {
+  const labels = lang === 'ru' ? UNIT_LABELS_RU : UNIT_LABELS_EN;
+  return labels[unit] || labels.mg;
 }
 
 // Currency follows language, but which currency a given language maps to depends on the
