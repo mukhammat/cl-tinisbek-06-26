@@ -708,7 +708,6 @@ export default function App() {
 
             <div className="space-y-2 text-xs">
               <h5 className="text-white font-bold">{t('footerLicensingTitle')}</h5>
-              <p className="text-slate-500">{t('footerLicenseText')}</p>
               <p className="text-slate-500">{t('footerCopyright')}</p>
             </div>
           </div>
