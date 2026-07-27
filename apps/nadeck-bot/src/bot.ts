@@ -34,11 +34,13 @@ function logInteraction(entry: Record<string, unknown>) {
 
 const bot = new Bot(TOKEN);
 
-bot.command("start", (ctx) =>
-  ctx.reply(
+bot.command("start", (ctx) => {
+  // Bot only serves groups - no private-chat conversations.
+  if (ctx.chat.type === "private") return;
+  return ctx.reply(
     "Привет! Я бот поддержки Nadeck. Задай вопрос о пептидах, протоколах применения или дозировках — отвечу на основе нашей базы знаний.",
-  ),
-);
+  );
+});
 
 // The only way the bot learns which groups it belongs to (there's no "list my chats" API
 // call) - fires when it's added/promoted/removed/kicked. Powers the daily greeting list.
@@ -68,9 +70,11 @@ function stripSelfMention(ctx: Filter<Context, "message:text">): string {
 }
 
 bot.on("message:text", async (ctx) => {
-  // Never answer other bots (avoids reply loops), and never answer group admins - they're
-  // staff talking shop, not customers asking a question.
+  // Never answer other bots (avoids reply loops), never answer group admins - they're
+  // staff talking shop, not customers asking a question - and never answer private DMs -
+  // the bot only serves groups.
   if (ctx.from?.is_bot) return;
+  if (ctx.chat.type === "private") return;
 
   const isGroup = ctx.chat.type === "group" || ctx.chat.type === "supergroup";
   if (isGroup) {
