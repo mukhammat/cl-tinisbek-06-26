@@ -17,8 +17,6 @@ interface MarketConfig {
   contactPhoneHref: string;
 }
 
-// TODO: contactPhone/contactPhoneHref for the 'ar' market are placeholders (same number as
-// 'main') until a dedicated number for the Arabic-audience site is available - swap here.
 const MARKET_CONFIGS: Record<Market, MarketConfig> = {
   main: {
     defaultLang: 'ru',
@@ -29,8 +27,8 @@ const MARKET_CONFIGS: Record<Market, MarketConfig> = {
   ar: {
     defaultLang: 'ar',
     availableLanguages: ['ar', 'en'],
-    contactPhone: '+7 (707) 022-23-12',
-    contactPhoneHref: 'tel:+77070222312',
+    contactPhone: '+966 56 470 4586',
+    contactPhoneHref: 'tel:+966564704586',
   },
 };
 
