@@ -447,7 +447,7 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
   homeTab: {
     ru: 'Каталог',
     en: 'Catalog',
-    ar: 'الكتالوج'
+    ar: 'المنتجات'
   },
   calcTab: {
     ru: 'Калькулятор',
@@ -569,7 +569,7 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
   backToCatalog: {
     ru: '← Вернуться в каталог',
     en: '← Back to Catalog',
-    ar: '← العودة إلى الكتالوج'
+    ar: '← العودة إلى المنتجات'
   },
   aboutDrug: {
     ru: 'Описание',
