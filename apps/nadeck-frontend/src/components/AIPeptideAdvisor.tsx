@@ -89,7 +89,11 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
       }
 
       const data = await res.json();
-      const assistantMsg: ChatMessage = { role: 'assistant', text: data.reply };
+      const reply = data.reply?.trim();
+      // No reliable answer - stay silent instead of showing an "I don't know" message.
+      if (!reply) return;
+
+      const assistantMsg: ChatMessage = { role: 'assistant', text: reply };
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (error) {
       console.error('AI chat error:', error);

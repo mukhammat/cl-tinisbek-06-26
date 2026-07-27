@@ -102,7 +102,13 @@ bot.on("message:text", async (ctx) => {
     if (!res.ok) throw new Error(`Backend chat API returned ${res.status}`);
 
     const data = (await res.json()) as { reply?: string };
-    const answer = data.reply || "Извините, не получилось сформировать ответ.";
+    const answer = data.reply?.trim();
+
+    if (!answer) {
+      // Backend has no reliable answer - stay silent instead of saying "I don't know".
+      logInteraction({ userId: ctx.from?.id, username: ctx.from?.username, question, answer: null });
+      return;
+    }
 
     await ctx.reply(answer);
 
