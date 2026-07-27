@@ -468,7 +468,7 @@ export default function App() {
                     {currentLang === 'ru'
                       ? 'Высококачественные пептиды и аминокислоты для здоровья и развития научного прогресса.'
                       : currentLang === 'ar'
-                      ? 'ببتيدات وأحماض أمينية عالية النقاء والجودة لدعم صحتك والمساهمة في التقدم العلمي.'
+                      ? 'ببتيدات وأحماض أمينية عالية النقاء والجودة والمساهمة في التقدم العلمي.'
                       : 'Premium-grade peptides and amino acids for health and the advancement of scientific progress.'}
                   </h2>
                   <p className="text-xs sm:text-sm text-white/90 font-medium leading-relaxed">
