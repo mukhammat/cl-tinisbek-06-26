@@ -461,7 +461,7 @@ export default function CartView({
               <span>{t('deliveryFree')}:</span>
               <span>
                 {getDeliveryCost() === 0 ? (
-                  <span className="text-emerald-400 font-bold">{t('freeStatus')}</span>
+                  <span className="text-slate-300 font-bold">{t('freeStatus')}</span>
                 ) : (
                   <span>{getDeliveryCost().toLocaleString()} {t('currencySymbol')}</span>
                 )}

@@ -682,9 +682,9 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     ar: 'الشحن والتوصيل'
   },
   freeStatus: {
-    ru: 'Бесплатно (от 15000 ₸)',
-    en: 'Free (over $30)',
-    ar: 'توصيل مجاني (فوق 15000 ₸)'
+    ru: 'Уточняется менеджером',
+    en: 'Confirmed by manager',
+    ar: 'يحددها المدير'
   },
   totalToPay: {
     ru: 'Сумма к оплате',
