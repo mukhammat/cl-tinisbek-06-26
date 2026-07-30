@@ -73,6 +73,23 @@ function resolveLang(chatId: number, userLanguageCode?: string): Lang {
   return CHAT_LANGS.get(String(chatId)) || normalizeLang(userLanguageCode) || DEFAULT_LANG;
 }
 
+// Куда ведут кнопки. У арабской группы свои мужской/женский чаты — русские ссылки ей не
+// подходят, поэтому набор ссылок привязан к языку приветствия.
+const LINKS: Record<Lang, { male: string; female: string }> = {
+  ru: { male: MALE_CHAT_LINK, female: FEMALE_CHAT_LINK },
+  ar: {
+    male: process.env.MALE_CHAT_LINK_AR || MALE_CHAT_LINK,
+    female: process.env.FEMALE_CHAT_LINK_AR || FEMALE_CHAT_LINK,
+  },
+};
+
+// Молчаливый откат на русские чаты — ровно та ошибка, которую здесь легко не заметить.
+if (!process.env.MALE_CHAT_LINK_AR || !process.env.FEMALE_CHAT_LINK_AR) {
+  console.warn(
+    "MALE_CHAT_LINK_AR/FEMALE_CHAT_LINK_AR не заданы — арабское приветствие будет вести в чаты из MALE_CHAT_LINK/FEMALE_CHAT_LINK",
+  );
+}
+
 const LOGS_DIR = join(import.meta.dirname, "..", "data", "logs");
 mkdirSync(LOGS_DIR, { recursive: true });
 const LOG_FILE = join(LOGS_DIR, "routing.jsonl");
@@ -99,7 +116,8 @@ bot.on("message:new_chat_members", async (ctx) => {
     // "url" buttons open the chat immediately on tap - Telegram handles that client-side,
     // there's no round trip through the bot (and so no per-user click restriction or
     // "who picked what" logging like a callback-based flow would give us).
-    const keyboard = new InlineKeyboard().url(t.male, MALE_CHAT_LINK).url(t.female, FEMALE_CHAT_LINK);
+    const links = LINKS[lang];
+    const keyboard = new InlineKeyboard().url(t.male, links.male).url(t.female, links.female);
 
     await ctx.reply(t.welcome(name), {
       reply_markup: keyboard,
