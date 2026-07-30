@@ -23,10 +23,12 @@ import {
   AlertTriangle,
   Languages,
   Loader2,
-  Upload
+  Upload,
+  Images
 } from 'lucide-react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
 import { motion, AnimatePresence } from 'motion/react';
+import MediaLibraryModal from './MediaLibraryModal';
 
 interface AdminPanelProps {
   currentLang: Language;
@@ -139,6 +141,9 @@ export default function AdminPanel({
       setTimeout(() => setErrorMsg(''), 4000);
     }
   };
+
+  // Which field the R2 gallery is currently picking for (null = closed).
+  const [mediaLibraryTarget, setMediaLibraryTarget] = useState<'category-icon' | 'product-images' | null>(null);
 
   // Uploads a single image file to R2 (via the backend) and resolves with its public URL.
   const uploadImage = (file: File, folder: 'categories' | 'medicines'): Promise<string> => {
@@ -1203,6 +1208,15 @@ export default function AdminPanel({
                     <Upload className="w-3.5 h-3.5" />
                     {currentLang === 'ru' ? 'Загрузить иконку' : 'Upload icon'}
                   </label>
+                  <button
+                    type="button"
+                    id="btn-category-icon-library"
+                    onClick={() => setMediaLibraryTarget('category-icon')}
+                    className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors"
+                  >
+                    <Images className="w-3.5 h-3.5" />
+                    {currentLang === 'ru' ? 'Из хранилища' : 'From storage'}
+                  </button>
                   <input
                     id="category-icon-upload"
                     type="file"
@@ -1542,6 +1556,16 @@ export default function AdminPanel({
                         e.target.value = '';
                       }}
                     />
+                    <button
+                      type="button"
+                      id="btn-product-images-library"
+                      onClick={() => setMediaLibraryTarget('product-images')}
+                      className="flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-2xl border border-dashed border-slate-300 text-slate-400 hover:border-nadeck-400 hover:text-nadeck-600 text-[9px] font-bold transition-colors"
+                      title={currentLang === 'ru' ? 'Выбрать из хранилища' : 'Pick from storage'}
+                    >
+                      <Images className="w-4 h-4" />
+                      {currentLang === 'ru' ? 'Из R2' : 'From R2'}
+                    </button>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1.5">
                     {currentLang === 'ru'
@@ -2143,6 +2167,22 @@ export default function AdminPanel({
           </motion.div>
         )}
       </div>
+
+      <MediaLibraryModal
+        isOpen={mediaLibraryTarget !== null}
+        currentLang={currentLang}
+        authHeaders={authHeaders}
+        initialFolder={mediaLibraryTarget === 'category-icon' ? 'categories' : 'medicines'}
+        multiple={mediaLibraryTarget === 'product-images'}
+        onClose={() => setMediaLibraryTarget(null)}
+        onSelect={(urls) => {
+          if (mediaLibraryTarget === 'category-icon') {
+            setCategoryForm((prev) => ({ ...prev, icon: urls[0] }));
+          } else {
+            setFormData((prev) => ({ ...prev, images: [...(prev.images || []), ...urls] }));
+          }
+        }}
+      />
     </div>
   );
 }
