@@ -85,6 +85,8 @@ services:
       - GENDER_BOT_TOKEN=${GENDER_BOT_TOKEN}
       - MALE_CHAT_LINK=${MALE_CHAT_LINK}
       - FEMALE_CHAT_LINK=${FEMALE_CHAT_LINK}
+      - GENDER_BOT_LANG=${GENDER_BOT_LANG}
+      - GENDER_BOT_CHAT_LANGS=${GENDER_BOT_CHAT_LANGS}
     volumes:
       - ./apps/gender-router-bot/data:/app/apps/gender-router-bot/data
 
