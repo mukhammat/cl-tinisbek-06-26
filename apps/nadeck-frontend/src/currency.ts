@@ -37,8 +37,8 @@ export function getPrimaryVolume(product: Product): ProductVolume {
   return volumes.find((v) => v.mgPerUnit === product.mgPerUnit) || volumes[0] || { mgPerUnit: product.mgPerUnit ?? 0, price: 0, priceUsd: 0, priceSar: 0 };
 }
 
-// Flat delivery fee rules, kept per currency since the free-delivery threshold isn't a
-// straight FX conversion of the KZT figure. SAR has no threshold - ar.nadeck.net delivery is
-// always the flat 50 SAR fee, by business decision (see CartView's getDeliveryCostForCurrency).
-export const FREE_DELIVERY_THRESHOLD = { kzt: 15000, usd: 50 };
-export const DELIVERY_COST = { kzt: 1500, usd: 5, sar: 50 };
+// Shipping is priced per destination country in the admin panel (DeliveryCountry). These are
+// only the fallback rates used until the first country is added - with an empty country list
+// the checkout hides the picker and charges these, so a fresh install still behaves sanely.
+// There is no free-delivery tier anywhere: every order pays shipping.
+export const FALLBACK_DELIVERY_COST = { kzt: 1500, usd: 5, sar: 50 };

@@ -101,6 +101,21 @@ model AdditionalGoodDetails {
   volumes   Json @default("[]")
 }
 
+// Where orders can be shipped and what shipping costs there. Admin-managed so opening a new
+// destination doesn't need a deploy - these fees used to be hardcoded in the frontend's
+// currency.ts. There is deliberately no free-delivery tier: every country charges its flat fee.
+model DeliveryCountry {
+  code      String   @id // ISO 3166-1 alpha-2, uppercase (KZ, SA, AE, ...)
+  name      Json // { ru, en, ar }
+  priceKzt  Float    @default(0)
+  priceUsd  Float    @default(0)
+  priceSar  Float    @default(0)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  // Which storefront offers this destination - same semantics as Product.markets/Category.markets.
+  markets   Market[] @default([main])
+}
+
 // A code handed to a partner, who passes it on to their clients: the client types it at
 // checkout and gets a percentage off. Percent rather than a fixed sum because the storefront
 // sells in three currencies (KZT/USD/SAR) - one percentage covers all of them.

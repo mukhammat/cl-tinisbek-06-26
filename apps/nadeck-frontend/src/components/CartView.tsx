@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-1.0
  */
 
-import React, { useState } from 'react';
-import { Language, CartItem, User, Order, AppliedPromo, PromoRejection } from '../types';
+import React, { useEffect, useState } from 'react';
+import { Language, CartItem, User, Order, AppliedPromo, PromoRejection, DeliveryCountry } from '../types';
 import { TRANSLATIONS } from '../data';
-import { resolvePrice, getPrimaryVolume, FREE_DELIVERY_THRESHOLD, DELIVERY_COST } from '../currency';
+import { resolvePrice, getPrimaryVolume, FALLBACK_DELIVERY_COST } from '../currency';
 import { MARKET } from '../market';
 import { Trash2, Phone, ShoppingBag, Plus, Minus, ArrowRight, MessageCircle, CheckCircle2, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -34,6 +34,8 @@ export default function CartView({
 }: CartViewProps) {
   
   // Delivery states
+  const [countries, setCountries] = useState<DeliveryCountry[]>([]);
+  const [countryCode, setCountryCode] = useState('');
   const [city, setCity] = useState('Алматы');
   const [street, setStreet] = useState(user.address || '');
   const [apartment, setApartment] = useState('');
@@ -71,22 +73,37 @@ export default function CartView({
   const calculateSubtotalSar = () => cart.reduce((total, item) => total + unitPriceSarOf(item) * item.quantity, 0);
   const calculateSubtotal = () => resolvePrice(calculateSubtotalKzt(), calculateSubtotalUsd(), calculateSubtotalSar(), currentLang);
 
-  // Flat delivery fee per currency (not a straight FX conversion), so KZT and USD checkouts
-  // each cross their own free-delivery threshold independently. SAR (ar.nadeck.net) has no
-  // free tier at all - delivery there is always the flat fee, per business decision.
+  // Destinations and their shipping fees are maintained in the admin panel. Until the first
+  // one is added the picker stays hidden and the fallback rate applies, so checkout still works
+  // on a fresh install.
+  useEffect(() => {
+    fetch(`/api/delivery-countries?market=${MARKET}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: DeliveryCountry[]) => {
+        setCountries(data);
+        // Preselect so the shopper sees a real shipping figure without touching the field.
+        setCountryCode((current) => current || data[0]?.code || '');
+      })
+      .catch((err) => console.error('Failed to load delivery countries', err));
+  }, []);
+
+  const selectedCountry = countries.find((country) => country.code === countryCode) || null;
+
+  // Flat fee per currency, taken from the chosen country. No free-delivery tier: shipping is
+  // charged on every order, and the server re-reads the rate when the order is placed.
   type DeliveryCurrency = 'kzt' | 'usd' | 'sar';
   const getDeliveryCostForCurrency = (currency: DeliveryCurrency) => {
     if (cart.length === 0) return 0;
-    if (currency === 'sar') return DELIVERY_COST.sar;
-    const subtotal = currency === 'kzt' ? calculateSubtotalKzt() : calculateSubtotalUsd();
-    const threshold = currency === 'kzt' ? FREE_DELIVERY_THRESHOLD.kzt : FREE_DELIVERY_THRESHOLD.usd;
-    if (subtotal >= threshold) return 0;
-    return currency === 'kzt' ? DELIVERY_COST.kzt : DELIVERY_COST.usd;
+    if (selectedCountry) {
+      if (currency === 'kzt') return selectedCountry.priceKzt;
+      if (currency === 'usd') return selectedCountry.priceUsd;
+      return selectedCountry.priceSar;
+    }
+    return FALLBACK_DELIVERY_COST[currency];
   };
 
   const activeDeliveryCurrency: DeliveryCurrency = MARKET === 'ar' ? (currentLang === 'ar' ? 'sar' : 'usd') : (currentLang === 'ru' ? 'kzt' : 'usd');
   const getDeliveryCost = () => getDeliveryCostForCurrency(activeDeliveryCurrency);
-  const isFreeDelivery = () => getDeliveryCost() === 0;
 
   // A promo code takes its percentage off the goods only - delivery is never discounted, and
   // the free-delivery threshold is still judged on the full pre-discount subtotal.
@@ -182,7 +199,8 @@ export default function CartView({
     }
     lines.push(`${t('totalToPay')}: ${grandTotal.toLocaleString()} ${t('currencySymbol')}`);
     lines.push('');
-    lines.push(`${t('deliveryAddressLabel')}: ${city}, ${street}${apartment ? ', ' + apartment : ''}`);
+    const countryLabel = selectedCountry ? `${selectedCountry.name[currentLang] || selectedCountry.name.en}, ` : '';
+    lines.push(`${t('deliveryAddressLabel')}: ${countryLabel}${city}, ${street}${apartment ? ', ' + apartment : ''}`);
     lines.push(`${t('phoneLabel')}: ${phoneNumber}`);
 
     return lines.join('\n');
@@ -195,6 +213,10 @@ export default function CartView({
     if (cart.length === 0) return;
 
     // Delivery fields validation
+    if (countries.length > 0 && !selectedCountry) {
+      setFormError(currentLang === 'ru' ? 'Выберите страну доставки!' : currentLang === 'ar' ? 'يرجى اختيار بلد الشحن!' : 'Please choose a delivery country.');
+      return;
+    }
     if (!city || !street || !phoneNumber) {
       setFormError(currentLang === 'ru' ? 'Заполните адрес доставки и номер телефона!' : currentLang === 'ar' ? 'يرجى إدخال عنوان الشحن ورقم الهاتف!' : 'Please enter delivery address and phone number.');
       return;
@@ -229,6 +251,9 @@ export default function CartView({
       deliveryPriceSar: getDeliveryCostForCurrency('sar'),
       promoCode: appliedPromo?.code || null,
       address: {
+        // The server charges shipping by this code, so it travels inside the address rather
+        // than as a client-computed delivery figure.
+        country: selectedCountry?.code || '',
         city,
         street,
         apartment: apartment || '',
@@ -514,7 +539,30 @@ export default function CartView({
 
           {/* Destination coordinates block */}
           <div className="space-y-4" id="address-inputs">
-            
+
+            {/* Country drives the shipping fee, so it comes before the rest of the address.
+                Hidden until the admin has added at least one destination. */}
+            {countries.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700">
+                  {currentLang === 'ru' ? 'Страна доставки' : currentLang === 'ar' ? 'بلد الشحن' : 'Delivery country'} *
+                </label>
+                <select
+                  id="checkout-country"
+                  required
+                  value={countryCode}
+                  onChange={(e) => setCountryCode(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500 focus:bg-white"
+                >
+                  {countries.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {country.name[currentLang] || country.name.en || country.code}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-700">{t('cityLabel')} *</label>
@@ -612,7 +660,10 @@ export default function CartView({
             )}
 
             <div className="flex justify-between items-center">
-              <span>{t('deliveryFree')}:</span>
+              <span>
+                {t('deliveryFree')}
+                {selectedCountry ? ` — ${selectedCountry.name[currentLang] || selectedCountry.name.en}` : ''}:
+              </span>
               <span>
                 {getDeliveryCost() === 0 ? (
                   <span className="text-slate-300 font-bold">{t('freeStatus')}</span>

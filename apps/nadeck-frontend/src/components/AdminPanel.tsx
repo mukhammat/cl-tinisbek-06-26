@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Product, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency, SiteMarket, PromoCodeStats } from '../types';
+import { Product, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency, SiteMarket, PromoCodeStats, DeliveryCountry } from '../types';
 import { unitLabel } from '../currency';
 import {
   Package,
@@ -56,7 +56,7 @@ export default function AdminPanel({
   adminMarket
 }: AdminPanelProps) {
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo'>('products');
+  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo' | 'delivery'>('products');
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
@@ -69,6 +69,20 @@ export default function AdminPanel({
   const [newPromoPercent, setNewPromoPercent] = useState('10');
   const [newPromoMaxUses, setNewPromoMaxUses] = useState('');
   const [newPromoExpires, setNewPromoExpires] = useState('');
+
+  // Delivery tab: destination countries and their shipping fees.
+  const [deliveryCountries, setDeliveryCountries] = useState<DeliveryCountry[]>([]);
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
+  const [deliverySaving, setDeliverySaving] = useState(false);
+  const [newCountryCode, setNewCountryCode] = useState('');
+  const [newCountryNames, setNewCountryNames] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
+  const [newCountryPriceKzt, setNewCountryPriceKzt] = useState('');
+  const [newCountryPriceUsd, setNewCountryPriceUsd] = useState('');
+  const [newCountryPriceSar, setNewCountryPriceSar] = useState('');
+  const [newCountryMarkets, setNewCountryMarkets] = useState<SiteMarket[]>([adminMarket || 'main']);
+  // Editing an existing row's prices in place - the whole point of the tab is changing rates.
+  const [editingCountry, setEditingCountry] = useState<string | null>(null);
+  const [editCountryPrices, setEditCountryPrices] = useState<{ kzt: string; usd: string; sar: string }>({ kzt: '', usd: '', sar: '' });
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -158,12 +172,34 @@ export default function AdminPanel({
       });
   };
 
+  const fetchDeliveryCountries = () => {
+    setDeliveryLoading(true);
+    fetch('/api/admin/delivery-countries', { headers: authHeaders })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load delivery countries');
+        return res.json();
+      })
+      .then((data) => {
+        setDeliveryCountries(data);
+      })
+      .catch((err) => {
+        console.error(err);
+        setErrorMsg(currentLang === 'ru' ? 'Не удалось загрузить страны доставки' : 'Error loading delivery countries');
+      })
+      .finally(() => {
+        setDeliveryLoading(false);
+      });
+  };
+
   useEffect(() => {
     if (activeSubTab === 'orders') {
       fetchAllOrders();
     }
     if (activeSubTab === 'promo') {
       fetchPromoCodes();
+    }
+    if (activeSubTab === 'delivery') {
+      fetchDeliveryCountries();
     }
   }, [activeSubTab]);
 
@@ -735,6 +771,110 @@ export default function AdminPanel({
       });
   };
 
+  const handleCreateCountry = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = newCountryCode.trim().toUpperCase();
+    const nameRu = newCountryNames.ru.trim();
+
+    if (!/^[A-Z]{2}$/.test(code)) {
+      showFeedback('error', currentLang === 'ru' ? 'Код страны — две латинские буквы, например KZ' : 'Country code must be two latin letters, e.g. KZ');
+      return;
+    }
+    if (!nameRu && !newCountryNames.en.trim()) {
+      showFeedback('error', currentLang === 'ru' ? 'Введите название страны' : 'Enter the country name');
+      return;
+    }
+
+    setDeliverySaving(true);
+    fetch('/api/admin/delivery-countries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({
+        code,
+        name: newCountryNames,
+        priceKzt: Number(newCountryPriceKzt) || 0,
+        priceUsd: Number(newCountryPriceUsd) || 0,
+        priceSar: Number(newCountryPriceSar) || 0,
+        markets: newCountryMarkets.length > 0 ? newCountryMarkets : ['main'],
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const detail = await res.json().catch(() => null);
+          throw new Error(detail?.message || 'Country creation failed');
+        }
+        return res.json();
+      })
+      .then(() => {
+        showFeedback('success', currentLang === 'ru' ? `Страна ${code} добавлена` : `Country ${code} added`);
+        setNewCountryCode('');
+        setNewCountryNames({ ru: '', en: '', ar: '' });
+        setNewCountryPriceKzt('');
+        setNewCountryPriceUsd('');
+        setNewCountryPriceSar('');
+        fetchDeliveryCountries();
+      })
+      .catch((err) => {
+        console.error(err);
+        showFeedback('error', err.message || (currentLang === 'ru' ? 'Не удалось добавить страну' : 'Could not add the country'));
+      })
+      .finally(() => {
+        setDeliverySaving(false);
+      });
+  };
+
+  const patchCountry = (code: string, body: Record<string, unknown>) => {
+    fetch(`/api/admin/delivery-countries/${encodeURIComponent(code)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify(body),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Country update failed');
+        return res.json();
+      })
+      .then(() => {
+        setEditingCountry(null);
+        fetchDeliveryCountries();
+      })
+      .catch((err) => {
+        console.error(err);
+        showFeedback('error', currentLang === 'ru' ? 'Не удалось изменить страну' : 'Could not update the country');
+      });
+  };
+
+  const handleSaveCountryPrices = (code: string) => {
+    patchCountry(code, {
+      priceKzt: Number(editCountryPrices.kzt) || 0,
+      priceUsd: Number(editCountryPrices.usd) || 0,
+      priceSar: Number(editCountryPrices.sar) || 0,
+    });
+  };
+
+  const handleDeleteCountry = (code: string) => {
+    const warning = currentLang === 'ru'
+      ? `Удалить страну ${code}? Она исчезнет из выбора при оформлении, но прошлые заказы останутся.`
+      : `Delete country ${code}? It disappears from checkout, but past orders are kept.`;
+    if (!window.confirm(warning)) return;
+
+    fetch(`/api/admin/delivery-countries/${encodeURIComponent(code)}`, {
+      method: 'DELETE',
+      headers: authHeaders,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Country delete failed');
+        return res.json();
+      })
+      .then(() => {
+        showFeedback('success', currentLang === 'ru' ? 'Страна удалена' : 'Country deleted');
+        fetchDeliveryCountries();
+      })
+      .catch((err) => {
+        console.error(err);
+        showFeedback('error', currentLang === 'ru' ? 'Не удалось удалить страну' : 'Could not delete the country');
+      });
+  };
+
   // Filter lists
   const filteredProds = allMedicines.filter((m) => {
     const q = prodSearch.toLowerCase();
@@ -921,6 +1061,18 @@ export default function AdminPanel({
         >
           <Ticket className="w-4 h-4" />
           <span>{currentLang === 'ru' ? 'Промокоды' : 'Promo Codes'}</span>
+        </button>
+        <button
+          id="admin-tab-delivery"
+          onClick={() => { setActiveSubTab('delivery'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
+          className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
+            activeSubTab === 'delivery' && !isEditing && !isAdding
+              ? 'border-nadeck-600 text-nadeck-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Truck className="w-4 h-4" />
+          <span>{currentLang === 'ru' ? 'Доставка' : 'Delivery'}</span>
         </button>
         {(isEditing || isAdding || isEditingCategory || isAddingCategory) && (
           <div className="px-5 py-3 text-xs sm:text-sm font-bold text-nadeck-600 border-b-2 border-nadeck-600 flex items-center gap-1">
@@ -1488,7 +1640,7 @@ export default function AdminPanel({
                             📍 {currentLang === 'ru' ? 'Адрес доставки' : 'Delivery Destination'}:
                           </p>
                           <p className="leading-relaxed">
-                            {order.address.city}, {order.address.street}, кв./офис {order.address.apartment} {order.address.postalCode && `• Инд. ${order.address.postalCode}`}
+                            {order.address.country ? `${order.address.country}, ` : ''}{order.address.city}, {order.address.street}, кв./офис {order.address.apartment} {order.address.postalCode && `• Инд. ${order.address.postalCode}`}
                           </p>
                         </div>
                       </div>
@@ -1736,6 +1888,288 @@ export default function AdminPanel({
                   {currentLang === 'ru'
                     ? 'Создайте код выше и передайте его партнёру — здесь будет видно, сколько клиентов он привёл.'
                     : 'Create a code above and hand it to a partner - this table will show how many customers it brought.'}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeSubTab === 'delivery' && !isEditing && !isAdding && (
+          <div className="space-y-5" id="view-admin-delivery">
+            {/* Add a destination */}
+            <form onSubmit={handleCreateCountry} className="bg-white rounded-3xl border border-slate-100 p-5 sm:p-6 shadow-xs space-y-4" id="delivery-create-form">
+              <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                <Plus className="w-4 h-4 text-nadeck-600" />
+                {currentLang === 'ru' ? 'Новая страна доставки' : 'New delivery country'}
+              </h3>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentLang === 'ru' ? 'Код' : 'Code'} *</label>
+                  <input
+                    id="country-new-code"
+                    type="text"
+                    maxLength={2}
+                    value={newCountryCode}
+                    onChange={(e) => setNewCountryCode(e.target.value.toUpperCase())}
+                    placeholder="KZ"
+                    className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 uppercase font-extrabold text-center focus:outline-none focus:border-nadeck-500 focus:bg-white"
+                  />
+                </div>
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <div key={lang.code} className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      {currentLang === 'ru' ? 'Название' : 'Name'} {lang.code.toUpperCase()}{lang.code === 'ru' ? ' *' : ''}
+                    </label>
+                    <input
+                      id={`country-new-name-${lang.code}`}
+                      type="text"
+                      value={newCountryNames[lang.code]}
+                      onChange={(e) => setNewCountryNames({ ...newCountryNames, [lang.code]: e.target.value })}
+                      placeholder={lang.code === 'ru' ? 'Казахстан' : lang.code === 'en' ? 'Kazakhstan' : 'كازاخستان'}
+                      className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500 focus:bg-white"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentLang === 'ru' ? 'Доставка, ₸' : 'Delivery, ₸'}</label>
+                  <input
+                    id="country-new-price-kzt"
+                    type="number"
+                    min="0"
+                    value={newCountryPriceKzt}
+                    onChange={(e) => setNewCountryPriceKzt(e.target.value)}
+                    placeholder="1500"
+                    className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 font-bold focus:outline-none focus:border-nadeck-500 focus:bg-white"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentLang === 'ru' ? 'Доставка, $' : 'Delivery, $'}</label>
+                  <input
+                    id="country-new-price-usd"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newCountryPriceUsd}
+                    onChange={(e) => setNewCountryPriceUsd(e.target.value)}
+                    placeholder="5"
+                    className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 font-bold focus:outline-none focus:border-nadeck-500 focus:bg-white"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentLang === 'ru' ? 'Доставка, ﷼' : 'Delivery, ﷼'}</label>
+                  <input
+                    id="country-new-price-sar"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newCountryPriceSar}
+                    onChange={(e) => setNewCountryPriceSar(e.target.value)}
+                    placeholder="50"
+                    className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 font-bold focus:outline-none focus:border-nadeck-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50 space-y-2.5" id="country-form-markets-box">
+                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
+                  {currentLang === 'ru' ? 'Предлагать на сайтах' : 'Offered on'}
+                </span>
+                {adminMarket ? (
+                  <p className="text-xs font-semibold text-slate-500">
+                    {adminMarket === 'ar' ? 'ar.nadeck.net' : 'nadeck.net'}{' '}
+                    <span className="font-normal text-slate-400">
+                      {currentLang === 'ru' ? '(закреплено за вашей учётной записью)' : '(fixed for your account)'}
+                    </span>
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-4">
+                    {(['main', 'ar'] as const).map((market) => {
+                      const active = newCountryMarkets.includes(market);
+                      return (
+                        <label key={market} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={active}
+                            onChange={() => {
+                              setNewCountryMarkets(active ? newCountryMarkets.filter((m) => m !== market) : [...newCountryMarkets, market]);
+                            }}
+                            className="w-4 h-4 rounded border-slate-300 text-nadeck-600 focus:ring-nadeck-500"
+                          />
+                          {market === 'main' ? 'nadeck.net' : 'ar.nadeck.net'}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <p className="text-[11px] text-slate-400 font-medium">
+                  {currentLang === 'ru'
+                    ? 'Цена берётся в валюте, в которой покупатель видит сайт (₸ — русский, $ — английский, ﷼ — арабский). Бесплатной доставки нет: 0 означает «уточняется менеджером».'
+                    : 'The fee is charged in the currency the shopper sees (₸ Russian, $ English, ﷼ Arabic). There is no free tier: 0 reads as "confirmed by manager".'}
+                </p>
+                <button
+                  id="country-create-btn"
+                  type="submit"
+                  disabled={deliverySaving}
+                  className="px-5 py-2.5 bg-nadeck-600 hover:bg-nadeck-700 text-white text-xs font-extrabold rounded-xl flex items-center gap-2 transition disabled:opacity-50"
+                >
+                  {deliverySaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  <span>{currentLang === 'ru' ? 'Добавить страну' : 'Add country'}</span>
+                </button>
+              </div>
+            </form>
+
+            {deliveryLoading ? (
+              <div className="py-16 text-center text-slate-400 text-xs font-semibold" id="delivery-loading-state">
+                <div className="w-8 h-8 rounded-full border-2 border-nadeck-600 border-t-transparent animate-spin mx-auto mb-3" />
+                {currentLang === 'ru' ? 'Загрузка стран...' : 'Loading countries...'}
+              </div>
+            ) : deliveryCountries.length > 0 ? (
+              <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xs" id="admin-delivery-table-box">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse" id="admin-delivery-table">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase tracking-widest text-[9.5px] font-black">
+                        <th className="py-4 px-5">{currentLang === 'ru' ? 'Страна' : 'Country'}</th>
+                        <th className="py-4 px-4 text-center">₸</th>
+                        <th className="py-4 px-4 text-center">$</th>
+                        <th className="py-4 px-4 text-center">﷼</th>
+                        <th className="py-4 px-4">{currentLang === 'ru' ? 'Сайты' : 'Sites'}</th>
+                        <th className="py-4 px-4 text-center">{currentLang === 'ru' ? 'Статус' : 'Status'}</th>
+                        <th className="py-4 px-5 text-right">{currentLang === 'ru' ? 'Опции' : 'Actions'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100/70 text-slate-700">
+                      {deliveryCountries.map((country) => {
+                        const isEditingRow = editingCountry === country.code;
+                        return (
+                          <tr key={country.code} className="hover:bg-slate-50/40 transition-colors" id={`admin-country-row-${country.code}`}>
+                            <td className="py-4 px-5">
+                              <span className="text-xs font-black text-slate-900">{country.name[currentLang] || country.name.en || country.code}</span>
+                              <span className="block text-[10px] text-slate-400 font-mono font-bold mt-0.5">{country.code}</span>
+                            </td>
+                            {(['kzt', 'usd', 'sar'] as const).map((currency) => (
+                              <td key={currency} className="py-4 px-4 text-center">
+                                {isEditingRow ? (
+                                  <input
+                                    id={`country-edit-${currency}-${country.code}`}
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={editCountryPrices[currency]}
+                                    onChange={(e) => setEditCountryPrices({ ...editCountryPrices, [currency]: e.target.value })}
+                                    className="w-20 px-2 py-1.5 text-xs bg-white rounded-lg border border-nadeck-300 font-bold text-center focus:outline-none focus:border-nadeck-500"
+                                  />
+                                ) : (
+                                  <span className="text-xs font-extrabold text-slate-800">
+                                    {(currency === 'kzt' ? country.priceKzt : currency === 'usd' ? country.priceUsd : country.priceSar).toLocaleString()}
+                                  </span>
+                                )}
+                              </td>
+                            ))}
+                            <td className="py-4 px-4">
+                              <div className="flex flex-wrap gap-1">
+                                {(country.markets && country.markets.length > 0 ? country.markets : ['main']).map((market) => (
+                                  <span key={market} className="text-[9px] font-black px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                                    {market === 'main' ? 'nadeck.net' : 'ar.nadeck.net'}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border ${
+                                country.isActive
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
+                                  : 'bg-slate-100 text-slate-500 border-slate-200'
+                              }`}>
+                                {country.isActive
+                                  ? (currentLang === 'ru' ? 'Активна' : 'Active')
+                                  : (currentLang === 'ru' ? 'Выключена' : 'Disabled')}
+                              </span>
+                            </td>
+                            <td className="py-4 px-5">
+                              <div className="flex items-center justify-end gap-2">
+                                {isEditingRow ? (
+                                  <>
+                                    <button
+                                      id={`country-save-${country.code}`}
+                                      onClick={() => handleSaveCountryPrices(country.code)}
+                                      title={currentLang === 'ru' ? 'Сохранить' : 'Save'}
+                                      className="p-2 bg-emerald-50 hover:bg-emerald-100 rounded-xl text-emerald-600 transition"
+                                    >
+                                      <Check className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      id={`country-cancel-${country.code}`}
+                                      onClick={() => setEditingCountry(null)}
+                                      title={currentLang === 'ru' ? 'Отмена' : 'Cancel'}
+                                      className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-500 transition"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    id={`country-edit-${country.code}`}
+                                    onClick={() => {
+                                      setEditingCountry(country.code);
+                                      setEditCountryPrices({
+                                        kzt: String(country.priceKzt),
+                                        usd: String(country.priceUsd),
+                                        sar: String(country.priceSar),
+                                      });
+                                    }}
+                                    title={currentLang === 'ru' ? 'Изменить цены' : 'Edit prices'}
+                                    className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 transition"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                                <button
+                                  id={`country-toggle-${country.code}`}
+                                  onClick={() => patchCountry(country.code, { isActive: !country.isActive })}
+                                  title={country.isActive ? (currentLang === 'ru' ? 'Выключить' : 'Disable') : (currentLang === 'ru' ? 'Включить' : 'Enable')}
+                                  className={`p-2 rounded-xl transition ${
+                                    country.isActive
+                                      ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                                      : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                  }`}
+                                >
+                                  <Power className="w-4 h-4" />
+                                </button>
+                                <button
+                                  id={`country-delete-${country.code}`}
+                                  onClick={() => handleDeleteCountry(country.code)}
+                                  title={currentLang === 'ru' ? 'Удалить' : 'Delete'}
+                                  className="p-2 bg-rose-50 hover:bg-rose-100 rounded-xl text-rose-500 hover:text-rose-700 transition"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="py-12 text-center bg-white rounded-3xl border border-dashed border-slate-200" id="admin-empty-delivery">
+                <Truck className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+                <h3 className="text-sm font-bold text-slate-800">
+                  {currentLang === 'ru' ? 'Стран доставки пока нет' : 'No delivery countries yet'}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  {currentLang === 'ru'
+                    ? 'Пока список пуст, в корзине не спрашивают страну и действует старая ставка 1500 ₸ / $5 / 50 ﷼.'
+                    : 'While the list is empty the cart asks for no country and charges the old flat 1500 ₸ / $5 / 50 ﷼ rate.'}
                 </p>
               </div>
             )}

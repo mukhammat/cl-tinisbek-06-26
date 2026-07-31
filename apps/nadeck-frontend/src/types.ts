@@ -129,6 +129,7 @@ export interface Order {
   totalPriceUsd: number; // grand total in USD
   totalPriceSar?: number; // grand total in SAR
   address: {
+    country?: string; // DeliveryCountry code, absent on orders placed before countries existed
     city: string;
     street: string;
     apartment: string;
@@ -143,6 +144,19 @@ export interface Order {
   discountUsd?: number;
   discountSar?: number;
   userEmail?: string;
+}
+
+// A shipping destination, priced per currency in the admin panel. There is no free-delivery
+// tier - every country charges its flat fee.
+export interface DeliveryCountry {
+  code: string; // ISO 3166-1 alpha-2, uppercase
+  name: Record<Language, string>;
+  priceKzt: number;
+  priceUsd: number;
+  priceSar: number;
+  isActive: boolean;
+  sortOrder: number;
+  markets?: SiteMarket[]; // which storefront(s) offer it; defaults to ['main'] server-side
 }
 
 // A code given to a partner, whose clients get discountPercent off the goods subtotal.

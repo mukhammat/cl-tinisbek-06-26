@@ -141,7 +141,7 @@ export default function OrderHistory({
                   <div className="pt-3 border-t border-slate-50 text-[11px] text-slate-400 font-semibold flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <span id={`order-address-${order.id}`}>
-                      {order.address.city}, {order.address.street}, {order.address.apartment || ''} ({order.address.postalCode})
+                      {order.address.country ? `${order.address.country}, ` : ''}{order.address.city}, {order.address.street}, {order.address.apartment || ''} ({order.address.postalCode})
                     </span>
                   </div>
                 </div>

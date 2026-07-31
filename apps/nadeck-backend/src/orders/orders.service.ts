@@ -6,6 +6,7 @@
 import { Inject, Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { PromoCodesService } from '../promo-codes/promo-codes.service';
+import { DeliveryCountriesService } from '../delivery-countries/delivery-countries.service';
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
@@ -14,6 +15,7 @@ export class OrdersService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(PromoCodesService) private readonly promoCodes: PromoCodesService,
+    @Inject(DeliveryCountriesService) private readonly deliveryCountries: DeliveryCountriesService,
   ) {}
 
   async placeOrder(body: any) {
@@ -51,11 +53,13 @@ export class OrdersService {
         usd: subtotalPriceUsd !== undefined ? num(subtotalPriceUsd) : num(totalPriceUsd),
         sar: subtotalPriceSar !== undefined ? num(subtotalPriceSar) : num(totalPriceSar),
       };
-      const delivery = {
-        kzt: num(deliveryPrice),
-        usd: num(deliveryPriceUsd),
-        sar: num(deliveryPriceSar),
-      };
+      // Shipping is charged at the rate stored for the destination country, not the one the
+      // browser reports. Falls back to the reported figure only while no country has been
+      // configured yet - the country picker is hidden in that state too.
+      const countryFee = await this.deliveryCountries.resolveFee(address?.country);
+      const delivery = countryFee
+        ? { kzt: countryFee.priceKzt, usd: countryFee.priceUsd, sar: countryFee.priceSar }
+        : { kzt: num(deliveryPrice), usd: num(deliveryPriceUsd), sar: num(deliveryPriceSar) };
 
       // Never trust a discount computed in the browser: the percentage is re-read from the
       // database here, and an expired or exhausted code silently charges full price.
