@@ -153,6 +153,14 @@ export default function OrderHistory({
                     <span id={`order-total-${order.id}`} className="text-base sm:text-lg font-black text-nadeck-800">
                       {resolvePrice(order.totalPrice, order.totalPriceUsd, order.totalPriceSar, currentLang).toLocaleString()} {t('currencySymbol')}
                     </span>
+                    {/* This is the screen the customer lands on right after checkout, so the
+                        discount has to be visible here and not only in the cart. */}
+                    {order.promoCode ? (
+                      <span id={`order-promo-${order.id}`} className="block text-[10px] font-bold text-emerald-600 mt-0.5">
+                        {currentLang === 'ru' ? 'Промокод' : currentLang === 'ar' ? 'الرمز الترويجي' : 'Promo code'} {order.promoCode} · −
+                        {resolvePrice(order.discountKzt || 0, order.discountUsd || 0, order.discountSar || 0, currentLang).toLocaleString()} {t('currencySymbol')}
+                      </span>
+                    ) : null}
                   </div>
                   <span className="text-[10px] text-slate-400 font-medium italic mt-2 block sm:mt-0">
                     Оплата: {order.paymentMethod}
