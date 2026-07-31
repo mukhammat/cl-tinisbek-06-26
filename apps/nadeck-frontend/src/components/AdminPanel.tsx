@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Product, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency, SiteMarket } from '../types';
+import { Product, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency, SiteMarket, PromoCodeStats } from '../types';
 import { unitLabel } from '../currency';
 import {
   Package,
@@ -24,7 +24,10 @@ import {
   Languages,
   Loader2,
   Upload,
-  Images
+  Images,
+  Ticket,
+  Users,
+  Power
 } from 'lucide-react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
 import { motion, AnimatePresence } from 'motion/react';
@@ -53,9 +56,19 @@ export default function AdminPanel({
   adminMarket
 }: AdminPanelProps) {
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders'>('products');
+  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo'>('products');
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+
+  // Promo codes tab: the list already carries each code's usage stats from the server.
+  const [promoCodes, setPromoCodes] = useState<PromoCodeStats[]>([]);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoSaving, setPromoSaving] = useState(false);
+  const [newPromoCode, setNewPromoCode] = useState('');
+  const [newPromoPartner, setNewPromoPartner] = useState('');
+  const [newPromoPercent, setNewPromoPercent] = useState('10');
+  const [newPromoMaxUses, setNewPromoMaxUses] = useState('');
+  const [newPromoExpires, setNewPromoExpires] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -125,9 +138,32 @@ export default function AdminPanel({
       });
   };
 
+  // Fetch promo codes together with their usage stats
+  const fetchPromoCodes = () => {
+    setPromoLoading(true);
+    fetch('/api/admin/promo-codes', { headers: authHeaders })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load promo codes');
+        return res.json();
+      })
+      .then((data) => {
+        setPromoCodes(data);
+      })
+      .catch((err) => {
+        console.error(err);
+        setErrorMsg(currentLang === 'ru' ? 'Не удалось загрузить промокоды' : 'Error loading promo codes');
+      })
+      .finally(() => {
+        setPromoLoading(false);
+      });
+  };
+
   useEffect(() => {
     if (activeSubTab === 'orders') {
       fetchAllOrders();
+    }
+    if (activeSubTab === 'promo') {
+      fetchPromoCodes();
     }
   }, [activeSubTab]);
 
@@ -604,6 +640,101 @@ export default function AdminPanel({
       });
   };
 
+  const handleCreatePromo = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = newPromoCode.trim().toUpperCase();
+    const percent = Number(newPromoPercent);
+
+    if (!code) {
+      showFeedback('error', currentLang === 'ru' ? 'Введите промокод' : 'Enter a promo code');
+      return;
+    }
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      showFeedback('error', currentLang === 'ru' ? 'Скидка должна быть от 0 до 100%' : 'Discount must be between 0 and 100%');
+      return;
+    }
+
+    setPromoSaving(true);
+    fetch('/api/admin/promo-codes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({
+        code,
+        partnerName: newPromoPartner.trim(),
+        discountPercent: percent,
+        maxUses: newPromoMaxUses.trim() || null,
+        expiresAt: newPromoExpires || null,
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const detail = await res.json().catch(() => null);
+          throw new Error(detail?.message || 'Promo code creation failed');
+        }
+        return res.json();
+      })
+      .then(() => {
+        showFeedback('success', currentLang === 'ru' ? `Промокод ${code} создан` : `Promo code ${code} created`);
+        setNewPromoCode('');
+        setNewPromoPartner('');
+        setNewPromoPercent('10');
+        setNewPromoMaxUses('');
+        setNewPromoExpires('');
+        fetchPromoCodes();
+      })
+      .catch((err) => {
+        console.error(err);
+        showFeedback('error', err.message || (currentLang === 'ru' ? 'Не удалось создать промокод' : 'Could not create the promo code'));
+      })
+      .finally(() => {
+        setPromoSaving(false);
+      });
+  };
+
+  // Switching a code off keeps its history - past orders still count towards the partner's stats.
+  const handleTogglePromo = (promo: PromoCodeStats) => {
+    fetch(`/api/admin/promo-codes/${encodeURIComponent(promo.code)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ isActive: !promo.isActive }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Promo code update failed');
+        return res.json();
+      })
+      .then(() => {
+        fetchPromoCodes();
+      })
+      .catch((err) => {
+        console.error(err);
+        showFeedback('error', currentLang === 'ru' ? 'Не удалось изменить промокод' : 'Could not update the promo code');
+      });
+  };
+
+  const handleDeletePromo = (code: string) => {
+    const warning = currentLang === 'ru'
+      ? `Удалить промокод ${code}? Он перестанет работать, но заказы, оформленные по нему, сохранятся.`
+      : `Delete promo code ${code}? It stops working, but the orders placed with it are kept.`;
+    if (!window.confirm(warning)) return;
+
+    fetch(`/api/admin/promo-codes/${encodeURIComponent(code)}`, {
+      method: 'DELETE',
+      headers: authHeaders,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Promo code delete failed');
+        return res.json();
+      })
+      .then(() => {
+        showFeedback('success', currentLang === 'ru' ? 'Промокод удалён' : 'Promo code deleted');
+        fetchPromoCodes();
+      })
+      .catch((err) => {
+        console.error(err);
+        showFeedback('error', currentLang === 'ru' ? 'Не удалось удалить промокод' : 'Could not delete the promo code');
+      });
+  };
+
   // Filter lists
   const filteredProds = allMedicines.filter((m) => {
     const q = prodSearch.toLowerCase();
@@ -778,6 +909,18 @@ export default function AdminPanel({
         >
           <ShoppingBag className="w-4 h-4" />
           <span>{currentLang === 'ru' ? 'Заказы клиентов' : 'Customer Orders'}</span>
+        </button>
+        <button
+          id="admin-tab-promo"
+          onClick={() => { setActiveSubTab('promo'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
+          className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
+            activeSubTab === 'promo' && !isEditing && !isAdding
+              ? 'border-nadeck-600 text-nadeck-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Ticket className="w-4 h-4" />
+          <span>{currentLang === 'ru' ? 'Промокоды' : 'Promo Codes'}</span>
         </button>
         {(isEditing || isAdding || isEditingCategory || isAddingCategory) && (
           <div className="px-5 py-3 text-xs sm:text-sm font-bold text-nadeck-600 border-b-2 border-nadeck-600 flex items-center gap-1">
@@ -1385,6 +1528,215 @@ export default function AdminPanel({
                 <AlertTriangle className="w-10 h-10 text-slate-400 mx-auto mb-2" />
                 <h3 className="text-sm font-bold text-slate-800">No database orders recorded</h3>
                 <p className="text-xs text-slate-400 mt-1">Orders placed by checkout clients will display here instantly.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeSubTab === 'promo' && !isEditing && !isAdding && (
+          <div className="space-y-5" id="view-admin-promo">
+            {/* Create a code to hand to a partner */}
+            <form onSubmit={handleCreatePromo} className="bg-white rounded-3xl border border-slate-100 p-5 sm:p-6 shadow-xs space-y-4" id="promo-create-form">
+              <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                <Plus className="w-4 h-4 text-nadeck-600" />
+                {currentLang === 'ru' ? 'Новый промокод для партнёра' : 'New partner promo code'}
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentLang === 'ru' ? 'Промокод' : 'Code'} *</label>
+                  <input
+                    id="promo-new-code"
+                    type="text"
+                    value={newPromoCode}
+                    onChange={(e) => setNewPromoCode(e.target.value.toUpperCase())}
+                    placeholder="PARTNER10"
+                    className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 uppercase tracking-wider font-extrabold focus:outline-none focus:border-nadeck-500 focus:bg-white"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentLang === 'ru' ? 'Партнёр' : 'Partner'}</label>
+                  <input
+                    id="promo-new-partner"
+                    type="text"
+                    value={newPromoPartner}
+                    onChange={(e) => setNewPromoPartner(e.target.value)}
+                    placeholder={currentLang === 'ru' ? 'Имя или блог' : 'Name or blog'}
+                    className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500 focus:bg-white"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentLang === 'ru' ? 'Скидка, %' : 'Discount, %'} *</label>
+                  <input
+                    id="promo-new-percent"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={newPromoPercent}
+                    onChange={(e) => setNewPromoPercent(e.target.value)}
+                    className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 font-extrabold focus:outline-none focus:border-nadeck-500 focus:bg-white"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentLang === 'ru' ? 'Лимит заказов' : 'Usage limit'}</label>
+                  <input
+                    id="promo-new-max-uses"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={newPromoMaxUses}
+                    onChange={(e) => setNewPromoMaxUses(e.target.value)}
+                    placeholder={currentLang === 'ru' ? 'без лимита' : 'unlimited'}
+                    className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500 focus:bg-white"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentLang === 'ru' ? 'Действует до' : 'Expires'}</label>
+                  <input
+                    id="promo-new-expires"
+                    type="date"
+                    value={newPromoExpires}
+                    onChange={(e) => setNewPromoExpires(e.target.value)}
+                    className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <p className="text-[11px] text-slate-400 font-medium">
+                  {currentLang === 'ru'
+                    ? 'Скидка вычитается из стоимости товаров, доставка не удешевляется.'
+                    : 'The discount comes off the goods subtotal; delivery is never discounted.'}
+                </p>
+                <button
+                  id="promo-create-btn"
+                  type="submit"
+                  disabled={promoSaving}
+                  className="px-5 py-2.5 bg-nadeck-600 hover:bg-nadeck-700 text-white text-xs font-extrabold rounded-xl flex items-center gap-2 transition disabled:opacity-50"
+                >
+                  {promoSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  <span>{currentLang === 'ru' ? 'Создать промокод' : 'Create promo code'}</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Stats table: which partner brought how many customers */}
+            {promoLoading ? (
+              <div className="py-16 text-center text-slate-400 text-xs font-semibold" id="promo-loading-state">
+                <div className="w-8 h-8 rounded-full border-2 border-nadeck-600 border-t-transparent animate-spin mx-auto mb-3" />
+                {currentLang === 'ru' ? 'Загрузка промокодов...' : 'Loading promo codes...'}
+              </div>
+            ) : promoCodes.length > 0 ? (
+              <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xs" id="admin-promo-table-box">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse" id="admin-promo-table">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase tracking-widest text-[9.5px] font-black">
+                        <th className="py-4 px-5">{currentLang === 'ru' ? 'Промокод' : 'Code'}</th>
+                        <th className="py-4 px-4">{currentLang === 'ru' ? 'Партнёр' : 'Partner'}</th>
+                        <th className="py-4 px-4 text-center">{currentLang === 'ru' ? 'Скидка' : 'Discount'}</th>
+                        <th className="py-4 px-4 text-center">{currentLang === 'ru' ? 'Клиентов' : 'Customers'}</th>
+                        <th className="py-4 px-4 text-center">{currentLang === 'ru' ? 'Заказов' : 'Orders'}</th>
+                        <th className="py-4 px-4 text-right">{currentLang === 'ru' ? 'Выручка' : 'Revenue'}</th>
+                        <th className="py-4 px-4 text-center">{currentLang === 'ru' ? 'Статус' : 'Status'}</th>
+                        <th className="py-4 px-5 text-right">{currentLang === 'ru' ? 'Опции' : 'Actions'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100/70 text-slate-700">
+                      {promoCodes.map((promo) => (
+                        <tr key={promo.code} className="hover:bg-slate-50/40 transition-colors" id={`admin-promo-row-${promo.code}`}>
+                          <td className="py-4 px-5">
+                            <span className="text-xs font-black text-slate-900 font-mono px-2.5 py-1 bg-slate-100 rounded-lg">{promo.code}</span>
+                            {promo.expiresAt && (
+                              <span className="block text-[10px] text-slate-400 font-semibold mt-1">
+                                {currentLang === 'ru' ? 'до' : 'until'} {new Date(promo.expiresAt).toLocaleDateString()}
+                              </span>
+                            )}
+                            {promo.maxUses !== null && (
+                              <span className="block text-[10px] text-slate-400 font-semibold">
+                                {currentLang === 'ru' ? 'лимит' : 'limit'} {promo.ordersCount}/{promo.maxUses}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-4 px-4 text-xs font-semibold text-slate-700">
+                            {promo.partnerName || <span className="text-slate-300">—</span>}
+                          </td>
+                          <td className="py-4 px-4 text-center text-xs font-black text-nadeck-600">−{promo.discountPercent}%</td>
+                          <td className="py-4 px-4 text-center">
+                            <span className="inline-flex items-center gap-1.5 text-sm font-black text-slate-900">
+                              <Users className="w-3.5 h-3.5 text-slate-400" />
+                              {promo.customersCount}
+                            </span>
+                            {promo.guestOrders > 0 && (
+                              <span className="block text-[10px] text-slate-400 font-semibold mt-0.5">
+                                {currentLang === 'ru' ? `из них гостей: ${promo.guestOrders}` : `guests: ${promo.guestOrders}`}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-4 px-4 text-center text-xs font-extrabold text-slate-800">{promo.ordersCount}</td>
+                          <td className="py-4 px-4 text-right">
+                            <span className="text-xs font-extrabold text-slate-900">{Math.round(promo.revenueKzt).toLocaleString()} ₸</span>
+                            <span className="block text-[10px] text-slate-400 font-bold">
+                              {currentLang === 'ru' ? 'скидок' : 'discounted'} {Math.round(promo.discountGivenKzt).toLocaleString()} ₸
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border ${
+                              promo.isActive
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
+                                : 'bg-slate-100 text-slate-500 border-slate-200'
+                            }`}>
+                              {promo.isActive
+                                ? (currentLang === 'ru' ? 'Активен' : 'Active')
+                                : (currentLang === 'ru' ? 'Выключен' : 'Disabled')}
+                            </span>
+                          </td>
+                          <td className="py-4 px-5">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                id={`promo-toggle-${promo.code}`}
+                                onClick={() => handleTogglePromo(promo)}
+                                title={promo.isActive ? (currentLang === 'ru' ? 'Выключить' : 'Disable') : (currentLang === 'ru' ? 'Включить' : 'Enable')}
+                                className={`p-2 rounded-xl transition ${
+                                  promo.isActive
+                                    ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                                    : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                }`}
+                              >
+                                <Power className="w-4 h-4" />
+                              </button>
+                              <button
+                                id={`promo-delete-${promo.code}`}
+                                onClick={() => handleDeletePromo(promo.code)}
+                                title={currentLang === 'ru' ? 'Удалить' : 'Delete'}
+                                className="p-2 bg-rose-50 hover:bg-rose-100 rounded-xl text-rose-500 hover:text-rose-700 transition"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="py-12 text-center bg-white rounded-3xl border border-dashed border-slate-200" id="admin-empty-promo">
+                <Ticket className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+                <h3 className="text-sm font-bold text-slate-800">
+                  {currentLang === 'ru' ? 'Промокодов пока нет' : 'No promo codes yet'}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  {currentLang === 'ru'
+                    ? 'Создайте код выше и передайте его партнёру — здесь будет видно, сколько клиентов он привёл.'
+                    : 'Create a code above and hand it to a partner - this table will show how many customers it brought.'}
+                </p>
               </div>
             )}
           </div>

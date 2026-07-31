@@ -136,4 +136,43 @@ export interface Order {
   };
   paymentMethod: string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered';
+  // Promo code applied at checkout, if any. The totalPrice* above are already net of the discount.
+  promoCode?: string | null;
+  discountPercent?: number;
+  discountKzt?: number;
+  discountUsd?: number;
+  discountSar?: number;
+  userEmail?: string;
+}
+
+// A code given to a partner, whose clients get discountPercent off the goods subtotal.
+// What /api/promo-codes/validate returns when the shopper's code is usable.
+export interface AppliedPromo {
+  code: string;
+  discountPercent: number;
+  partnerName: string;
+}
+
+// Why a code was refused - the cart turns this into a localized message.
+export type PromoRejection = 'not_found' | 'inactive' | 'expired' | 'exhausted';
+
+// A promo code row in the admin panel, with the numbers the partner is judged on.
+export interface PromoCodeStats {
+  code: string;
+  partnerName: string;
+  discountPercent: number;
+  isActive: boolean;
+  maxUses: number | null;
+  expiresAt: string | null;
+  createdAt: string;
+  ordersCount: number;
+  // Distinct signed-in customers plus every guest order counted on its own - guest checkouts
+  // share one email and can't be told apart.
+  customersCount: number;
+  registeredCustomers: number;
+  guestOrders: number;
+  revenueKzt: number;
+  revenueUsd: number;
+  revenueSar: number;
+  discountGivenKzt: number;
 }

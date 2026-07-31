@@ -101,6 +101,19 @@ model AdditionalGoodDetails {
   volumes   Json @default("[]")
 }
 
+// A code handed to a partner, who passes it on to their clients: the client types it at
+// checkout and gets a percentage off. Percent rather than a fixed sum because the storefront
+// sells in three currencies (KZT/USD/SAR) - one percentage covers all of them.
+model PromoCode {
+  code            String  @id // uppercase, exactly what the customer types
+  partnerName     String  @default("") // whose code this is - the label in the admin stats table
+  discountPercent Float // 0-100, taken off the goods subtotal only, never off delivery
+  isActive        Boolean @default(true)
+  maxUses         Int? // null = unlimited; counts orders, not people
+  expiresAt       String? // ISO date, null = no expiry
+  createdAt       String
+}
+
 model Order {
   id            String @id
   date          String
@@ -112,6 +125,18 @@ model Order {
   address       Json // { city, street, apartment, postalCode }
   paymentMethod String
   status        String @default("pending")
+
+  // Promo code used at checkout, uppercase. Deliberately plain text and not a relation to
+  // PromoCode: deleting a retired code must not erase which orders it brought in, and the
+  // "how many clients did this partner send" figures are counted from this column.
+  promoCode       String?
+  discountPercent Float   @default(0)
+  // What the discount actually took off, per currency. The totalPrice* above are already net of it.
+  discountKzt     Float   @default(0)
+  discountUsd     Float   @default(0)
+  discountSar     Float   @default(0)
+
+  @@index([promoCode])
 }
 
 model StockSubscription {

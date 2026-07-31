@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Language, CartItem, User, Order } from '../types';
+import { Language, CartItem, User, Order, AppliedPromo, PromoRejection } from '../types';
 import { TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume, FREE_DELIVERY_THRESHOLD, DELIVERY_COST } from '../currency';
 import { MARKET } from '../market';
@@ -49,6 +49,14 @@ export default function CartView({
   const [orderConfirmed, setOrderConfirmed] = useState<Order | null>(null);
   const [formError, setFormError] = useState('');
 
+  // Promo code state. `appliedPromo` is only what the shopper sees - the server re-reads the
+  // percentage from the database when the order is placed, so a stale value here can't
+  // discount anything on its own.
+  const [promoInput, setPromoInput] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
+  const [promoChecking, setPromoChecking] = useState(false);
+  const [promoError, setPromoError] = useState('');
+
   const t = (key: string) => {
     return TRANSLATIONS[key]?.[currentLang] || key;
   };
@@ -80,10 +88,83 @@ export default function CartView({
   const getDeliveryCost = () => getDeliveryCostForCurrency(activeDeliveryCurrency);
   const isFreeDelivery = () => getDeliveryCost() === 0;
 
-  const grandTotalKzt = calculateSubtotalKzt() + getDeliveryCostForCurrency('kzt');
-  const grandTotalUsd = calculateSubtotalUsd() + getDeliveryCostForCurrency('usd');
-  const grandTotalSar = calculateSubtotalSar() + getDeliveryCostForCurrency('sar');
+  // A promo code takes its percentage off the goods only - delivery is never discounted, and
+  // the free-delivery threshold is still judged on the full pre-discount subtotal.
+  const promoPercent = appliedPromo?.discountPercent ?? 0;
+  const round2 = (value: number) => Math.round(value * 100) / 100;
+  const discountKzt = round2((calculateSubtotalKzt() * promoPercent) / 100);
+  const discountUsd = round2((calculateSubtotalUsd() * promoPercent) / 100);
+  const discountSar = round2((calculateSubtotalSar() * promoPercent) / 100);
+  const discountDisplay = resolvePrice(discountKzt, discountUsd, discountSar, currentLang);
+
+  const grandTotalKzt = calculateSubtotalKzt() - discountKzt + getDeliveryCostForCurrency('kzt');
+  const grandTotalUsd = calculateSubtotalUsd() - discountUsd + getDeliveryCostForCurrency('usd');
+  const grandTotalSar = calculateSubtotalSar() - discountSar + getDeliveryCostForCurrency('sar');
   const grandTotal = resolvePrice(grandTotalKzt, grandTotalUsd, grandTotalSar, currentLang);
+
+  const promoErrorText = (reason: PromoRejection) => {
+    const messages: Record<PromoRejection, Record<Language, string>> = {
+      not_found: {
+        ru: 'Такого промокода нет',
+        en: 'No such promo code',
+        ar: 'هذا الرمز الترويجي غير موجود',
+      },
+      inactive: {
+        ru: 'Промокод отключён',
+        en: 'This promo code is disabled',
+        ar: 'تم إيقاف هذا الرمز الترويجي',
+      },
+      expired: {
+        ru: 'Срок действия промокода истёк',
+        en: 'This promo code has expired',
+        ar: 'انتهت صلاحية هذا الرمز الترويجي',
+      },
+      exhausted: {
+        ru: 'Промокод больше не действует — исчерпан лимит применений',
+        en: 'This promo code has reached its usage limit',
+        ar: 'تم استخدام هذا الرمز الترويجي بالكامل',
+      },
+    };
+    return messages[reason][currentLang] || messages[reason].en;
+  };
+
+  const handleApplyPromo = () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code || promoChecking) return;
+
+    setPromoChecking(true);
+    setPromoError('');
+
+    fetch('/api/promo-codes/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to validate promo code');
+        return res.json();
+      })
+      .then((data) => {
+        if (!data.valid) {
+          setAppliedPromo(null);
+          setPromoError(promoErrorText(data.reason as PromoRejection));
+          return;
+        }
+        setAppliedPromo({ code: data.code, discountPercent: data.discountPercent, partnerName: data.partnerName });
+        setPromoInput(data.code);
+      })
+      .catch((err) => {
+        console.error(err);
+        setPromoError(currentLang === 'ru' ? 'Не удалось проверить промокод' : currentLang === 'ar' ? 'تعذّر التحقق من الرمز الترويجي' : 'Could not check the promo code');
+      })
+      .finally(() => setPromoChecking(false));
+  };
+
+  const handleClearPromo = () => {
+    setAppliedPromo(null);
+    setPromoInput('');
+    setPromoError('');
+  };
 
   const buildWhatsAppMessage = () => {
     const heading = currentLang === 'ru' ? 'Новый заказ с сайта Nadeck' : currentLang === 'ar' ? 'طلب جديد من موقع Nadeck' : 'New order from Nadeck website';
@@ -95,6 +176,10 @@ export default function CartView({
     });
 
     lines.push('');
+    if (appliedPromo) {
+      const promoLabel = currentLang === 'ru' ? 'Промокод' : currentLang === 'ar' ? 'الرمز الترويجي' : 'Promo code';
+      lines.push(`${promoLabel}: ${appliedPromo.code} (−${appliedPromo.discountPercent}%) — −${discountDisplay.toLocaleString()} ${t('currencySymbol')}`);
+    }
     lines.push(`${t('totalToPay')}: ${grandTotal.toLocaleString()} ${t('currencySymbol')}`);
     lines.push('');
     lines.push(`${t('deliveryAddressLabel')}: ${city}, ${street}${apartment ? ', ' + apartment : ''}`);
@@ -134,6 +219,15 @@ export default function CartView({
       totalPrice: grandTotalKzt,
       totalPriceUsd: grandTotalUsd,
       totalPriceSar: grandTotalSar,
+      // Goods and delivery are sent apart from the total so the server can re-apply the
+      // discount itself - it takes the percentage from the database, not from this payload.
+      subtotalPrice: calculateSubtotalKzt(),
+      subtotalPriceUsd: calculateSubtotalUsd(),
+      subtotalPriceSar: calculateSubtotalSar(),
+      deliveryPrice: getDeliveryCostForCurrency('kzt'),
+      deliveryPriceUsd: getDeliveryCostForCurrency('usd'),
+      deliveryPriceSar: getDeliveryCostForCurrency('sar'),
+      promoCode: appliedPromo?.code || null,
       address: {
         city,
         street,
@@ -213,6 +307,15 @@ export default function CartView({
             <span>{t('paymentMethodLabel')}:</span>
             <span>{orderConfirmed.paymentMethod}</span>
           </div>
+          {orderConfirmed.promoCode ? (
+            <div className="flex justify-between font-semibold text-emerald-700" id="receipt-promo">
+              <span>{currentLang === 'ru' ? 'Промокод' : currentLang === 'ar' ? 'الرمز الترويجي' : 'Promo code'}:</span>
+              <span>
+                {orderConfirmed.promoCode} (−{orderConfirmed.discountPercent}%) −
+                {resolvePrice(orderConfirmed.discountKzt || 0, orderConfirmed.discountUsd || 0, orderConfirmed.discountSar || 0, currentLang).toLocaleString()} {t('currencySymbol')}
+              </span>
+            </div>
+          ) : null}
           <div className="flex justify-between font-extrabold text-sm text-slate-900 pt-2 border-t border-slate-200">
             <span>Итого к оплате:</span>
             <span>{resolvePrice(orderConfirmed.totalPrice, orderConfirmed.totalPriceUsd, orderConfirmed.totalPriceSar, currentLang).toLocaleString()} {t('currencySymbol')}</span>
@@ -329,25 +432,67 @@ export default function CartView({
 
         </div>
 
-        {/* Promo Code section placeholder to look rich */}
-        <div className="bg-white rounded-3xl border border-slate-100 p-4 shadow-sm flex items-center justify-between gap-3 text-xs" id="promo-section">
-          <div className="flex items-center gap-2 text-slate-500">
-            <Ticket className="w-4 h-4 text-emerald-600" />
-            <div className="flex flex-col leading-tight">
-              <span className="font-semibold">{currentLang === 'ru' ? 'Промокод или скидочный купон' : 'Promo code or discount coupon'}</span>
-              <span className="text-[10px] text-slate-400 font-medium">{currentLang === 'ru' ? 'не обязательно' : 'optional'}</span>
+        {/* Promo code: checked against the server, applied to the goods subtotal */}
+        <div className="bg-white rounded-3xl border border-slate-100 p-4 shadow-sm space-y-3 text-xs" id="promo-section">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-slate-500">
+              <Ticket className="w-4 h-4 text-emerald-600" />
+              <div className="flex flex-col leading-tight">
+                <span className="font-semibold">{currentLang === 'ru' ? 'Промокод или скидочный купон' : currentLang === 'ar' ? 'رمز ترويجي أو قسيمة خصم' : 'Promo code or discount coupon'}</span>
+                <span className="text-[10px] text-slate-400 font-medium">{currentLang === 'ru' ? 'не обязательно' : currentLang === 'ar' ? 'اختياري' : 'optional'}</span>
+              </div>
             </div>
+
+            {appliedPromo ? (
+              <div className="flex items-center gap-2" id="promo-applied-badge">
+                <span className="px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-black tracking-wider uppercase">
+                  {appliedPromo.code} · −{appliedPromo.discountPercent}%
+                </span>
+                <button
+                  id="promo-clear-btn"
+                  type="button"
+                  onClick={handleClearPromo}
+                  className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg font-extrabold hover:bg-slate-200"
+                >
+                  {currentLang === 'ru' ? 'Убрать' : currentLang === 'ar' ? 'إزالة' : 'Remove'}
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  id="promo-code-input"
+                  type="text"
+                  value={promoInput}
+                  onChange={(e) => { setPromoInput(e.target.value); setPromoError(''); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleApplyPromo(); } }}
+                  placeholder="HEALTHPRO"
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-center uppercase tracking-wider font-extrabold focus:outline-none focus:border-emerald-500 w-28 bg-slate-50 text-slate-800"
+                />
+                <button
+                  id="promo-apply-btn"
+                  type="button"
+                  onClick={handleApplyPromo}
+                  disabled={promoChecking || !promoInput.trim()}
+                  className="px-3 bg-slate-800 text-white rounded-lg font-extrabold hover:bg-slate-900 disabled:opacity-40"
+                >
+                  {promoChecking ? '…' : 'OK'}
+                </button>
+              </div>
+            )}
           </div>
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              placeholder="HEALTHPRO" 
-              className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-center uppercase tracking-wider font-extrabold focus:outline-none focus:border-emerald-500 w-28 bg-slate-50 text-slate-800"
-            />
-            <button className="px-3 bg-slate-800 text-white rounded-lg font-extrabold hover:bg-slate-900">
-              OK
-            </button>
-          </div>
+
+          {promoError && (
+            <p id="promo-error" className="text-[11px] font-semibold text-rose-600">⚠️ {promoError}</p>
+          )}
+          {appliedPromo && (
+            <p id="promo-success" className="text-[11px] font-semibold text-emerald-700">
+              {currentLang === 'ru'
+                ? `Скидка ${appliedPromo.discountPercent}% применена к товарам`
+                : currentLang === 'ar'
+                  ? `تم تطبيق خصم ${appliedPromo.discountPercent}% على المنتجات`
+                  : `${appliedPromo.discountPercent}% off the items applied`}
+            </p>
+          )}
         </div>
 
       </div>
@@ -457,6 +602,15 @@ export default function CartView({
               <span>{calculateSubtotal().toLocaleString()} {t('currencySymbol')}</span>
             </div>
             
+            {appliedPromo && (
+              <div className="flex justify-between items-center text-emerald-400" id="promo-discount-line">
+                <span>
+                  {currentLang === 'ru' ? 'Промокод' : currentLang === 'ar' ? 'الرمز الترويجي' : 'Promo code'} {appliedPromo.code} (−{appliedPromo.discountPercent}%):
+                </span>
+                <span className="font-bold">−{discountDisplay.toLocaleString()} {t('currencySymbol')}</span>
+              </div>
+            )}
+
             <div className="flex justify-between items-center">
               <span>{t('deliveryFree')}:</span>
               <span>

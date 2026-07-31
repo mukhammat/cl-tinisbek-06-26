@@ -61,4 +61,6 @@ Full stack via Docker: `docker compose up -d --build`. DB backups: `./scripts/ba
 
 **HTTPS is terminated at Cloudflare, not the origin.** `nginx.conf`/`docker-compose.yml` deliberately serve plain HTTP only; Cloudflare (proxied DNS + Flexible SSL) handles TLS for visitors. Don't add certbot/TLS config to the origin unless the Cloudflare proxy setup changes.
 
-**Backend module layout** (`apps/nadeck-backend/src/`): `auth`, `categories`, `medicines`, `orders`, `chat`, `upload`, `notifications`, `newsletter`, `translate`, `seeds`, `database`. `src/seeds` conditionally seeds categories/medicines based on environment — check it before assuming a fresh DB is empty.
+**Promo discounts are computed server-side.** A `PromoCode` is a percentage (never a fixed sum — the storefront prices in KZT/USD/SAR). The cart's `/api/promo-codes/validate` call is display-only; `OrdersService.placeOrder` re-reads the percentage from the database and applies it to the goods subtotal itself, so a discount posted by the browser is ignored. `Order.promoCode` is plain text with no relation to `PromoCode` on purpose — deleting a retired code must not erase which orders a partner brought in, and the admin usage stats are counted from that column.
+
+**Backend module layout** (`apps/nadeck-backend/src/`): `auth`, `categories`, `medicines`, `orders`, `promo-codes`, `chat`, `upload`, `notifications`, `newsletter`, `translate`, `seeds`, `database`. `src/seeds` conditionally seeds categories/medicines based on environment — check it before assuming a fresh DB is empty.

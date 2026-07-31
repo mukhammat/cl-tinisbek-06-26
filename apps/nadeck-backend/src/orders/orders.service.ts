@@ -5,18 +5,70 @@
 
 import { Inject, Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { PromoCodesService } from '../promo-codes/promo-codes.service';
+
+const round2 = (value: number) => Math.round(value * 100) / 100;
 
 @Injectable()
 export class OrdersService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(PromoCodesService) private readonly promoCodes: PromoCodesService,
+  ) {}
 
   async placeOrder(body: any) {
-    const { email, items, totalPrice, totalPriceUsd, totalPriceSar, address, paymentMethod } = body;
+    const {
+      email,
+      items,
+      totalPrice,
+      totalPriceUsd,
+      totalPriceSar,
+      subtotalPrice,
+      subtotalPriceUsd,
+      subtotalPriceSar,
+      deliveryPrice,
+      deliveryPriceUsd,
+      deliveryPriceSar,
+      promoCode,
+      address,
+      paymentMethod,
+    } = body;
     if (!items || !totalPrice || !address) {
       throw new BadRequestException('Invalid cart or address details');
     }
 
     try {
+      const num = (value: any) => {
+        const parsed = parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+      };
+
+      // The discount comes off goods only, so the split matters. Callers that don't send one
+      // (older clients) get the whole total treated as goods - the discount is then simply
+      // applied to everything, which is still correct arithmetic, just more generous.
+      const goods = {
+        kzt: subtotalPrice !== undefined ? num(subtotalPrice) : num(totalPrice),
+        usd: subtotalPriceUsd !== undefined ? num(subtotalPriceUsd) : num(totalPriceUsd),
+        sar: subtotalPriceSar !== undefined ? num(subtotalPriceSar) : num(totalPriceSar),
+      };
+      const delivery = {
+        kzt: num(deliveryPrice),
+        usd: num(deliveryPriceUsd),
+        sar: num(deliveryPriceSar),
+      };
+
+      // Never trust a discount computed in the browser: the percentage is re-read from the
+      // database here, and an expired or exhausted code silently charges full price.
+      const resolved = promoCode ? await this.promoCodes.resolve(promoCode) : null;
+      const promo = resolved && 'promo' in resolved ? resolved.promo : null;
+      const percent = promo?.discountPercent ?? 0;
+
+      const discount = {
+        kzt: round2((goods.kzt * percent) / 100),
+        usd: round2((goods.usd * percent) / 100),
+        sar: round2((goods.sar * percent) / 100),
+      };
+
       const trackingNumber = 'PP-' + Math.floor(100000 + Math.random() * 900000);
       const dateStr = new Date().toLocaleDateString('ru-RU');
       const userEmailVal = email ? email.toLowerCase() : 'guest';
@@ -27,12 +79,17 @@ export class OrdersService {
           date: dateStr,
           userEmail: userEmailVal,
           items,
-          totalPrice: parseFloat(totalPrice),
-          totalPriceUsd: parseFloat(totalPriceUsd || 0),
-          totalPriceSar: parseFloat(totalPriceSar || 0),
+          totalPrice: round2(goods.kzt - discount.kzt + delivery.kzt),
+          totalPriceUsd: round2(goods.usd - discount.usd + delivery.usd),
+          totalPriceSar: round2(goods.sar - discount.sar + delivery.sar),
           address,
           paymentMethod,
           status: 'pending',
+          promoCode: promo?.code ?? null,
+          discountPercent: percent,
+          discountKzt: discount.kzt,
+          discountUsd: discount.usd,
+          discountSar: discount.sar,
         }
       });
 
@@ -47,6 +104,11 @@ export class OrdersService {
         address,
         paymentMethod: order.paymentMethod,
         status: order.status,
+        promoCode: order.promoCode,
+        discountPercent: order.discountPercent,
+        discountKzt: order.discountKzt,
+        discountUsd: order.discountUsd,
+        discountSar: order.discountSar,
       };
     } catch (err) {
       console.error('Place order error:', err);
@@ -77,6 +139,11 @@ export class OrdersService {
         address: o.address,
         paymentMethod: o.paymentMethod,
         status: o.status,
+        promoCode: o.promoCode,
+        discountPercent: o.discountPercent,
+        discountKzt: o.discountKzt,
+        discountUsd: o.discountUsd,
+        discountSar: o.discountSar,
       }));
     } catch (err) {
       console.error('Get orders error:', err);
@@ -102,6 +169,11 @@ export class OrdersService {
         address: o.address,
         paymentMethod: o.paymentMethod,
         status: o.status,
+        promoCode: o.promoCode,
+        discountPercent: o.discountPercent,
+        discountKzt: o.discountKzt,
+        discountUsd: o.discountUsd,
+        discountSar: o.discountSar,
       }));
     } catch (err) {
       console.error('Get all orders error:', err);
