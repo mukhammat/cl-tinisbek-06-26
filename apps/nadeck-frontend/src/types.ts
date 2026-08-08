@@ -66,6 +66,9 @@ export interface Product {
   description: Record<Language, string>;
   fullDescription: Record<Language, string>;
   images: string[]; // gallery of image URLs; images[0] is the cover photo shown in listings
+  // ar.nadeck.net's own gallery, sent only to the admin panel - a storefront read already
+  // gets the right market's photos in `images` (an empty gallery borrows the other market's).
+  imagesAr?: string[];
   rating: number;
   volumes: ProductVolume[]; // all available package volumes; the price lives here, per volume (see getPrimaryVolume)
   inStock?: boolean;

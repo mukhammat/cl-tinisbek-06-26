@@ -71,6 +71,15 @@ export class MedicinesService {
     return images.filter((url) => typeof url === 'string' && url.trim().length > 0);
   }
 
+  // Each storefront has its own gallery (Product.images for nadeck.net, Product.imagesAr for
+  // ar.nadeck.net); whichever one is empty borrows the other's photos, so a product shot only
+  // has to be uploaded twice when the two sites genuinely need different pictures.
+  private resolveImages(p: any, market: Market): string[] {
+    const main = this.normalizeImages(p.images);
+    const ar = this.normalizeImages(p.imagesAr);
+    return market === 'ar' ? (ar.length > 0 ? ar : main) : (main.length > 0 ? main : ar);
+  }
+
   // Resolves the category id from either the current `categoryId` field or the legacy
   // `category` field, falling back to DEFAULT_CATEGORY_ID, and verifies it actually exists.
   private async resolveCategoryId(categoryId: any, category: any): Promise<string> {
@@ -85,7 +94,11 @@ export class MedicinesService {
   // Flattens a Product + its type-specific details row into the single flat shape the
   // frontend has always consumed, so callers never need to know the data is split across
   // tables. Peptide-only fields are simply absent for non-peptide products.
-  private flatten(p: any) {
+  //
+  // `forAdmin` keeps both galleries raw, because the product form edits each market's photos
+  // separately - a storefront read instead collapses them into the single `images` array that
+  // market should show, so no component has to know there is more than one gallery.
+  private flatten(p: any, market: Market, forAdmin: boolean) {
     const base = {
       id: p.id,
       name: p.name,
@@ -94,7 +107,8 @@ export class MedicinesService {
       unit: p.unit as ProductUnit,
       description: p.description,
       fullDescription: p.fullDescription,
-      images: p.images,
+      images: forAdmin ? this.normalizeImages(p.images) : this.resolveImages(p, market),
+      ...(forAdmin ? { imagesAr: this.normalizeImages(p.imagesAr) } : {}),
       rating: p.rating,
       inStock: p.inStock === 1,
       markets: p.markets,
@@ -119,13 +133,14 @@ export class MedicinesService {
     };
   }
 
-  async getAll(market?: string) {
+  async getAll(market?: string, forAdmin = false) {
     try {
       const rows = await this.prisma.product.findMany({
         where: VALID_MARKETS.includes(market as Market) ? { markets: { has: market as Market } } : undefined,
         include: { medicine: true, additionalGood: true },
       });
-      return rows.map((p) => this.flatten(p));
+      const readingMarket: Market = VALID_MARKETS.includes(market as Market) ? (market as Market) : 'main';
+      return rows.map((p) => this.flatten(p, readingMarket, forAdmin));
     } catch (err) {
       console.error('Error fetching medicines:', err);
       throw new InternalServerErrorException('Database error occurred');
@@ -135,7 +150,7 @@ export class MedicinesService {
   async create(body: any, adminMarket?: string | null) {
     const {
       id, name, categoryId, category, description, fullDescription,
-      indications, contraindications, usage, images, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit, markets
+      indications, contraindications, usage, images, imagesAr, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit, markets
     } = body;
 
     if (!id || !name) {
@@ -148,8 +163,11 @@ export class MedicinesService {
     if (normalizedVolumes.length === 0) {
       throw new BadRequestException('At least one priced volume is required');
     }
+    // One gallery is enough - the other market borrows it (see resolveImages), so only a
+    // product with no photo at all anywhere is rejected.
     const normalizedImages = this.normalizeImages(images);
-    if (normalizedImages.length === 0) {
+    const normalizedImagesAr = this.normalizeImages(imagesAr);
+    if (normalizedImages.length === 0 && normalizedImagesAr.length === 0) {
       throw new BadRequestException('At least one product image is required');
     }
 
@@ -166,6 +184,7 @@ export class MedicinesService {
           description: description || { ru: '', en: '', ar: '' },
           fullDescription: fullDescription || { ru: '', en: '', ar: '' },
           images: normalizedImages,
+          imagesAr: normalizedImagesAr,
           rating: Number(rating || 5.0),
           inStock: inStock === false ? 0 : 1,
           markets: this.resolveMarkets(markets, adminMarket),
@@ -202,7 +221,7 @@ export class MedicinesService {
   async update(id: string, body: any, adminMarket?: string | null) {
     const {
       name, categoryId, category, description, fullDescription,
-      indications, contraindications, usage, images, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit, markets
+      indications, contraindications, usage, images, imagesAr, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit, markets
     } = body;
 
     const productType = this.resolveProductType(type);
@@ -212,7 +231,8 @@ export class MedicinesService {
       throw new BadRequestException('At least one priced volume is required');
     }
     const normalizedImages = this.normalizeImages(images);
-    if (normalizedImages.length === 0) {
+    const normalizedImagesAr = this.normalizeImages(imagesAr);
+    if (normalizedImages.length === 0 && normalizedImagesAr.length === 0) {
       throw new BadRequestException('At least one product image is required');
     }
 
@@ -246,6 +266,7 @@ export class MedicinesService {
           description,
           fullDescription,
           images: normalizedImages,
+          imagesAr: normalizedImagesAr,
           rating: Number(rating),
           inStock: newInStock,
           markets: this.resolveMarkets(markets, adminMarket),

@@ -33,6 +33,14 @@ import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
 import { motion, AnimatePresence } from 'motion/react';
 import MediaLibraryModal from './MediaLibraryModal';
 
+// The product form edits one photo gallery per storefront: `images` is nadeck.net's,
+// `imagesAr` is ar.nadeck.net's. Leaving one empty is fine - the backend serves the other
+// market's photos there instead of nothing.
+type ProductImageField = 'images' | 'imagesAr';
+
+// Stand-in cover for a product saved without a single photo in either gallery.
+const DEFAULT_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80';
+
 interface AdminPanelProps {
   currentLang: Language;
   onRefreshMedicines: () => void;
@@ -103,7 +111,9 @@ export default function AdminPanel({
   const [isTranslatingCategory, setIsTranslatingCategory] = useState(false);
   const [isTranslatingProduct, setIsTranslatingProduct] = useState(false);
   const [isUploadingCategoryIcon, setIsUploadingCategoryIcon] = useState(false);
-  const [isUploadingProductImage, setIsUploadingProductImage] = useState(false);
+  // Which of the two per-storefront galleries is currently uploading (null = neither), so an
+  // upload into one gallery doesn't lock the other one's buttons.
+  const [uploadingImageField, setUploadingImageField] = useState<ProductImageField | null>(null);
 
   // Volumes list (mg + own price in KZT, USD and SAR) available for the product, plus the pending "new volume" inputs
   const [volumesList, setVolumesList] = useState<{ mgPerUnit: number; price: number; priceUsd: number; priceSar: number }[]>([]);
@@ -215,7 +225,7 @@ export default function AdminPanel({
   };
 
   // Which field the R2 gallery is currently picking for (null = closed).
-  const [mediaLibraryTarget, setMediaLibraryTarget] = useState<'category-icon' | 'product-images' | null>(null);
+  const [mediaLibraryTarget, setMediaLibraryTarget] = useState<'category-icon' | ProductImageField | null>(null);
 
   // Uploads a single image file to R2 (via the backend) and resolves with its public URL.
   const uploadImage = (file: File, folder: 'categories' | 'medicines'): Promise<string> => {
@@ -237,18 +247,93 @@ export default function AdminPanel({
   };
 
   // Uploads every selected file (multi-select is allowed) and appends the resulting URLs to
-  // the product's photo gallery - existing photos are kept, not replaced.
-  const handleAddProductImages = (files: FileList | null) => {
+  // the given storefront's photo gallery - existing photos are kept, not replaced.
+  const handleAddProductImages = (files: FileList | null, field: ProductImageField) => {
     if (!files || files.length === 0) return;
-    setIsUploadingProductImage(true);
+    setUploadingImageField(field);
     Promise.all(Array.from(files).map((file) => uploadImage(file, 'medicines')))
-      .then((urls) => setFormData((prev) => ({ ...prev, images: [...(prev.images || []), ...urls] })))
+      .then((urls) => setFormData((prev) => ({ ...prev, [field]: [...(prev[field] || []), ...urls] })))
       .catch((err) => showFeedback('error', err.message || (currentLang === 'ru' ? 'Не удалось загрузить изображение' : 'Could not upload image')))
-      .finally(() => setIsUploadingProductImage(false));
+      .finally(() => setUploadingImageField(null));
   };
 
-  const handleRemoveProductImage = (index: number) => {
-    setFormData((prev) => ({ ...prev, images: (prev.images || []).filter((_, i) => i !== index) }));
+  const handleRemoveProductImage = (index: number, field: ProductImageField) => {
+    setFormData((prev) => ({ ...prev, [field]: (prev[field] || []).filter((_, i) => i !== index) }));
+  };
+
+  // Both storefronts' galleries are managed identically (upload, pick from R2, remove), so the
+  // block is rendered once per market instead of being duplicated in the form markup.
+  const renderProductGallery = (field: ProductImageField, label: string, hint: string) => {
+    const gallery = formData[field] || [];
+    const isUploading = uploadingImageField === field;
+    // The nadeck.net gallery keeps the original element ids; the Arabic one gets the suffix.
+    const idSuffix = field === 'images' ? '' : '-ar';
+    const uploadInputId = `form-input-image-upload${idSuffix}`;
+
+    return (
+      <div>
+        <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+          {label}
+        </label>
+        <div className="flex flex-wrap items-center gap-2" id={`form-images-gallery${idSuffix}`}>
+          {gallery.map((url, index) => (
+            <div
+              key={`${url}-${index}`}
+              id={`form-image-thumb${idSuffix}-${index}`}
+              className="relative w-14 h-14 rounded-2xl border border-slate-200 bg-slate-50 shrink-0 overflow-hidden group"
+            >
+              <img src={url} alt="" className="w-full h-full object-cover" />
+              {index === 0 && (
+                <span className="absolute bottom-0 inset-x-0 bg-nadeck-600/90 text-white text-[7px] font-bold text-center leading-tight py-0.5">
+                  {currentLang === 'ru' ? 'Обложка' : 'Cover'}
+                </span>
+              )}
+              <button
+                type="button"
+                id={`form-image-remove${idSuffix}-${index}`}
+                onClick={() => handleRemoveProductImage(index, field)}
+                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-white/90 hover:bg-rose-50 text-slate-500 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                title={currentLang === 'ru' ? 'Удалить фото' : 'Remove photo'}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+          <label
+            htmlFor={uploadInputId}
+            className={`flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-2xl border border-dashed border-slate-300 text-slate-400 hover:border-nadeck-400 hover:text-nadeck-600 text-[9px] font-bold transition-colors ${
+              isUploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'
+            }`}
+          >
+            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            {currentLang === 'ru' ? 'Добавить' : 'Add'}
+          </label>
+          <input
+            id={uploadInputId}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            disabled={isUploading}
+            onChange={(e) => {
+              handleAddProductImages(e.target.files, field);
+              e.target.value = '';
+            }}
+          />
+          <button
+            type="button"
+            id={`btn-product-images-library${idSuffix}`}
+            onClick={() => setMediaLibraryTarget(field)}
+            className="flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-2xl border border-dashed border-slate-300 text-slate-400 hover:border-nadeck-400 hover:text-nadeck-600 text-[9px] font-bold transition-colors"
+            title={currentLang === 'ru' ? 'Выбрать из хранилища' : 'Pick from storage'}
+          >
+            <Images className="w-4 h-4" />
+            {currentLang === 'ru' ? 'Из R2' : 'From R2'}
+          </button>
+        </div>
+        <p className="text-[10px] text-slate-400 mt-1.5">{hint}</p>
+      </div>
+    );
   };
 
   // Toggle Stock Status
@@ -354,7 +439,10 @@ export default function AdminPanel({
       type: 'peptide',
       unit: 'mg',
       category: defaultCategoryId,
-      images: ['https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80'],
+      images: [DEFAULT_PRODUCT_IMAGE],
+      // Left empty on purpose: ar.nadeck.net shows the photos above until someone uploads
+      // pictures specific to that storefront.
+      imagesAr: [],
       rating: 5.0,
       form: 'vial',
       mgPerUnit: 5,
@@ -476,6 +564,9 @@ export default function AdminPanel({
       return str.split('\n').map(s => s.trim()).filter(s => s.length > 0);
     };
 
+    const mainImages = formData.images || [];
+    const arImages = formData.imagesAr || [];
+
     const payload = {
       id: targetId,
       type: formData.type || 'peptide',
@@ -484,7 +575,10 @@ export default function AdminPanel({
       categoryId: formData.category || defaultCategoryId,
       description: locDescs,
       fullDescription: locFullDescs,
-      images: formData.images && formData.images.length > 0 ? formData.images : ['https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80'],
+      // Each storefront keeps its own gallery and borrows the other's when empty, so the
+      // placeholder is only needed when neither market has a photo at all.
+      images: mainImages.length > 0 || arImages.length > 0 ? mainImages : [DEFAULT_PRODUCT_IMAGE],
+      imagesAr: arImages,
       rating: Number(formData.rating || 5.0),
       volumes: volumesList,
       inStock: formData.inStock !== false,
@@ -1119,9 +1213,9 @@ export default function AdminPanel({
                           {/* Col 1 Brand detail */}
                           <td className="py-4 px-5">
                             <div className="flex items-center gap-3">
-                              <img 
-                                src={med.images?.[0]}
-                                alt={med.name.en} 
+                              <img
+                                src={med.images?.[0] || med.imagesAr?.[0]}
+                                alt={med.name.en}
                                 className="w-11 h-11 rounded-lg object-cover bg-slate-50 border border-slate-100 shrink-0" 
                               />
                               <div>
@@ -2293,71 +2387,23 @@ export default function AdminPanel({
 
               {/* Grid 2 Block: Images, Form, and Ratings */}
               <div className={`grid grid-cols-1 gap-5 ${isPeptideForm ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                    {currentLang === 'ru' ? 'Фото товара (можно несколько)' : 'Product photos (multiple allowed)'}
-                  </label>
-                  <div className="flex flex-wrap items-center gap-2" id="form-images-gallery">
-                    {(formData.images || []).map((url, index) => (
-                      <div
-                        key={`${url}-${index}`}
-                        id={`form-image-thumb-${index}`}
-                        className="relative w-14 h-14 rounded-2xl border border-slate-200 bg-slate-50 shrink-0 overflow-hidden group"
-                      >
-                        <img src={url} alt="" className="w-full h-full object-cover" />
-                        {index === 0 && (
-                          <span className="absolute bottom-0 inset-x-0 bg-nadeck-600/90 text-white text-[7px] font-bold text-center leading-tight py-0.5">
-                            {currentLang === 'ru' ? 'Обложка' : 'Cover'}
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          id={`form-image-remove-${index}`}
-                          onClick={() => handleRemoveProductImage(index)}
-                          className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-white/90 hover:bg-rose-50 text-slate-500 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title={currentLang === 'ru' ? 'Удалить фото' : 'Remove photo'}
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                    <label
-                      htmlFor="form-input-image-upload"
-                      className={`flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-2xl border border-dashed border-slate-300 text-slate-400 hover:border-nadeck-400 hover:text-nadeck-600 text-[9px] font-bold transition-colors ${
-                        isUploadingProductImage ? 'opacity-50 pointer-events-none' : 'cursor-pointer'
-                      }`}
-                    >
-                      {isUploadingProductImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                      {currentLang === 'ru' ? 'Добавить' : 'Add'}
-                    </label>
-                    <input
-                      id="form-input-image-upload"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      disabled={isUploadingProductImage}
-                      onChange={(e) => {
-                        handleAddProductImages(e.target.files);
-                        e.target.value = '';
-                      }}
-                    />
-                    <button
-                      type="button"
-                      id="btn-product-images-library"
-                      onClick={() => setMediaLibraryTarget('product-images')}
-                      className="flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-2xl border border-dashed border-slate-300 text-slate-400 hover:border-nadeck-400 hover:text-nadeck-600 text-[9px] font-bold transition-colors"
-                      title={currentLang === 'ru' ? 'Выбрать из хранилища' : 'Pick from storage'}
-                    >
-                      <Images className="w-4 h-4" />
-                      {currentLang === 'ru' ? 'Из R2' : 'From R2'}
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1.5">
-                    {currentLang === 'ru'
-                      ? 'Первое фото — обложка в каталоге. На странице товара покупатель сможет пролистать все фото.'
-                      : 'The first photo is the catalog cover. Shoppers can flip through all photos on the product page.'}
-                  </p>
+                {/* One gallery per storefront - the same product can be photographed
+                    differently for nadeck.net and ar.nadeck.net. */}
+                <div className="md:col-span-2 space-y-4">
+                  {renderProductGallery(
+                    'images',
+                    currentLang === 'ru' ? 'Фото для nadeck.net' : 'Photos for nadeck.net',
+                    currentLang === 'ru'
+                      ? 'Первое фото — обложка в каталоге. На странице товара покупатель сможет пролистать все фото. Если пусто — возьмутся фото ar.nadeck.net.'
+                      : 'The first photo is the catalog cover. Shoppers can flip through all photos on the product page. Left empty, the ar.nadeck.net photos are used instead.',
+                  )}
+                  {renderProductGallery(
+                    'imagesAr',
+                    currentLang === 'ru' ? 'Фото для ar.nadeck.net' : 'Photos for ar.nadeck.net',
+                    currentLang === 'ru'
+                      ? 'Отдельная галерея для арабского сайта. Если пусто — там показываются фото nadeck.net.'
+                      : 'A separate gallery for the Arabic site. Left empty, it shows the nadeck.net photos.',
+                  )}
                 </div>
 
                 {isPeptideForm && (
@@ -2959,13 +3005,14 @@ export default function AdminPanel({
         currentLang={currentLang}
         authHeaders={authHeaders}
         initialFolder={mediaLibraryTarget === 'category-icon' ? 'categories' : 'medicines'}
-        multiple={mediaLibraryTarget === 'product-images'}
+        multiple={mediaLibraryTarget !== null && mediaLibraryTarget !== 'category-icon'}
         onClose={() => setMediaLibraryTarget(null)}
         onSelect={(urls) => {
           if (mediaLibraryTarget === 'category-icon') {
             setCategoryForm((prev) => ({ ...prev, icon: urls[0] }));
-          } else {
-            setFormData((prev) => ({ ...prev, images: [...(prev.images || []), ...urls] }));
+          } else if (mediaLibraryTarget) {
+            const field = mediaLibraryTarget;
+            setFormData((prev) => ({ ...prev, [field]: [...(prev[field] || []), ...urls] }));
           }
         }}
       />

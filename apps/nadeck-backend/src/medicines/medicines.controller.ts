@@ -20,11 +20,12 @@ export class MedicinesController {
 
   // Admin panel read - full catalog for a full admin, or just their own market for a
   // market-scoped admin (User.adminMarket), so a scoped admin never sees products outside
-  // their storefront in the first place.
+  // their storefront in the first place. Unlike the storefront read this keeps each market's
+  // photo gallery separate, since the product form edits them one by one.
   @UseGuards(AdminGuard)
   @Get('medicines/admin')
   getAllForAdmin(@Req() req: any) {
-    return this.medicinesService.getAll(req.user.adminMarket ?? undefined);
+    return this.medicinesService.getAll(req.user.adminMarket ?? undefined, true);
   }
 
   @UseGuards(AdminGuard)

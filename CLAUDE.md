@@ -53,6 +53,8 @@ Full stack via Docker: `docker compose up -d --build`. DB backups: `./scripts/ba
 
 **Product schema is split by type.** `Product` holds fields common to everything in the catalog; type-specific data lives in `MedicineDetails` or `AdditionalGoodDetails` (one-to-one with `Product`). Price is *not* a field on `Product` — it's derived from volumes/pricing records, so don't reintroduce a flat `price`/`priceUsd` column. Currency fallback: USD price missing/0 → fall back to KZT.
 
+**Product photos are per storefront.** `Product.images` is nadeck.net's gallery, `Product.imagesAr` is ar.nadeck.net's; either one being empty means that site shows the other's photos, so a product only needs a second gallery when the two markets want different pictures. `MedicinesService` resolves this down to a single `images` array on the public read (`/api/medicines?market=…`) — only `/api/medicines/admin` returns both galleries, because the product form edits them separately. Storefront components therefore never see `imagesAr`; don't add market branching to them.
+
 **gender-router-bot is intentionally isolated.** Different Telegram token, no backend dependency, no shared code with `nadeck-bot` — it only exists to route new group members via link-buttons. Don't couple it to the backend or the other bot.
 
 **nadeck-bot's group list is self-discovered.** Telegram's Bot API has no "list my chats" call, so `apps/nadeck-bot/src/groupStore.ts` builds the list from `my_chat_member` events and persists it to `data/groups.json` (a Docker volume — survives restarts). Nothing to configure manually; the bot learns a group as soon as it's added.

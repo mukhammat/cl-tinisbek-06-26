@@ -65,7 +65,11 @@ model Product {
   category        Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   description     Json // { ru, en, ar }
   fullDescription Json // { ru, en, ar }
-  images          Json @default("[]") // string[] of image URLs - images[0] is the cover photo
+  images          Json @default("[]") // string[] of image URLs for nadeck.net - images[0] is the cover photo
+  // Same, but for ar.nadeck.net - the two storefronts can show different photos of the same
+  // product. Empty here means that site falls back to `images` (and an empty `images` falls
+  // back to this), so a product still only needs one gallery unless the markets differ.
+  imagesAr        Json @default("[]")
   rating          Float
   inStock         Int
   markets         Market[]    @default([main])
