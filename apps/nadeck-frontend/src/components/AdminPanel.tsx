@@ -2387,22 +2387,29 @@ export default function AdminPanel({
 
               {/* Grid 2 Block: Images, Form, and Ratings */}
               <div className={`grid grid-cols-1 gap-5 ${isPeptideForm ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
-                {/* One gallery per storefront - the same product can be photographed
-                    differently for nadeck.net and ar.nadeck.net. */}
+                {/* One gallery per storefront - the same product can be photographed differently
+                    for nadeck.net and ar.nadeck.net. A market-scoped admin manages only their own
+                    storefront (see User.adminMarket), so the other market's gallery is hidden from
+                    them entirely - along with the cross-market fallback note, which is only
+                    actionable for a full admin who can see both. */}
                 <div className="md:col-span-2 space-y-4">
-                  {renderProductGallery(
+                  {adminMarket !== 'ar' && renderProductGallery(
                     'images',
                     currentLang === 'ru' ? 'Фото для nadeck.net' : 'Photos for nadeck.net',
                     currentLang === 'ru'
-                      ? 'Первое фото — обложка в каталоге. На странице товара покупатель сможет пролистать все фото. Если пусто — возьмутся фото ar.nadeck.net.'
-                      : 'The first photo is the catalog cover. Shoppers can flip through all photos on the product page. Left empty, the ar.nadeck.net photos are used instead.',
+                      ? `Первое фото — обложка в каталоге. На странице товара покупатель сможет пролистать все фото.${adminMarket ? '' : ' Если пусто — возьмутся фото ar.nadeck.net.'}`
+                      : `The first photo is the catalog cover. Shoppers can flip through all photos on the product page.${adminMarket ? '' : ' Left empty, the ar.nadeck.net photos are used instead.'}`,
                   )}
-                  {renderProductGallery(
+                  {adminMarket !== 'main' && renderProductGallery(
                     'imagesAr',
                     currentLang === 'ru' ? 'Фото для ar.nadeck.net' : 'Photos for ar.nadeck.net',
                     currentLang === 'ru'
-                      ? 'Отдельная галерея для арабского сайта. Если пусто — там показываются фото nadeck.net.'
-                      : 'A separate gallery for the Arabic site. Left empty, it shows the nadeck.net photos.',
+                      ? (adminMarket
+                        ? 'Первое фото — обложка в каталоге. На странице товара покупатель сможет пролистать все фото.'
+                        : 'Отдельная галерея для арабского сайта. Если пусто — там показываются фото nadeck.net.')
+                      : (adminMarket
+                        ? 'The first photo is the catalog cover. Shoppers can flip through all photos on the product page.'
+                        : 'A separate gallery for the Arabic site. Left empty, it shows the nadeck.net photos.'),
                   )}
                 </div>
 

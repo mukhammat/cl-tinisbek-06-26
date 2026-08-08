@@ -243,6 +243,12 @@ export class MedicinesService {
       this.assertMarketAccess(before.markets as Market[], adminMarket);
     }
 
+    // A market-scoped admin owns only their own storefront's gallery - the admin form doesn't even
+    // render the other one. Keep whatever is already stored for the market they don't manage, so a
+    // payload that omits (or forges) it can't wipe the other storefront's photos.
+    const finalImages = adminMarket === 'ar' && before ? this.normalizeImages(before.images) : normalizedImages;
+    const finalImagesAr = adminMarket === 'main' && before ? this.normalizeImages(before.imagesAr) : normalizedImagesAr;
+
     try {
       const newInStock = inStock ? 1 : 0;
 
@@ -265,8 +271,8 @@ export class MedicinesService {
           categoryId: resolvedCategoryId,
           description,
           fullDescription,
-          images: normalizedImages,
-          imagesAr: normalizedImagesAr,
+          images: finalImages,
+          imagesAr: finalImagesAr,
           rating: Number(rating),
           inStock: newInStock,
           markets: this.resolveMarkets(markets, adminMarket),
