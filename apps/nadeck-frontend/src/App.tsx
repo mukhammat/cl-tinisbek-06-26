@@ -704,6 +704,19 @@ export default function App() {
                   </p>
                 );
               })}
+              {/* Crawlable link to the sibling storefront, labelled in that site's own language.
+                  Google treats ar.nadeck.net as a separate site, so without this the two markets
+                  have no link between them for the crawler to follow. */}
+              <p className="pt-1">
+                <a
+                  href={MARKET === 'ar' ? 'https://nadeck.net/' : 'https://ar.nadeck.net/'}
+                  className="text-slate-500 hover:text-white transition-colors"
+                  dir={MARKET === 'ar' ? 'ltr' : 'rtl'}
+                  style={{ unicodeBidi: 'isolate' }}
+                >
+                  {MARKET === 'ar' ? '🇷🇺 Nadeck на русском' : '🇸🇦 نديك بالعربية'}
+                </a>
+              </p>
             </div>
 
             <div className="space-y-2 text-xs">
