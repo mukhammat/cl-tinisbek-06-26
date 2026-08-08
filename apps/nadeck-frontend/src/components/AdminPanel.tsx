@@ -584,6 +584,8 @@ export default function AdminPanel({
       unit: formData.unit || 'mg',
       name: nameVal,
       categoryId: formData.category || defaultCategoryId,
+      // One category per storefront - blank means ar.nadeck.net borrows the nadeck.net one.
+      categoryIdAr: formData.categoryAr || '',
       description: locDescs,
       fullDescription: locFullDescs,
       // Each storefront keeps its own gallery and borrows the other's when empty, so the
