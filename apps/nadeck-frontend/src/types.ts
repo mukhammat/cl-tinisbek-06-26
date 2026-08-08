@@ -63,6 +63,10 @@ export interface Product {
   unit: ProductUnit;
   name: Record<Language, string>;
   category: string; // category id from database
+  // ar.nadeck.net's own category id, sent only to the admin panel - a storefront read already
+  // gets the right market's category in `category` (unset here borrows the nadeck.net one).
+  // The two markets keep separate Category rows, so one shared id can't serve both.
+  categoryAr?: string;
   description: Record<Language, string>;
   fullDescription: Record<Language, string>;
   images: string[]; // gallery of image URLs; images[0] is the cover photo shown in listings

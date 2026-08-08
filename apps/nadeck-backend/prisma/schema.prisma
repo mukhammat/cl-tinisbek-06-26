@@ -28,7 +28,10 @@ model Category {
   isActive  Boolean   @default(true)
   // Which storefront(s) list this category - same semantics as Product.markets.
   markets   Market[]  @default([main])
-  products  Product[]
+  // Two back-relations because a product is filed under one category per storefront - see
+  // Product.categoryId / Product.categoryIdAr.
+  products   Product[] @relation("ProductCategoryMain")
+  productsAr Product[] @relation("ProductCategoryAr")
 }
 
 enum ProductType {
@@ -61,8 +64,14 @@ model Product {
   type            ProductType @default(peptide)
   unit            ProductUnit @default(mg)
   name            Json // { ru, en, ar }
+  // One category per storefront, because the two markets keep entirely separate category
+  // rows (Category.markets) - a single shared id would always be an orphan on one of them.
+  // `categoryId` is nadeck.net's; `categoryIdAr` is ar.nadeck.net's and falls back to
+  // `categoryId` when unset, mirroring how images/imagesAr behave.
   categoryId      String      @default("weightloss")
-  category        Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category        Category    @relation("ProductCategoryMain", fields: [categoryId], references: [id], onDelete: Restrict)
+  categoryIdAr    String?
+  categoryAr      Category?   @relation("ProductCategoryAr", fields: [categoryIdAr], references: [id], onDelete: Restrict)
   description     Json // { ru, en, ar }
   fullDescription Json // { ru, en, ar }
   images          Json @default("[]") // string[] of image URLs for nadeck.net - images[0] is the cover photo

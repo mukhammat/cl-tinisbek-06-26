@@ -134,8 +134,18 @@ export default function AdminPanel({
   const categoryLabelById = Object.fromEntries(
     categories.map((category) => [category.id, category.name[currentLang] || category.name.en || category.id])
   );
+  // Each storefront has its own category rows, so the product form offers each market only its
+  // own - picking across markets is what leaves a product filed under a category that doesn't
+  // exist on the site showing it (the storefront then falls back to printing the raw id).
+  const categoriesForMarket = (market: SiteMarket) =>
+    activeCategories.filter((category) =>
+      (category.markets && category.markets.length > 0 ? category.markets : ['main']).includes(market)
+    );
+  const mainCategories = categoriesForMarket('main');
+  const arCategories = categoriesForMarket('ar');
   // Single source of truth for "no category picked yet" - reused everywhere a default is needed below.
-  const defaultCategoryId = activeCategories[0]?.id || 'weightloss';
+  const defaultCategoryId = (adminMarket === 'ar' ? arCategories : mainCategories)[0]?.id || activeCategories[0]?.id || 'weightloss';
+  const defaultCategoryIdAr = adminMarket === 'ar' ? (arCategories[0]?.id || '') : '';
 
   // Clinical/dosing fields (indications, dosageRules, mg strength, ...) only apply to peptides -
   // additional goods (syringes, vitamins, protein, ...) only need a name, image and a priced volume.
@@ -439,6 +449,7 @@ export default function AdminPanel({
       type: 'peptide',
       unit: 'mg',
       category: defaultCategoryId,
+      categoryAr: defaultCategoryIdAr,
       images: [DEFAULT_PRODUCT_IMAGE],
       // Left empty on purpose: ar.nadeck.net shows the photos above until someone uploads
       // pictures specific to that storefront.
@@ -1229,12 +1240,18 @@ export default function AdminPanel({
                             </div>
                           </td>
 
-                          {/* Col 2 Category */}
+                          {/* Col 2 Category - a product carries one category per storefront, so a
+                              market-scoped admin is shown the one their own site files it under
+                              (falling back to the nadeck.net category, exactly as the site does). */}
                           <td className="py-4 px-4">
                             <div className="flex flex-wrap items-center gap-1">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                                {categoryLabelById[med.category] || med.category}
+                              {(adminMarket === 'ar' ? [med.categoryAr || med.category] : [med.category, ...(adminMarket ? [] : [med.categoryAr])])
+                                .filter((categoryId): categoryId is string => Boolean(categoryId))
+                                .map((categoryId) => (
+                              <span key={categoryId} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                {categoryLabelById[categoryId] || categoryId}
                               </span>
+                              ))}
                               {(med.markets && med.markets.length > 0 ? med.markets : ['main']).map((market) => (
                                 <span
                                   key={market}
@@ -2366,9 +2383,13 @@ export default function AdminPanel({
                   </select>
                 </div>
 
+                {/* One category per storefront, each offering only that market's own rows. A
+                    market-scoped admin sees just their own, same as the galleries below. */}
+                {adminMarket !== 'ar' && (
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                    {currentLang === 'ru' ? 'Категория' : 'Category'} *
+                    {currentLang === 'ru' ? 'Категория' : 'Category'}
+                    {adminMarket ? '' : ' — nadeck.net'} *
                   </label>
                   <select
                     id="form-select-category"
@@ -2376,13 +2397,43 @@ export default function AdminPanel({
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
                   >
-                    {activeCategories.map((category) => (
+                    {mainCategories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {categoryLabelById[category.id]}
                       </option>
                     ))}
                   </select>
                 </div>
+                )}
+
+                {adminMarket !== 'main' && (
+                <div>
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
+                    {currentLang === 'ru' ? 'Категория' : 'Category'}
+                    {adminMarket ? '' : ' — ar.nadeck.net'} {adminMarket ? '*' : ''}
+                  </label>
+                  <select
+                    id="form-select-category-ar"
+                    value={formData.categoryAr || defaultCategoryIdAr}
+                    onChange={(e) => setFormData({ ...formData, categoryAr: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
+                  >
+                    {/* Optional for a full admin: left blank, the Arabic site falls back to the
+                        nadeck.net category above. A scoped ar admin has no such fallback to
+                        offer - that product's only category is this one. */}
+                    {!adminMarket && (
+                      <option value="">
+                        {currentLang === 'ru' ? '— как на nadeck.net —' : '— same as nadeck.net —'}
+                      </option>
+                    )}
+                    {arCategories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {categoryLabelById[category.id]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                )}
               </div>
 
               {/* Grid 2 Block: Images, Form, and Ratings */}

@@ -91,18 +91,38 @@ export class MedicinesService {
     return resolvedCategoryId;
   }
 
+  // Same, for ar.nadeck.net's category - optional, so blank means "not filed on the Arabic
+  // storefront yet" and resolveCategory() below falls back to the nadeck.net one.
+  private async resolveOptionalCategoryId(categoryIdAr: any): Promise<string | null> {
+    const resolved = String(categoryIdAr || '').trim();
+    if (!resolved) return null;
+    const categoryExists = await this.prisma.category.findUnique({ where: { id: resolved } });
+    if (!categoryExists) {
+      throw new BadRequestException('Selected Arabic category does not exist');
+    }
+    return resolved;
+  }
+
+  // The two storefronts keep separate Category rows, so a product is filed once per market.
+  // An unset Arabic category borrows the nadeck.net one - same fallback shape as the galleries,
+  // which keeps every product that predates this split behaving exactly as it did before.
+  private resolveCategory(p: any, market: Market): string {
+    return market === 'ar' ? (p.categoryIdAr || p.categoryId) : p.categoryId;
+  }
+
   // Flattens a Product + its type-specific details row into the single flat shape the
   // frontend has always consumed, so callers never need to know the data is split across
   // tables. Peptide-only fields are simply absent for non-peptide products.
   //
-  // `forAdmin` keeps both galleries raw, because the product form edits each market's photos
-  // separately - a storefront read instead collapses them into the single `images` array that
-  // market should show, so no component has to know there is more than one gallery.
+  // `forAdmin` keeps both galleries and both categories raw, because the product form edits
+  // each market's separately - a storefront read instead collapses them into the single
+  // `images`/`category` that market should show, so no component has to know there are two.
   private flatten(p: any, market: Market, forAdmin: boolean) {
     const base = {
       id: p.id,
       name: p.name,
-      category: p.categoryId,
+      category: forAdmin ? p.categoryId : this.resolveCategory(p, market),
+      ...(forAdmin ? { categoryAr: p.categoryIdAr || '' } : {}),
       type: p.type as ProductType,
       unit: p.unit as ProductUnit,
       description: p.description,
@@ -149,7 +169,7 @@ export class MedicinesService {
 
   async create(body: any, adminMarket?: string | null) {
     const {
-      id, name, categoryId, category, description, fullDescription,
+      id, name, categoryId, category, categoryIdAr, categoryAr, description, fullDescription,
       indications, contraindications, usage, images, imagesAr, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit, markets
     } = body;
 
@@ -171,7 +191,16 @@ export class MedicinesService {
       throw new BadRequestException('At least one product image is required');
     }
 
-    const resolvedCategoryId = await this.resolveCategoryId(categoryId, category);
+    // A market-scoped admin only ever picks their own storefront's category - the other select
+    // isn't rendered for them. `categoryId` is NOT NULL, so an ar-scoped admin's choice fills
+    // both columns; the nadeck.net one is never read for a product pinned to the ar market.
+    const arCategoryChoice = categoryIdAr ?? categoryAr;
+    const resolvedCategoryId = adminMarket === 'ar'
+      ? await this.resolveCategoryId(arCategoryChoice, undefined)
+      : await this.resolveCategoryId(categoryId, category);
+    const resolvedCategoryIdAr = adminMarket === 'main'
+      ? null
+      : await this.resolveOptionalCategoryId(arCategoryChoice);
 
     try {
       await this.prisma.product.create({
@@ -181,6 +210,7 @@ export class MedicinesService {
           unit: productUnit,
           name,
           categoryId: resolvedCategoryId,
+          categoryIdAr: resolvedCategoryIdAr,
           description: description || { ru: '', en: '', ar: '' },
           fullDescription: fullDescription || { ru: '', en: '', ar: '' },
           images: normalizedImages,
@@ -220,7 +250,7 @@ export class MedicinesService {
 
   async update(id: string, body: any, adminMarket?: string | null) {
     const {
-      name, categoryId, category, description, fullDescription,
+      name, categoryId, category, categoryIdAr, categoryAr, description, fullDescription,
       indications, contraindications, usage, images, imagesAr, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit, markets
     } = body;
 
@@ -236,18 +266,22 @@ export class MedicinesService {
       throw new BadRequestException('At least one product image is required');
     }
 
-    const resolvedCategoryId = await this.resolveCategoryId(categoryId, category);
-
     const before = await this.prisma.product.findUnique({ where: { id } });
     if (before) {
       this.assertMarketAccess(before.markets as Market[], adminMarket);
     }
 
-    // A market-scoped admin owns only their own storefront's gallery - the admin form doesn't even
-    // render the other one. Keep whatever is already stored for the market they don't manage, so a
-    // payload that omits (or forges) it can't wipe the other storefront's photos.
+    // A market-scoped admin owns only their own storefront's gallery and category - the admin form
+    // doesn't even render the other market's. Keep whatever is already stored for the market they
+    // don't manage, so a payload that omits (or forges) it can't overwrite the other storefront.
     const finalImages = adminMarket === 'ar' && before ? this.normalizeImages(before.images) : normalizedImages;
     const finalImagesAr = adminMarket === 'main' && before ? this.normalizeImages(before.imagesAr) : normalizedImagesAr;
+    const finalCategoryId = adminMarket === 'ar' && before
+      ? before.categoryId
+      : await this.resolveCategoryId(categoryId, category);
+    const finalCategoryIdAr = adminMarket === 'main' && before
+      ? before.categoryIdAr
+      : await this.resolveOptionalCategoryId(categoryIdAr ?? categoryAr);
 
     try {
       const newInStock = inStock ? 1 : 0;
@@ -268,7 +302,8 @@ export class MedicinesService {
           type: productType,
           unit: productUnit,
           name,
-          categoryId: resolvedCategoryId,
+          categoryId: finalCategoryId,
+          categoryIdAr: finalCategoryIdAr,
           description,
           fullDescription,
           images: finalImages,
