@@ -4,7 +4,7 @@ import { join } from "node:path";
 // Telegram's Bot API has no "list the chats I'm in" call - a bot only learns about a chat
 // from an update. So we track membership ourselves: record a group's id the first time we
 // see the bot join it (or see a message from it), drop it if the bot leaves/gets kicked,
-// and persist to disk so the daily greeting still knows where to post after a restart.
+// and persist to disk so the list survives a restart.
 const DATA_DIR = join(import.meta.dirname, "..", "data");
 const STORE_FILE = join(DATA_DIR, "groups.json");
 

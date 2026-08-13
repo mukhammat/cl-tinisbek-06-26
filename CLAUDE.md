@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `apps/nadeck-frontend` — React 19 + Vite + Tailwind 4 site: product catalog, AI Peptide Advisor chat widget, dosage calculator, admin panel.
 - `apps/nadeck-backend` — NestJS + Prisma (Postgres) API. Owns the catalog, orders, auth, and the `/api/chat` endpoint that powers the AI advisor.
-- `apps/nadeck-bot` — Telegram support bot (grammy). Thin transport only: forwards every message to the backend's `/api/chat` — same knowledge base/prompt/model as the website widget. Also runs an independent daily group greeting (own OpenAI prompt, unrelated to the FAQ/catalog).
+- `apps/nadeck-bot` — Telegram support bot (grammy). Thin transport only: forwards every message to the backend's `/api/chat` — same knowledge base/prompt/model as the website widget. Reply-only: it never posts on its own and has no scheduled messages.
 - `apps/gender-router-bot` — separate Telegram bot, unrelated to the above: greets new group members with male/female routing buttons that link straight to the target chat.
 
 ## Commands
@@ -49,7 +49,7 @@ Full stack via Docker: `docker compose up -d --build`. DB backups: `./scripts/ba
 
 ## Architecture
 
-**One chat brain, two front doors.** `nadeck-backend`'s `src/chat/chat.service.ts` holds the model, prompt, and knowledge base (FAQ + catalog) for the AI Peptide Advisor. Both the website widget and `nadeck-bot` call the same `/api/chat` endpoint — never duplicate Q&A logic into the bot. The bot's own daily greeting (`apps/nadeck-bot/src/greeting.ts`) is a deliberately separate, smaller prompt with no catalog/FAQ knowledge; don't merge it into the chat service.
+**One chat brain, two front doors.** `nadeck-backend`'s `src/chat/chat.service.ts` holds the model, prompt, and knowledge base (FAQ + catalog) for the AI Peptide Advisor. Both the website widget and `nadeck-bot` call the same `/api/chat` endpoint — never duplicate Q&A logic into the bot. The bot has no OpenAI client of its own: it used to also post a scheduled daily group greeting, and that was removed on purpose — don't reintroduce timed broadcasts.
 
 **Product schema is split by type.** `Product` holds fields common to everything in the catalog; type-specific data lives in `MedicineDetails` or `AdditionalGoodDetails` (one-to-one with `Product`). Price is *not* a field on `Product` — it's derived from volumes/pricing records, so don't reintroduce a flat `price`/`priceUsd` column. Currency fallback: USD price missing/0 → fall back to KZT.
 
@@ -67,4 +67,6 @@ Full stack via Docker: `docker compose up -d --build`. DB backups: `./scripts/ba
 
 **Shipping is priced per destination country** (`DeliveryCountry`), maintained in the admin panel — the flat fees that used to live in the frontend's `currency.ts` are now only a fallback for when no country has been added yet (the checkout hides the country picker in that state). There is no free-delivery tier. Like the promo discount, `OrdersService` charges the rate stored for `address.country` rather than the figure the browser reports.
 
-**Backend module layout** (`apps/nadeck-backend/src/`): `auth`, `categories`, `medicines`, `orders`, `promo-codes`, `delivery-countries`, `chat`, `upload`, `notifications`, `newsletter`, `translate`, `seeds`, `database`. `src/seeds` conditionally seeds categories/medicines based on environment — check it before assuming a fresh DB is empty.
+**Traffic analytics are first-party and anonymous.** The storefront posts one `VisitEvent` per screen the visitor opens (`src/analytics.ts` → `POST /api/analytics/track`); the admin panel's Analytics tab reads it back through `GET /api/admin/analytics`. There is no Google Analytics and nothing identifying is stored: a random `visitorId` (localStorage, = "how many people"), a `sessionId` that lapses after 30 idle minutes (= "how many visits"), and the country Cloudflare already puts on the request — no IP, no email, no cross-site cookie. Crawlers and logged-in admins are deliberately not counted, so don't "fix" the missing admin page views. `VisitEvent.createdAt` is a real timestamp rather than the ISO strings the older tables use because it's the one table queried by range; rows older than 400 days are pruned by `AnalyticsService`. `Order.market` exists only so this dashboard can pair an order with the visits of the storefront it was placed on — every other order screen still shows both markets together.
+
+**Backend module layout** (`apps/nadeck-backend/src/`): `auth`, `categories`, `medicines`, `orders`, `promo-codes`, `delivery-countries`, `chat`, `upload`, `notifications`, `newsletter`, `translate`, `analytics`, `seeds`, `database`. `src/seeds` conditionally seeds categories/medicines based on environment — check it before assuming a fresh DB is empty.

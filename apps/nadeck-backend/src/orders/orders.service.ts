@@ -34,6 +34,7 @@ export class OrdersService {
       promoCode,
       address,
       paymentMethod,
+      market,
     } = body;
     if (!items || !totalPrice || !address) {
       throw new BadRequestException('Invalid cart or address details');
@@ -82,6 +83,9 @@ export class OrdersService {
           id: trackingNumber,
           date: dateStr,
           userEmail: userEmailVal,
+          // Which storefront checked out, so the analytics dashboard can put this order next
+          // to that site's own traffic. Every other order screen still lists both markets.
+          market: market === 'ar' ? 'ar' : 'main',
           items,
           totalPrice: round2(goods.kzt - discount.kzt + delivery.kzt),
           totalPriceUsd: round2(goods.usd - discount.usd + delivery.usd),

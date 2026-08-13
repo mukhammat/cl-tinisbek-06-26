@@ -259,7 +259,10 @@ export default function CartView({
         apartment: apartment || '',
         postalCode: postalCode || '050000'
       },
-      paymentMethod: t('payViaWhatsApp')
+      paymentMethod: t('payViaWhatsApp'),
+      // Which storefront this checkout happened on - the admin analytics dashboard pairs the
+      // order with the visits of the same site.
+      market: MARKET
     };
 
     fetch('/api/orders', {

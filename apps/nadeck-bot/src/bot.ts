@@ -3,8 +3,7 @@ import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { Bot, type Context, type Filter } from "grammy";
 import { isChatAdmin } from "./adminCache.js";
-import { startGreetingScheduler } from "./scheduler.js";
-import { rememberGroup, forgetGroup, listGroups } from "./groupStore.js";
+import { rememberGroup, forgetGroup } from "./groupStore.js";
 
 // Single shared .env at the repo root (same file backend reads), not a per-app copy.
 loadEnv({ path: join(import.meta.dirname, "..", "..", "..", ".env") });
@@ -43,17 +42,17 @@ bot.command("start", (ctx) => {
 });
 
 // The only way the bot learns which groups it belongs to (there's no "list my chats" API
-// call) - fires when it's added/promoted/removed/kicked. Powers the daily greeting list.
+// call) - fires when it's added/promoted/removed/kicked.
 bot.on("my_chat_member", (ctx) => {
   if (ctx.chat.type !== "group" && ctx.chat.type !== "supergroup") return;
 
   const status = ctx.myChatMember.new_chat_member.status;
   if (status === "member" || status === "administrator") {
     rememberGroup(ctx.chat.id);
-    console.log(`Добавлен в группу "${ctx.chat.title}" (id=${ctx.chat.id}) — включена в ежедневное приветствие.`);
+    console.log(`Добавлен в группу "${ctx.chat.title}" (id=${ctx.chat.id}).`);
   } else if (status === "left" || status === "kicked") {
     forgetGroup(ctx.chat.id);
-    console.log(`Удалён из группы "${ctx.chat.title}" (id=${ctx.chat.id}) — исключена из рассылки.`);
+    console.log(`Удалён из группы "${ctx.chat.title}" (id=${ctx.chat.id}).`);
   }
 });
 
@@ -133,8 +132,6 @@ bot.on("message:text", async (ctx) => {
 });
 
 bot.catch((err) => console.error("Bot error:", err));
-
-startGreetingScheduler(bot, listGroups);
 
 bot.start();
 console.log(`Nadeck bot запущен (backend: ${BACKEND_URL})`);

@@ -197,3 +197,52 @@ export interface PromoCodeStats {
   revenueSar: number;
   discountGivenKzt: number;
 }
+
+// ----- admin analytics dashboard (GET /api/admin/analytics) -----
+
+// The three ways of counting traffic, used for the period totals, the previous period and
+// each column of the chart: people (distinct browsers), visits (a session, i.e. browsing with
+// no 30-minute gap) and raw screen opens.
+export interface TrafficCounts {
+  visitors: number;
+  visits: number;
+  pageViews: number;
+}
+
+export interface AnalyticsDay extends TrafficCounts {
+  date: string; // YYYY-MM-DD
+  orders: number;
+}
+
+// One row of the "top pages / devices / languages / countries" breakdowns.
+export interface AnalyticsBreakdown {
+  key: string;
+  views: number;
+  visitors: number;
+}
+
+export interface AnalyticsSummary {
+  days: number;
+  market: SiteMarket | null; // null = both storefronts together
+  generatedAt: string;
+  // Distinct visitors whose last page view was under 5 minutes ago.
+  online: number;
+  totals: TrafficCounts & { orders: number; revenueKzt: number; revenueUsd: number; revenueSar: number };
+  // The equally long period right before this one, so every tile can show a trend.
+  previous: TrafficCounts & { orders: number; revenueKzt: number; revenueUsd: number; revenueSar: number };
+  today: TrafficCounts & { orders: number };
+  daily: AnalyticsDay[];
+  topProducts: {
+    id: string;
+    name: Record<Language, string> | null; // null = the product has been deleted since
+    image: string | null;
+    views: number;
+    visitors: number;
+  }[];
+  topPages: AnalyticsBreakdown[];
+  // Counted once per visit (the site the visitor landed from), not per page view.
+  referrers: { source: string; visits: number }[];
+  devices: AnalyticsBreakdown[];
+  languages: AnalyticsBreakdown[];
+  countries: AnalyticsBreakdown[];
+}

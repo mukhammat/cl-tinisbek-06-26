@@ -11,8 +11,9 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { TranslateModule } from './translate/translate.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
 import { UploadModule } from './upload/upload.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, ChatModule, MedicinesModule, CategoriesModule, OrdersModule, PromoCodesModule, DeliveryCountriesModule, NotificationsModule, TranslateModule, NewsletterModule, UploadModule],
+  imports: [DatabaseModule, AuthModule, ChatModule, MedicinesModule, CategoriesModule, OrdersModule, PromoCodesModule, DeliveryCountriesModule, NotificationsModule, TranslateModule, NewsletterModule, UploadModule, AnalyticsModule],
 })
 export class AppModule {}

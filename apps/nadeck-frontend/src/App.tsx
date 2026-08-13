@@ -7,6 +7,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { Language, Product, CartItem, User, Order, AppNotification, Category, LANGUAGE_NAME_TRANSLATIONS } from './types';
 import { MEDICINES_DATA, TRANSLATIONS } from './data';
 import { currentMarket, marketLanguages, MARKET } from './market';
+import { trackView } from './analytics';
 import Navbar from './components/Navbar';
 import MedicineGrid from './components/MedicineGrid';
 import MedicineDetail from './components/MedicineDetail';
@@ -166,6 +167,15 @@ export default function App() {
       fetchAdminCategoriesList();
     }
   }, [user.isAdmin, user.token]);
+
+  // Traffic counter for the admin dashboard: every screen the visitor opens is one page view
+  // (see analytics.ts). Admins are skipped on purpose - the people running the shop spend all
+  // day in the catalog and would otherwise be the site's most loyal "customers".
+  useEffect(() => {
+    if (user.isAdmin || activeTab === 'admin') return;
+    const screen = selectedMedicine ? 'product' : activeTab;
+    trackView(screen, { productId: selectedMedicine?.id, lang: currentLang });
+  }, [activeTab, selectedMedicine?.id, user.isAdmin, currentLang]);
 
   // Sync to local storage
   useEffect(() => {

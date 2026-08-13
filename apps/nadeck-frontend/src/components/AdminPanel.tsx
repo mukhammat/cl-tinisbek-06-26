@@ -27,11 +27,13 @@ import {
   Images,
   Ticket,
   Users,
-  Power
+  Power,
+  BarChart3
 } from 'lucide-react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
 import { motion, AnimatePresence } from 'motion/react';
 import MediaLibraryModal from './MediaLibraryModal';
+import AnalyticsDashboard from './AnalyticsDashboard';
 
 // The product form edits one photo gallery per storefront: `images` is nadeck.net's,
 // `imagesAr` is ar.nadeck.net's. Leaving one empty is fine - the backend serves the other
@@ -64,7 +66,7 @@ export default function AdminPanel({
   adminMarket
 }: AdminPanelProps) {
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo' | 'delivery'>('products');
+  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo' | 'delivery' | 'analytics'>('products');
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
@@ -1181,6 +1183,18 @@ export default function AdminPanel({
           <Truck className="w-4 h-4" />
           <span>{currentLang === 'ru' ? 'Доставка' : 'Delivery'}</span>
         </button>
+        <button
+          id="admin-tab-analytics"
+          onClick={() => { setActiveSubTab('analytics'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
+          className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
+            activeSubTab === 'analytics' && !isEditing && !isAdding
+              ? 'border-nadeck-600 text-nadeck-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span>{currentLang === 'ru' ? 'Аналитика' : 'Analytics'}</span>
+        </button>
         {(isEditing || isAdding || isEditingCategory || isAddingCategory) && (
           <div className="px-5 py-3 text-xs sm:text-sm font-bold text-nadeck-600 border-b-2 border-nadeck-600 flex items-center gap-1">
             <Edit2 className="w-4 h-4 animate-bounce" />
@@ -2005,6 +2019,12 @@ export default function AdminPanel({
               </div>
             )}
           </div>
+        )}
+
+        {/* Traffic dashboard - fetches its own data (GET /api/admin/analytics), which is why
+            it isn't part of the tab-driven loader above. */}
+        {activeSubTab === 'analytics' && !isEditing && !isAdding && (
+          <AnalyticsDashboard currentLang={currentLang} token={token} adminMarket={adminMarket} />
         )}
 
         {activeSubTab === 'delivery' && !isEditing && !isAdding && (

@@ -146,6 +146,10 @@ model Order {
   id            String @id
   date          String
   userEmail     String
+  // Which storefront the checkout happened on. Only the analytics dashboard reads it, so it
+  // can put an order next to the visits of the same site - every other order screen still
+  // shows both markets together. Rows placed before this column existed default to 'main'.
+  market        Market @default(main)
   items         Json // [{ medicineName, price, priceUsd, priceSar, quantity }]
   totalPrice    Float // KZT grand total
   totalPriceUsd Float @default(0) // USD grand total
@@ -189,4 +193,37 @@ model Notification {
 model NewsletterSubscriber {
   email     String @id
   createdAt String
+}
+
+// One screen view on a storefront, written by the browser through POST /api/analytics/track
+// and read back only by the admin dashboard (GET /api/admin/analytics).
+//
+// "How many people came" is the number of distinct visitorId values; "how many visits" the
+// number of distinct sessionId values. visitorId lives in the browser's localStorage and
+// sessionId is renewed after 30 idle minutes, exactly like the two figures mean.
+//
+// Deliberately anonymous: no IP address, no email, no cross-site cookie - the only thing
+// about the person is the country Cloudflare already stamps on every request.
+//
+// createdAt is a real timestamp instead of the ISO strings the older tables use: this is the
+// one table that is queried by range and grouped by day, and a text column can't be indexed
+// for that. The table also grows per page view, so AnalyticsService prunes old rows.
+model VisitEvent {
+  id        String   @id @default(cuid())
+  visitorId String
+  sessionId String
+  market    Market   @default(main)
+  // The logical screen, not a URL: catalog | product | calculator | cart | orders | checkout
+  path      String
+  // Set only on `path = 'product'` - drives the "most viewed products" table
+  productId String?
+  // Host the visitor arrived from ('' = typed the address in or came from a private link)
+  referrer  String   @default("")
+  lang      String   @default("")
+  device    String   @default("desktop") // desktop | mobile | tablet
+  country   String   @default("") // ISO 3166-1 alpha-2, from Cloudflare's cf-ipcountry header
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([market, createdAt])
 }
