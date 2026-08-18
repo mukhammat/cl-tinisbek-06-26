@@ -64,8 +64,19 @@ export default function AnalyticsDashboard({ currentLang, token, adminMarket }: 
     fetch(`/api/admin/analytics?${query.toString()}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load analytics');
+      .then(async (res) => {
+        // The banner has to name the failure: a lapsed admin session (the token is good for
+        // 7 days) and a server-side error look identical from this screen otherwise.
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          let detail = body.slice(0, 200);
+          try {
+            detail = JSON.parse(body)?.message || detail;
+          } catch {
+            // Not JSON - nginx and Cloudflare answer with HTML, so the raw text is the clue.
+          }
+          throw new Error(`${res.status}${detail ? `: ${detail}` : ''}`);
+        }
         return res.json();
       })
       .then((summary: AnalyticsSummary) => {
@@ -74,7 +85,19 @@ export default function AnalyticsDashboard({ currentLang, token, adminMarket }: 
       })
       .catch((err) => {
         console.error(err);
-        setErrorMsg(isRu ? 'Не удалось загрузить аналитику' : 'Error loading analytics');
+        const reason = err instanceof Error ? err.message : '';
+        // 401/403 isn't a broken dashboard - the admin just has to sign in again.
+        if (/^40[13]/.test(reason)) {
+          setErrorMsg(
+            isRu
+              ? 'Сессия администратора истекла — выйдите и войдите заново.'
+              : 'Admin session expired - sign out and sign in again.',
+          );
+          return;
+        }
+        setErrorMsg(
+          (isRu ? 'Не удалось загрузить аналитику' : 'Error loading analytics') + (reason ? ` (${reason})` : ''),
+        );
       })
       .finally(() => setLoading(false));
   };
