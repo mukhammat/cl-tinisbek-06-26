@@ -66,6 +66,43 @@ export class MedicinesService {
     }
   }
 
+  // Product ids are generated from the name, not typed by an admin. They're primary keys that
+  // never appear in a URL, so the only reason to keep them readable rather than random is that
+  // an id is what an order row, an export or a log line shows.
+  private slugify(value: string): string {
+    const cyrillic: Record<string, string> = {
+      а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i',
+      й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't',
+      у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '',
+      э: 'e', ю: 'yu', я: 'ya',
+    };
+    return (value || '')
+      .toLowerCase()
+      .replace(/[а-яё]/g, (char) => cyrillic[char] ?? '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60)
+      .replace(/-+$/g, '');
+  }
+
+  // Turns a localized name into an id that isn't taken yet (-2, -3, ...). A name with nothing
+  // transliterable (Arabic only, say) falls back to a random id so saving never fails on it.
+  private async generateProductId(name: any): Promise<string> {
+    const root = this.slugify(name?.en || name?.ru || name?.ar) || `product-${Math.random().toString(36).slice(2, 8)}`;
+    const taken = new Set(
+      (await this.prisma.product.findMany({ where: { id: { startsWith: root } }, select: { id: true } }))
+        .map((p) => p.id),
+    );
+    if (!taken.has(root)) return root;
+    for (let suffix = 2; suffix < 1000; suffix += 1) {
+      const candidate = `${root}-${suffix}`;
+      if (!taken.has(candidate)) return candidate;
+    }
+    return `${root}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
   private normalizeImages(images: any): string[] {
     if (!Array.isArray(images)) return [];
     return images.filter((url) => typeof url === 'string' && url.trim().length > 0);
@@ -173,9 +210,19 @@ export class MedicinesService {
       indications, contraindications, usage, images, imagesAr, rating, form, mgPerUnit, volumes, dosageRules, inStock, type, unit, markets
     } = body;
 
-    if (!id || !name) {
+    if (!name) {
       throw new BadRequestException('Missing required medicine info');
     }
+
+    // The admin panel derives the id from the name and sends it along; anything else calling
+    // this endpoint can omit it and let the name decide. A market-scoped admin only sees their
+    // own storefront's catalog, so the id their panel picked can still collide with a product
+    // they can't see - generating a fresh one beats failing the save on a primary key nobody
+    // chose deliberately.
+    const requestedId = typeof id === 'string' ? id.trim().toLowerCase() : '';
+    const requestedIdIsFree = requestedId
+      && !(await this.prisma.product.findUnique({ where: { id: requestedId }, select: { id: true } }));
+    const productId = requestedIdIsFree ? requestedId : await this.generateProductId(name);
 
     const productType = this.resolveProductType(type);
     const productUnit = this.resolveProductUnit(unit);
@@ -205,7 +252,7 @@ export class MedicinesService {
     try {
       await this.prisma.product.create({
         data: {
-          id,
+          id: productId,
           type: productType,
           unit: productUnit,
           name,
@@ -241,7 +288,7 @@ export class MedicinesService {
               }),
         },
       });
-      return { success: true, id };
+      return { success: true, id: productId };
     } catch (err: any) {
       console.error('Error creating medicine:', err);
       throw new InternalServerErrorException(err.message || 'Database error occurred');

@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Product, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency, SiteMarket, PromoCodeStats, DeliveryCountry } from '../types';
 import { unitLabel } from '../currency';
+import { uniqueSlug } from '../slug';
 import {
   Package,
   ShoppingBag,
@@ -547,21 +548,25 @@ export default function AdminPanel({
     setVolumesList(volumesList.filter((v) => v.mgPerUnit !== mg));
   };
 
+  // The id is derived from the product name instead of being typed in - it's a primary key
+  // that never shows up in a URL, so it only has to be unique and readable in order rows and
+  // logs. An existing product keeps the id it was saved with: renaming it must not move the
+  // primary key that orders already reference.
+  const generatedProductId = useMemo(
+    () => uniqueSlug(locNames.en || locNames.ru, allMedicines.map((m) => m.id)),
+    [locNames.en, locNames.ru, allMedicines]
+  );
+
   // Handle Submit (Create or Update Product)
   const handleSubmitProduct = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ID verification handles
-    const targetId = isAdding ? (formData.id || '').trim().toLowerCase() : formData.id;
-    if (!targetId) {
-      showFeedback('error', 'Product unique ID (slug) is required!');
+    if (isAdding && !locNames.ru.trim() && !locNames.en.trim()) {
+      showFeedback('error', currentLang === 'ru' ? 'Укажите название товара — из него создаётся ID' : 'Enter the product name - the ID is generated from it');
       return;
     }
 
-    if (isAdding && allMedicines.some((m) => m.id === targetId)) {
-      showFeedback('error', `ID "${targetId}" already exists in catalog. Please use another unique ID.`);
-      return;
-    }
+    const targetId = isAdding ? generatedProductId : formData.id;
 
     if (volumesList.length === 0) {
       showFeedback('error', currentLang === 'ru' ? 'Добавьте хотя бы один объём с ценой в тенге и долларах' : 'Add at least one volume with a KZT/USD price');
@@ -2353,19 +2358,24 @@ export default function AdminPanel({
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                    {currentLang === 'ru' ? 'Уникальный ID (slug)' : 'Unique String ID (Slug)'} *
+                    {currentLang === 'ru' ? 'Уникальный ID (slug)' : 'Unique String ID (Slug)'}
                   </label>
+                  {/* Read-only on purpose: generated from the name when adding, frozen once
+                      saved so orders keep pointing at the same product. */}
                   <input
                     id="form-input-id"
                     type="text"
-                    required
-                    disabled={!isAdding}
-                    placeholder="e.g. semaglutide"
-                    value={formData.id || ''}
-                    onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400 font-mono"
+                    readOnly
+                    disabled
+                    placeholder={currentLang === 'ru' ? 'создаётся из названия' : 'generated from the name'}
+                    value={isAdding ? (locNames.ru || locNames.en ? generatedProductId : '') : (formData.id || '')}
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl bg-slate-50 text-slate-400 font-mono"
                   />
-                  {isAdding && <span className="text-[10px] text-slate-400 mt-1 block">Only letters and hyphens, no spaces.</span>}
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    {isAdding
+                      ? (currentLang === 'ru' ? 'Создаётся автоматически из названия товара.' : 'Generated automatically from the product name.')
+                      : (currentLang === 'ru' ? 'ID не меняется после сохранения.' : 'The ID never changes once saved.')}
+                  </span>
                 </div>
 
                 <div>
