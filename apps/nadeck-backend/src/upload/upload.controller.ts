@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminGuard } from '../auth/admin.guard';
 import { UploadService } from './upload.service';
@@ -19,5 +19,13 @@ export class UploadController {
   @Get('library')
   library(@Query('folder') folder?: string) {
     return this.uploadService.listImages(folder);
+  }
+
+  // Deletes images from the bucket for good. Keys still referenced by a product gallery or a
+  // category icon come back in `skipped` instead of being removed.
+  @UseGuards(AdminGuard)
+  @Delete('library')
+  deleteFromLibrary(@Body() body: { keys?: unknown }) {
+    return this.uploadService.deleteImages(body?.keys);
   }
 }

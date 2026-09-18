@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { DeleteObjectsCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
+import { PrismaService } from '../database/prisma.service';
 
 const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/gif'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -8,12 +9,17 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 // (lexicographic) order is meaningless to a human - we pull up to this many and sort by
 // upload date instead. Well above the current bucket size; raise it if the bucket grows.
 const LIBRARY_MAX_OBJECTS = 2000;
+// R2/S3 caps a single DeleteObjects call at 1000 keys.
+const DELETE_BATCH_SIZE = 1000;
 
 export interface StoredImage {
   key: string;
   url: string;
   size: number;
   lastModified: string | null;
+  // True while a product gallery or a category icon still points at this image - the admin
+  // panel greys those out and the delete below refuses them.
+  inUse: boolean;
 }
 
 @Injectable()
@@ -24,7 +30,7 @@ export class UploadService {
 
   private readonly isConfigured: boolean;
 
-  constructor() {
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
     const accountId = process.env.R2_ACCOUNT_ID;
     const accessKeyId = process.env.R2_ACCESS_KEY_ID;
     const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
@@ -74,14 +80,39 @@ export class UploadService {
     return { url: `${this.publicUrl}/${key}` };
   }
 
+  // Every image URL the catalog currently points at: both storefront galleries of every
+  // product plus every category icon. Deleting one of these would leave a broken picture on a
+  // live site, so it's what listImages() flags and deleteImages() refuses. Both galleries are
+  // collected regardless of market - an ar-scoped admin can't see nadeck.net's products, so
+  // this check is the only thing standing between them and someone else's photo.
+  private async collectUsedUrls(): Promise<Set<string>> {
+    const [products, categories] = await Promise.all([
+      this.prisma.product.findMany({ select: { images: true, imagesAr: true } }),
+      this.prisma.category.findMany({ select: { icon: true } }),
+    ]);
+
+    const used = new Set<string>();
+    const add = (value: unknown) => {
+      if (typeof value === 'string' && value.trim()) used.add(value.trim());
+    };
+
+    for (const product of products) {
+      for (const url of Array.isArray(product.images) ? product.images : []) add(url);
+      for (const url of Array.isArray(product.imagesAr) ? product.imagesAr : []) add(url);
+    }
+    for (const category of categories) add(category.icon);
+
+    return used;
+  }
+
   // Lists what is already in the bucket so the admin panel can reuse an existing image
-  // instead of re-uploading it. Read-only by design - nothing here deletes objects, since a
-  // key can still be referenced by Product.images / Category.icon.
+  // instead of re-uploading it.
   async listImages(folder?: string): Promise<{ images: StoredImage[]; truncated: boolean }> {
     if (!this.isConfigured) {
       throw new InternalServerErrorException('R2 storage is not configured. Set R2_* env vars.');
     }
 
+    const usedUrls = await this.collectUsedUrls();
     const images: StoredImage[] = [];
     let continuationToken: string | undefined;
     let truncated = false;
@@ -99,11 +130,13 @@ export class UploadService {
         for (const object of page.Contents || []) {
           // Skip the zero-byte "folder" placeholders some S3 clients create.
           if (!object.Key || object.Key.endsWith('/')) continue;
+          const url = `${this.publicUrl}/${object.Key}`;
           images.push({
             key: object.Key,
-            url: `${this.publicUrl}/${object.Key}`,
+            url,
             size: object.Size || 0,
             lastModified: object.LastModified ? object.LastModified.toISOString() : null,
+            inUse: usedUrls.has(url),
           });
         }
 
@@ -121,5 +154,62 @@ export class UploadService {
     images.sort((a, b) => (b.lastModified || '').localeCompare(a.lastModified || ''));
 
     return { images, truncated };
+  }
+
+  // Permanently removes objects from the bucket - there is no recycle bin in R2, so a key that
+  // the catalog still points at is reported back as skipped rather than deleted. The caller
+  // gets both lists so the admin panel can say which images survived and why.
+  async deleteImages(keys: unknown): Promise<{ deleted: string[]; skipped: { key: string; reason: 'in_use' }[] }> {
+    if (!this.isConfigured) {
+      throw new InternalServerErrorException('R2 storage is not configured. Set R2_* env vars.');
+    }
+
+    const requested = Array.from(
+      new Set(
+        (Array.isArray(keys) ? keys : [])
+          .filter((key): key is string => typeof key === 'string')
+          .map((key) => key.trim())
+          .filter((key) => key.length > 0 && !key.startsWith('/') && !key.endsWith('/') && !key.includes('..')),
+      ),
+    );
+
+    if (requested.length === 0) {
+      throw new BadRequestException('No image keys to delete');
+    }
+
+    const usedUrls = await this.collectUsedUrls();
+    const skipped: { key: string; reason: 'in_use' }[] = [];
+    const deletable: string[] = [];
+    for (const key of requested) {
+      if (usedUrls.has(`${this.publicUrl}/${key}`)) {
+        skipped.push({ key, reason: 'in_use' });
+      } else {
+        deletable.push(key);
+      }
+    }
+
+    const deleted: string[] = [];
+    try {
+      for (let i = 0; i < deletable.length; i += DELETE_BATCH_SIZE) {
+        const batch = deletable.slice(i, i + DELETE_BATCH_SIZE);
+        const result = await this.client.send(
+          new DeleteObjectsCommand({
+            Bucket: this.bucket,
+            Delete: { Objects: batch.map((Key) => ({ Key })), Quiet: false },
+          }),
+        );
+        for (const object of result.Deleted || []) {
+          if (object.Key) deleted.push(object.Key);
+        }
+        for (const error of result.Errors || []) {
+          console.error('Error deleting R2 object:', error.Key, error.Code, error.Message);
+        }
+      }
+    } catch (err) {
+      console.error('Error deleting R2 objects:', err);
+      throw new InternalServerErrorException('Failed to delete files');
+    }
+
+    return { deleted, skipped };
   }
 }
