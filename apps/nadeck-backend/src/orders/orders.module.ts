@@ -10,5 +10,6 @@ import { DeliveryCountriesModule } from '../delivery-countries/delivery-countrie
   imports: [DatabaseModule, AuthModule, PromoCodesModule, DeliveryCountriesModule],
   controllers: [OrdersController],
   providers: [OrdersService],
+  exports: [OrdersService],
 })
 export class OrdersModule {}

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { Bot, type Context, type Filter } from "grammy";
 import { isChatAdmin } from "./adminCache.js";
 import { rememberGroup, forgetGroup } from "./groupStore.js";
-import { shop, productButtons, managerKeyboard } from "./shop.js";
+import { groupOrderButton, handOverKeyboard, notifyManagers, type PlacedOrder } from "./shop.js";
 
 // Single shared .env at the repo root (same file backend reads), not a per-app copy.
 loadEnv({ path: join(import.meta.dirname, "..", "..", "..", ".env") });
@@ -34,12 +34,14 @@ function logInteraction(entry: Record<string, unknown>) {
 
 const bot = new Bot(TOKEN);
 
-// Private chat is where customers browse the catalog and place orders (shop.ts handles /start
-// there); groups only get the advisor, with product buttons leading into the private chat.
-bot.use(shop);
-
+// Private chat is where customers talk to the advisor as a sales consultant and place orders
+// (sales mode, see shop.ts); groups only get Q&A plus a link into the private chat.
 bot.command("start", (ctx) => {
-  if (ctx.chat.type === "private") return;
+  if (ctx.chat.type === "private") {
+    return ctx.reply(
+      "Здравствуйте! Я консультант Nadeck 🙂 Расскажите, какая у вас цель или что вас интересует — подскажу, что подойдёт, расскажу про применение и помогу оформить заказ.",
+    );
+  }
   return ctx.reply(
     "Привет! Я бот поддержки Nadeck. Задай вопрос о пептидах, протоколах применения или дозировках — отвечу на основе нашей базы знаний.",
   );
@@ -97,29 +99,36 @@ bot.on("message:text", async (ctx) => {
     const res = await fetch(`${BACKEND_URL}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: question, history }),
+      // In a private chat the advisor also sells: it can place the order itself (sales mode).
+      body: JSON.stringify(
+        isGroup
+          ? { message: question, history }
+          : { message: question, history, mode: "sales", customer: { id: ctx.from?.id, username: ctx.from?.username } },
+      ),
     });
 
     if (!res.ok) throw new Error(`Backend chat API returned ${res.status}`);
 
-    const data = (await res.json()) as { reply?: string };
+    const data = (await res.json()) as { reply?: string; order?: PlacedOrder };
     const answer = data.reply?.trim();
 
     if (!answer) {
       // Backend has no reliable answer - in a group stay silent instead of saying "I don't
-      // know"; in a private chat the customer is waiting on us, so point them to a person.
+      // know"; in a private chat the customer is waiting on a reply, so ask them to rephrase.
       logInteraction({ userId: ctx.from?.id, username: ctx.from?.username, question, answer: null });
-      if (!isGroup) {
-        await ctx.reply("Здесь лучше подскажет менеджер — напишите ему, или выберите товар в каталоге.", {
-          reply_markup: managerKeyboard(question),
-        });
-      }
+      if (!isGroup) await ctx.reply("Извините, не совсем понял. Можете переформулировать?");
       return;
     }
 
-    // A failed catalog lookup must not swallow the answer itself.
-    const buttons = await productButtons(answer, ctx.me.username, isGroup).catch(() => undefined);
-    await ctx.reply(answer, { reply_markup: buttons });
+    if (data.order) {
+      await ctx.reply(answer, { reply_markup: handOverKeyboard(data.order) });
+      await notifyManagers(ctx.api, data.order, ctx.from!.id, ctx.from?.username);
+      logInteraction({ userId: ctx.from?.id, username: ctx.from?.username, orderId: data.order.id });
+    } else {
+      // A failed catalog lookup must not swallow the answer itself.
+      const button = isGroup ? await groupOrderButton(answer, ctx.me.username).catch(() => undefined) : undefined;
+      await ctx.reply(answer, { reply_markup: button });
+    }
 
     const updatedHistory = [
       ...history,

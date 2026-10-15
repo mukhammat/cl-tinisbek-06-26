@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import OpenAI from 'openai';
 import { PrismaService } from '../database/prisma.service';
+import { OrdersService } from '../orders/orders.service';
 
 interface FaqCard {
   question: string;
@@ -23,13 +24,53 @@ const CATALOG_CACHE_MS = 5 * 60 * 1000;
 // (frontend widget, Telegram bot) translate that into staying silent, not "I don't know".
 const NO_ANSWER_TOKEN = 'NO_REPLY';
 
+const UNIT_LABELS: Record<string, string> = { mg: 'мг', ml: 'мл', pcs: 'шт' };
+
+// Sales mode (the Telegram bot's private chat) lets the model place the order itself once the
+// customer has confirmed it. Only ids, pack sizes and quantities come from the model - prices
+// are looked up by OrdersService, so a hallucinated figure can never reach the order.
+const PLACE_ORDER_TOOL: OpenAI.Chat.ChatCompletionTool = {
+  type: 'function',
+  function: {
+    name: 'place_order',
+    description: 'Оформить заказ. Вызывай только после того, как клиент явно подтвердил итоговый состав заказа и свои данные.',
+    parameters: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              productId: { type: 'string', description: 'id товара из каталога (значение в квадратных скобках)' },
+              mgPerUnit: { type: 'number', description: 'фасовка — число из списка фасовок этого товара' },
+              quantity: { type: 'integer', minimum: 1 },
+            },
+            required: ['productId', 'mgPerUnit', 'quantity'],
+          },
+        },
+        name: { type: 'string', description: 'имя клиента' },
+        phone: { type: 'string', description: 'телефон клиента' },
+        country: { type: 'string', description: 'код страны доставки из списка стран, например KZ' },
+        city: { type: 'string' },
+        street: { type: 'string', description: 'улица, дом, квартира' },
+      },
+      required: ['items', 'name', 'phone', 'city', 'street'],
+    },
+  },
+};
+
 @Injectable()
 export class ChatService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(OrdersService) private readonly orders: OrdersService,
+  ) {}
 
   private openai: OpenAI | null = null;
   private knowledgeBase: string | null = null;
   private catalogText: string | null = null;
+  private salesCatalogText: string | null = null;
   private catalogFetchedAt = 0;
 
   private getClient(): OpenAI {
@@ -52,42 +93,77 @@ export class ChatService {
   // Builds a compact one-line-per-product summary of the live catalog (peptides and
   // everything else Nadeck sells — syringes, water, vitamins, cosmetics, equipment) so the
   // assistant can answer "what do you have / how much / is it in stock" questions accurately
-  // instead of only knowing about the peptides discussed in the FAQ transcripts.
-  private async loadCatalog(): Promise<string> {
-    const isStale = !this.catalogText || Date.now() - this.catalogFetchedAt > CATALOG_CACHE_MS;
-    if (!isStale) return this.catalogText as string;
+  // instead of only knowing about the peptides discussed in the FAQ transcripts. The sales
+  // variant also carries ids and every pack size, which the place_order tool needs; it's kept
+  // out of the website widget's prompt so ids never leak into its answers.
+  private async loadCatalog(): Promise<{ catalog: string; sales: string }> {
+    const isStale = this.catalogText === null || Date.now() - this.catalogFetchedAt > CATALOG_CACHE_MS;
+    if (!isStale) return { catalog: this.catalogText as string, sales: this.salesCatalogText as string };
 
     try {
-      const products = await this.prisma.product.findMany({
-        include: { category: true, medicine: true, additionalGood: true },
+      const [products, countries] = await Promise.all([
+        this.prisma.product.findMany({ include: { category: true, medicine: true, additionalGood: true } }),
+        this.prisma.deliveryCountry.findMany({ where: { isActive: true, markets: { has: 'main' } } }),
+      ]);
+
+      const lines = products.map((p) => {
+        const name = (p.name as any)?.ru || p.id;
+        const category = (p.category?.name as any)?.ru || p.categoryId;
+        const typeLabel = p.type === 'peptide' ? 'пептид' : 'сопутствующий товар';
+        const volumes: { mgPerUnit: number; price: number }[] = (p.medicine?.volumes as any) || (p.additionalGood?.volumes as any) || [];
+        const priced = volumes.filter((v) => Number.isFinite(Number(v.price)) && Number(v.price) > 0);
+        const priceLabel = priced.length ? `от ${Math.min(...priced.map((v) => Number(v.price))).toLocaleString('ru-RU')} тг` : 'цена по запросу';
+        const stockLabel = p.inStock ? 'в наличии' : 'нет в наличии';
+        const description = (p.description as any)?.ru || '';
+        const unit = UNIT_LABELS[p.unit] || '';
+        const packs = priced.length
+          ? priced.map((v) => `${v.mgPerUnit} ${unit} — ${Number(v.price).toLocaleString('ru-RU')} тг`).join('; ')
+          : 'цена по запросу, заказ только через менеджера';
+        const sellable = p.inStock && p.markets.includes('main');
+        return {
+          catalog: `${name} — категория: ${category}, ${typeLabel}, ${priceLabel}, ${stockLabel}. ${description}`.trim(),
+          sales: sellable ? `[${p.id}] ${name} — ${category}, ${typeLabel}. Фасовки: ${packs}. ${description}`.trim() : null,
+        };
       });
 
-      this.catalogText = products
-        .map((p) => {
-          const name = (p.name as any)?.ru || p.id;
-          const category = (p.category?.name as any)?.ru || p.categoryId;
-          const typeLabel = p.type === 'peptide' ? 'пептид' : 'сопутствующий товар';
-          const volumes: { price: number }[] = (p.medicine?.volumes as any) || (p.additionalGood?.volumes as any) || [];
-          const prices = volumes.map((v) => Number(v.price)).filter((v) => Number.isFinite(v) && v > 0);
-          const priceLabel = prices.length ? `от ${Math.min(...prices).toLocaleString('ru-RU')} тг` : 'цена по запросу';
-          const stockLabel = p.inStock ? 'в наличии' : 'нет в наличии';
-          const description = (p.description as any)?.ru || '';
-          return `${name} — категория: ${category}, ${typeLabel}, ${priceLabel}, ${stockLabel}. ${description}`.trim();
-        })
-        .join('\n');
+      const delivery = countries.length
+        ? countries.map((c) => `${c.code} — ${(c.name as any)?.ru || c.code}, доставка ${c.priceKzt.toLocaleString('ru-RU')} тг`).join('\n')
+        : 'Страны доставки не настроены — стоимость доставки уточнит менеджер, поле country не передавай.';
+
+      this.catalogText = lines.map((l) => l.catalog).join('\n');
+      this.salesCatalogText = `${lines.flatMap((l) => (l.sales ? [l.sales] : [])).join('\n')}\n\nСТРАНЫ ДОСТАВКИ:\n${delivery}`;
       this.catalogFetchedAt = Date.now();
     } catch (err) {
       console.error('Chat service: failed to load product catalog', err);
       // Keep serving the previous snapshot (or empty string on first failure) rather than
       // failing the whole chat request over a catalog refresh error.
       this.catalogText = this.catalogText || '';
+      this.salesCatalogText = this.salesCatalogText || '';
     }
 
-    return this.catalogText;
+    return { catalog: this.catalogText as string, sales: this.salesCatalogText as string };
   }
 
-  private async getSystemPrompt(): Promise<string> {
-    const catalog = await this.loadCatalog();
+  private async getSystemPrompt(sales: boolean): Promise<string> {
+    const { catalog, sales: salesCatalog } = await this.loadCatalog();
+
+    const unknownRule = sales
+      ? `3. Не придумывай конкретные цифры (дозировки, сроки, проценты, цены) и вообще ничего, чего нет ни в источниках выше, ни в надёжных общих знаниях. Если точного ответа нет — честно скажи, что это уточнит менеджер после оформления заказа, и продолжай разговор.`
+      : `3. Не придумывай конкретные цифры (дозировки, сроки, проценты, цены) и вообще ничего, чего нет ни в источниках выше, ни в надёжных общих знаниях. В этом случае НЕ пиши «не знаю», «уточню у менеджера» и подобное — вместо ответа выведи только служебный токен ${NO_ANSWER_TOKEN}, без каких-либо других слов, знаков препинания или пояснений.`;
+
+    const salesBlock = sales
+      ? `
+
+ТЫ ТАКЖЕ ПРОДАВЕЦ-КОНСУЛЬТАНТ. Это личный чат с клиентом в Telegram — общайся как живой внимательный менеджер магазина, а не как анкета: коротко, тепло, по одному-два вопроса за раз, без списков вопросов подряд.
+- Узнай, какая у клиента цель или задача, и предложи подходящие товары из каталога для продажи ниже. Расскажи, для чего применяется товар, назначение, важные противопоказания — опираясь на базу знаний и описание. Уместно предлагай сопутствующие товары (бактериостатическая вода, шприцы, иглы), если они нужны для применения.
+- Цены называй только из каталога для продажи, в тенге. Товар без цены или которого нет в каталоге для продажи — предложи обсудить с менеджером, не оформляй его.
+- Когда клиент решил купить, уточни фасовку и количество, затем собери: имя, телефон, страну (если стран доставки несколько), город, адрес (улица, дом, квартира). Спрашивай естественно, в ходе разговора.
+- Перед оформлением коротко повтори заказ: товары с фасовками и количеством, сумма за товары, доставка, итог, данные клиента — и спроси подтверждение. Только после явного «да» вызови place_order.
+- После оформления сообщи номер заказа и что менеджер свяжется с клиентом для подтверждения и оплаты. Оплату сам не принимай и реквизиты не придумывай.
+
+КАТАЛОГ ДЛЯ ПРОДАЖИ (в квадратных скобках — id товара для place_order; только эти товары можно оформить):
+${salesCatalog || '(каталог временно недоступен — предложи связаться с менеджером)'}`
+      : '';
 
     return `Ты — ассистент поддержки Nadeck. Отвечаешь пользователям сайта и Telegram-чатов на вопросы о пептидах, дозировках и протоколах применения, а также о любых других товарах каталога Nadeck (сопутствующие товары: шприцы, бактериостатическая вода, витамины, косметика, оборудование и т.д.) — их наличии, цене и назначении.
 
@@ -102,18 +178,21 @@ ${this.loadKnowledgeBase()}
 ПРАВИЛА:
 1. На вопросы о дозировках, разведении/смешивании (сколько воды на флакон, концентрация, мл/ЕД), схеме и частоте инъекций, длительности курса, хранении, побочных эффектах и противопоказаниях — отвечай прямо и конкретно теми цифрами, которые есть в базе знаний (мг, мл, ЕД, недели). Это основная ценность консультанта, не уклоняйся от таких вопросов и не отправляй к менеджеру, если ответ есть в базе.
 2. На вопросы о том, какие товары есть в наличии, сколько стоят, к какой категории относятся — отвечай по каталогу выше. Если товара нет в каталоге или он отмечен «нет в наличии», так и скажи, не выдумывай наличие или цену.
-3. Не придумывай конкретные цифры (дозировки, сроки, проценты, цены) и вообще ничего, чего нет ни в источниках выше, ни в надёжных общих знаниях. В этом случае НЕ пиши «не знаю», «уточню у менеджера» и подобное — вместо ответа выведи только служебный токен ${NO_ANSWER_TOKEN}, без каких-либо других слов, знаков препинания или пояснений.
+${unknownRule}
 4. Если вопрос касается индивидуальной медицинской ситуации, которая выходит за рамки обычных случаев (сопутствующие заболевания, беременность, комбинации с рецептурными лекарствами, дети, острые симптомы и т.п.), дай конкретный ответ по базе (если он там есть), но дополнительно рекомендуй проконсультироваться с врачом — не вместо ответа, а в дополнение к нему.
 5. Отвечай кратко и по делу, разговорным, но уважительным тоном на языке пользователя (русский, казахский, английский или арабский). Определяй язык по последнему сообщению пользователя и веди на нём весь ответ целиком — источники фактов выше на русском, но это не повод переключаться на русский посреди ответа: переводи факты на язык пользователя, а не копируй формулировки как есть. Никогда не смешивай два языка в одном ответе. Не используй markdown-заголовки.
-6. Ты не заменяешь врача. Это справочная информация на основе базы знаний и каталога Nadeck, а не медицинская консультация.`;
-  } 
+6. Ты не заменяешь врача. Это справочная информация на основе базы знаний и каталога Nadeck, а не медицинская консультация.${salesBlock}`;
+  }
 
+  // body.mode === 'sales' is sent only by the Telegram bot's private chat, together with
+  // body.customer ({ id, username }) - the website widget keeps the plain Q&A behaviour.
   async processChat(body: any) {
-    const { message, history } = body;
+    const { message, history, mode, customer } = body;
+    const sales = mode === 'sales';
 
     try {
       const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        { role: 'system', content: await this.getSystemPrompt() },
+        { role: 'system', content: await this.getSystemPrompt(sales) },
         ...(history || []).map((m: any) => ({
           role: m.role === 'assistant' ? 'assistant' : 'user',
           content: m.text,
@@ -121,18 +200,55 @@ ${this.loadKnowledgeBase()}
         { role: 'user', content: message },
       ];
 
-      const completion = await this.getClient().chat.completions.create({
-        model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
-        messages,
-        temperature: 0.3,
-      });
+      const complete = () =>
+        this.getClient().chat.completions.create({
+          model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
+          messages,
+          temperature: 0.3,
+          ...(sales ? { tools: [PLACE_ORDER_TOOL] } : {}),
+        });
+
+      let completion = await complete();
+      let order: any = null;
+
+      const toolCalls = completion.choices[0]?.message?.tool_calls;
+      if (sales && toolCalls?.length) {
+        messages.push(completion.choices[0].message);
+        for (const call of toolCalls) {
+          const result = await this.runPlaceOrder(call.function.arguments, customer);
+          if (result.order) order = result.order;
+          messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result.forModel) });
+        }
+        completion = await complete();
+      }
 
       const content = completion.choices[0]?.message?.content ?? '';
       const reply = content.trim() === NO_ANSWER_TOKEN ? '' : content;
-      return { reply };
+      return order ? { reply, order } : { reply };
     } catch (err) {
       console.error('Chat service error:', err);
       throw new InternalServerErrorException('AI service error occurred');
+    }
+  }
+
+  // A rejected order (sold out, wrong pack size, missing phone) goes back to the model as the
+  // tool result, so it can tell the customer what to fix instead of the whole chat failing.
+  private async runPlaceOrder(rawArgs: string, customer: any): Promise<{ order?: any; forModel: any }> {
+    try {
+      const args = JSON.parse(rawArgs || '{}');
+      const order = await this.orders.placeTelegramOrder({
+        items: args.items,
+        address: { country: args.country, city: args.city, street: args.street, name: args.name, phone: args.phone },
+        telegram: { id: customer?.id, username: customer?.username },
+      });
+      return {
+        order,
+        forModel: { ok: true, orderId: order.id, subtotal: order.subtotal, delivery: order.delivery, total: order.totalPrice },
+      };
+    } catch (err) {
+      const reason = err instanceof BadRequestException ? err.message : 'Внутренняя ошибка, предложи клиенту написать менеджеру';
+      if (!(err instanceof BadRequestException)) console.error('Chat place_order failed:', err);
+      return { forModel: { ok: false, error: reason } };
     }
   }
 }
