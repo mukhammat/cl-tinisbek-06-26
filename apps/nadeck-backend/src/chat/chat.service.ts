@@ -60,6 +60,29 @@ const PLACE_ORDER_TOOL: OpenAI.Chat.ChatCompletionTool = {
   },
 };
 
+// Lets the model show product photos in the Telegram chat - it can't send images itself, so it
+// names the products and the bot delivers their gallery covers next to the reply.
+const SEND_PHOTOS_TOOL: OpenAI.Chat.ChatCompletionTool = {
+  type: 'function',
+  function: {
+    name: 'send_product_photos',
+    description: 'Показать клиенту фото товаров — фото отправятся в чат вместе с твоим ответом.',
+    parameters: {
+      type: 'object',
+      properties: {
+        productIds: { type: 'array', items: { type: 'string' }, maxItems: 3, description: 'id товаров из каталога для продажи' },
+      },
+      required: ['productIds'],
+    },
+  },
+};
+
+// Tool round-trips per message: e.g. photos first, then the final answer. Bounded so a model
+// that keeps calling tools can't loop forever.
+const MAX_TOOL_ROUNDS = 3;
+
+type Photo = { url: string; caption: string };
+
 @Injectable()
 export class ChatService {
   constructor(
@@ -160,6 +183,8 @@ export class ChatService {
 - Когда клиент решил купить, уточни фасовку и количество, затем собери: имя, телефон, страну (если стран доставки несколько), город, адрес (улица, дом, квартира). Спрашивай естественно, в ходе разговора.
 - Перед оформлением коротко повтори заказ: товары с фасовками и количеством, сумма за товары, доставка, итог, данные клиента — и спроси подтверждение. Только после явного «да» вызови place_order.
 - После оформления сообщи номер заказа и что менеджер свяжется с клиентом для подтверждения и оплаты. Оплату сам не принимай и реквизиты не придумывай.
+- Ты можешь показывать фото товаров: вызови send_product_photos, когда клиент просит фото или хочет посмотреть товар, а также когда предлагаешь клиенту один-два конкретных товара к покупке. Никогда не говори, что не можешь показать фото.
+- Пиши простым текстом, без markdown (никаких **, __, #) — Telegram показывает эти символы как есть.
 
 КАТАЛОГ ДЛЯ ПРОДАЖИ (в квадратных скобках — id товара для place_order; только эти товары можно оформить):
 ${salesCatalog || '(каталог временно недоступен — предложи связаться с менеджером)'}`
@@ -205,29 +230,56 @@ ${unknownRule}
           model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
           messages,
           temperature: 0.3,
-          ...(sales ? { tools: [PLACE_ORDER_TOOL] } : {}),
+          ...(sales ? { tools: [PLACE_ORDER_TOOL, SEND_PHOTOS_TOOL] } : {}),
         });
 
       let completion = await complete();
       let order: any = null;
+      const photos: Photo[] = [];
 
-      const toolCalls = completion.choices[0]?.message?.tool_calls;
-      if (sales && toolCalls?.length) {
+      for (let round = 0; sales && round < MAX_TOOL_ROUNDS; round++) {
+        const toolCalls = completion.choices[0]?.message?.tool_calls;
+        if (!toolCalls?.length) break;
         messages.push(completion.choices[0].message);
         for (const call of toolCalls) {
-          const result = await this.runPlaceOrder(call.function.arguments, customer);
-          if (result.order) order = result.order;
-          messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result.forModel) });
+          let forModel: any;
+          if (call.function.name === 'send_product_photos') {
+            const found = await this.findPhotos(call.function.arguments);
+            photos.push(...found.filter((p) => !photos.some((x) => x.url === p.url)));
+            forModel = found.length ? { ok: true, sent: found.length } : { ok: false, error: 'У этих товаров нет фото' };
+          } else {
+            const result = await this.runPlaceOrder(call.function.arguments, customer);
+            if (result.order) order = result.order;
+            forModel = result.forModel;
+          }
+          messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(forModel) });
         }
         completion = await complete();
       }
 
       const content = completion.choices[0]?.message?.content ?? '';
       const reply = content.trim() === NO_ANSWER_TOKEN ? '' : content;
-      return order ? { reply, order } : { reply };
+      return { reply, ...(order ? { order } : {}), ...(photos.length ? { photos: photos.slice(0, 10) } : {}) };
     } catch (err) {
       console.error('Chat service error:', err);
       throw new InternalServerErrorException('AI service error occurred');
+    }
+  }
+
+  // Cover photo of each requested product, as nadeck.net shows it (its own gallery, else the
+  // ar.nadeck.net one - same fallback as MedicinesService).
+  private async findPhotos(rawArgs: string): Promise<Photo[]> {
+    try {
+      const ids: string[] = (JSON.parse(rawArgs || '{}').productIds || []).map(String).slice(0, 3);
+      const products = await this.prisma.product.findMany({ where: { id: { in: ids } } });
+      return products.flatMap((p) => {
+        const gallery = [p.images, p.imagesAr].find((g) => Array.isArray(g) && g.length) as string[] | undefined;
+        const name = String((p.name as any)?.ru || p.id).split(/\s+—\s+/)[0].trim();
+        return gallery?.[0] ? [{ url: gallery[0], caption: name }] : [];
+      });
+    } catch (err) {
+      console.error('Chat send_product_photos failed:', err);
+      return [];
     }
   }
 

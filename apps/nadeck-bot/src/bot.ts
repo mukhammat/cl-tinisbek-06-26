@@ -109,8 +109,18 @@ bot.on("message:text", async (ctx) => {
 
     if (!res.ok) throw new Error(`Backend chat API returned ${res.status}`);
 
-    const data = (await res.json()) as { reply?: string; order?: PlacedOrder };
-    const answer = data.reply?.trim();
+    const data = (await res.json()) as { reply?: string; order?: PlacedOrder; photos?: { url: string; caption: string }[] };
+    // The prompt asks for plain text, but bold markers still slip through now and then, and
+    // Telegram would show them as literal asterisks.
+    const answer = data.reply?.replace(/\*\*|__/g, "").trim();
+
+    // Photos the advisor chose to show (sales mode) go first, so the text reads as their caption.
+    if (data.photos?.length) {
+      await (data.photos.length === 1
+        ? ctx.replyWithPhoto(data.photos[0].url, { caption: data.photos[0].caption })
+        : ctx.replyWithMediaGroup(data.photos.map((p) => ({ type: "photo" as const, media: p.url, caption: p.caption })))
+      ).catch((err) => console.error("Failed to send product photos", err));
+    }
 
     if (!answer) {
       // Backend has no reliable answer - in a group stay silent instead of saying "I don't

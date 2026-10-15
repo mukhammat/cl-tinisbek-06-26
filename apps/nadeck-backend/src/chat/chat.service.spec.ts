@@ -28,7 +28,7 @@ describe('ChatService sales mode', () => {
 
     expect(result).toEqual({ reply: 'Заказ оформлен', order });
     expect(placeTelegramOrder.mock.calls[0][0]).toMatchObject({ telegram: { id: 7, username: 'u' }, address: { phone: '+7700', city: 'Алматы' } });
-    expect(create.mock.calls[0][0].tools).toHaveLength(1);
+    expect(create.mock.calls[0][0].tools.map((t: any) => t.function.name)).toEqual(['place_order', 'send_product_photos']);
   });
 
   it('feeds a rejected order back to the model instead of failing the chat', async () => {
@@ -41,6 +41,30 @@ describe('ChatService sales mode', () => {
     const toolMessage = create.mock.calls[1][0].messages.at(-1);
     expect(toolMessage).toMatchObject({ role: 'tool', tool_call_id: 'c1' });
     expect(JSON.parse(toolMessage.content)).toEqual({ ok: false, error: 'Product reta is not available' });
+  });
+
+  it('returns product photos the model asked to show', async () => {
+    const photoPrisma: any = {
+      product: {
+        findMany: jest.fn(async (q: any) =>
+          q?.where?.id ? [{ id: 'reta', name: { ru: 'Рета (Retarutide) — пептид' }, images: [], imagesAr: ['https://cdn/r.jpg'] }] : [],
+        ),
+      },
+      deliveryCountry: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const service = new ChatService(photoPrisma, {} as any);
+    const create = jest
+      .fn()
+      .mockResolvedValueOnce({
+        choices: [{ message: { role: 'assistant', content: null, tool_calls: [{ id: 'p1', type: 'function', function: { name: 'send_product_photos', arguments: '{"productIds":["reta"]}' } }] } }],
+      })
+      .mockResolvedValueOnce({ choices: [{ message: { role: 'assistant', content: 'Вот фото' } }] });
+    (service as any).openai = { chat: { completions: { create } } };
+    (service as any).knowledgeBase = '';
+
+    const result = await service.processChat({ message: 'покажи фото', history: [], mode: 'sales' });
+
+    expect(result).toEqual({ reply: 'Вот фото', photos: [{ url: 'https://cdn/r.jpg', caption: 'Рета (Retarutide)' }] });
   });
 
   it('never offers the tool to the website widget', async () => {
