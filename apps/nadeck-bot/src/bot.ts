@@ -112,7 +112,8 @@ bot.on("message:text", async (ctx) => {
     const data = (await res.json()) as { reply?: string; order?: PlacedOrder; photos?: { url: string; caption: string }[] };
     // The prompt asks for plain text, but bold markers still slip through now and then, and
     // Telegram would show them as literal asterisks.
-    const answer = data.reply?.replace(/\*\*|__/g, "").trim();
+    // Same for markdown image embeds - the photos themselves are sent separately below.
+    const answer = data.reply?.replace(/!\[[^\]]*\]\([^)]*\)\n?/g, "").replace(/\*\*|__/g, "").replace(/\n{3,}/g, "\n\n").trim();
 
     // Photos the advisor chose to show (sales mode) go first, so the text reads as their caption.
     if (data.photos?.length) {
