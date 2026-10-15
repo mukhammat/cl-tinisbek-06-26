@@ -1774,6 +1774,11 @@ export default function AdminPanel({
                           <p className="leading-relaxed">
                             {order.address.country ? `${order.address.country}, ` : ''}{order.address.city}, {order.address.street}, кв./офис {order.address.apartment} {order.address.postalCode && `• Инд. ${order.address.postalCode}`}
                           </p>
+                          {(order.address.name || order.address.phone || order.address.telegram) && (
+                            <p className="leading-relaxed">
+                              👤 {[order.address.name, order.address.phone, order.address.telegram].filter(Boolean).join(' • ')}
+                            </p>
+                          )}
                         </div>
                       </div>
 

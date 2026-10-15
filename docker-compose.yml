@@ -71,6 +71,9 @@ services:
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - BACKEND_URL=http://backend:3001
+      - MANAGER_TELEGRAM=${MANAGER_TELEGRAM:-}
+      - MANAGER_WHATSAPP=${MANAGER_WHATSAPP:-}
+      - MANAGER_CHAT_ID=${MANAGER_CHAT_ID:-}
     volumes:
       - ./apps/nadeck-bot/data:/app/apps/nadeck-bot/data
 

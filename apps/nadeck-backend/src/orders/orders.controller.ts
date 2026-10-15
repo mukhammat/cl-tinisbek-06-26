@@ -16,6 +16,12 @@ export class OrdersController {
     return this.ordersService.placeOrder(body);
   }
 
+  // Checkout from the Telegram bot - prices are looked up server-side, see OrdersService.
+  @Post('orders/telegram')
+  placeTelegramOrder(@Body() body: any) {
+    return this.ordersService.placeTelegramOrder(body);
+  }
+
   @Get('orders/:email')
   getUserOrders(@Param('email') email: string) {
     return this.ordersService.getUserOrders(email);

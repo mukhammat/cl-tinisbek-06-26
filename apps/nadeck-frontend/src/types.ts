@@ -141,6 +141,11 @@ export interface Order {
     street: string;
     apartment: string;
     postalCode: string;
+    // Only orders placed through the Telegram bot carry these - the site hands the customer
+    // over to WhatsApp instead of storing their contacts.
+    name?: string;
+    phone?: string;
+    telegram?: string;
   };
   paymentMethod: string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered';

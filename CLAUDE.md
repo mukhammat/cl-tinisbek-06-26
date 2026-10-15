@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `apps/nadeck-frontend` — React 19 + Vite + Tailwind 4 site: product catalog, AI Peptide Advisor chat widget, dosage calculator, admin panel.
 - `apps/nadeck-backend` — NestJS + Prisma (Postgres) API. Owns the catalog, orders, auth, and the `/api/chat` endpoint that powers the AI advisor.
-- `apps/nadeck-bot` — Telegram support bot (grammy). Thin transport only: forwards every message to the backend's `/api/chat` — same knowledge base/prompt/model as the website widget. Reply-only: it never posts on its own and has no scheduled messages.
+- `apps/nadeck-bot` — Telegram support + sales bot (grammy). Thin transport only: forwards questions to the backend's `/api/chat` — same knowledge base/prompt/model as the website widget — and sells through `src/shop.ts` in private chats (catalog → cart → contacts → `POST /api/orders/telegram`, then hands the customer to a manager who takes payment). Reply-only: it never posts on its own and has no scheduled messages.
 - `apps/gender-router-bot` — separate Telegram bot, unrelated to the above: greets new group members with male/female routing buttons that link straight to the target chat.
 
 ## Commands
@@ -54,6 +54,8 @@ Full stack via Docker: `docker compose up -d --build`. DB backups: `./scripts/ba
 **Product schema is split by type.** `Product` holds fields common to everything in the catalog; type-specific data lives in `MedicineDetails` or `AdditionalGoodDetails` (one-to-one with `Product`). Price is *not* a field on `Product` — it's derived from volumes/pricing records, so don't reintroduce a flat `price`/`priceUsd` column. Currency fallback: USD price missing/0 → fall back to KZT.
 
 **Product photos are per storefront.** `Product.images` is nadeck.net's gallery, `Product.imagesAr` is ar.nadeck.net's; either one being empty means that site shows the other's photos, so a product only needs a second gallery when the two markets want different pictures. `MedicinesService` resolves this down to a single `images` array on the public read (`/api/medicines?market=…`) — only `/api/medicines/admin` returns both galleries, because the product form edits them separately. Storefront components therefore never see `imagesAr`; don't add market branching to them.
+
+**Bot sales happen in private chats only.** In groups the bot answers questions and, when the answer names a catalog product, attaches deep-link buttons (`?start=p_<hash>`) into the private chat — contacts and addresses are never collected in a group. The bot reads the public catalog (`/api/medicines?market=main`, KZT only) and sends just product id + pack size + quantity; `OrdersService.placeTelegramOrder` prices everything from the database. There is no online payment: the order is stored as `pending` and the customer gets a `t.me`/`wa.me` link with the order prefilled (`MANAGER_*` env vars). Carts live in memory — a restart only loses unfinished carts.
 
 **gender-router-bot is intentionally isolated.** Different Telegram token, no backend dependency, no shared code with `nadeck-bot` — it only exists to route new group members via link-buttons. Don't couple it to the backend or the other bot.
 

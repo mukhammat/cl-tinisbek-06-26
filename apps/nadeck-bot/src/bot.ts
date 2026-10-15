@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { Bot, type Context, type Filter } from "grammy";
 import { isChatAdmin } from "./adminCache.js";
 import { rememberGroup, forgetGroup } from "./groupStore.js";
+import { shop, productButtons, managerKeyboard } from "./shop.js";
 
 // Single shared .env at the repo root (same file backend reads), not a per-app copy.
 loadEnv({ path: join(import.meta.dirname, "..", "..", "..", ".env") });
@@ -33,8 +34,11 @@ function logInteraction(entry: Record<string, unknown>) {
 
 const bot = new Bot(TOKEN);
 
+// Private chat is where customers browse the catalog and place orders (shop.ts handles /start
+// there); groups only get the advisor, with product buttons leading into the private chat.
+bot.use(shop);
+
 bot.command("start", (ctx) => {
-  // Bot only serves groups - no private-chat conversations.
   if (ctx.chat.type === "private") return;
   return ctx.reply(
     "Привет! Я бот поддержки Nadeck. Задай вопрос о пептидах, протоколах применения или дозировках — отвечу на основе нашей базы знаний.",
@@ -69,11 +73,9 @@ function stripSelfMention(ctx: Filter<Context, "message:text">): string {
 }
 
 bot.on("message:text", async (ctx) => {
-  // Never answer other bots (avoids reply loops), never answer group admins - they're
-  // staff talking shop, not customers asking a question - and never answer private DMs -
-  // the bot only serves groups.
+  // Never answer other bots (avoids reply loops) and never answer group admins - they're
+  // staff talking shop, not customers asking a question.
   if (ctx.from?.is_bot) return;
-  if (ctx.chat.type === "private") return;
 
   const isGroup = ctx.chat.type === "group" || ctx.chat.type === "supergroup";
   if (isGroup) {
@@ -104,12 +106,20 @@ bot.on("message:text", async (ctx) => {
     const answer = data.reply?.trim();
 
     if (!answer) {
-      // Backend has no reliable answer - stay silent instead of saying "I don't know".
+      // Backend has no reliable answer - in a group stay silent instead of saying "I don't
+      // know"; in a private chat the customer is waiting on us, so point them to a person.
       logInteraction({ userId: ctx.from?.id, username: ctx.from?.username, question, answer: null });
+      if (!isGroup) {
+        await ctx.reply("Здесь лучше подскажет менеджер — напишите ему, или выберите товар в каталоге.", {
+          reply_markup: managerKeyboard(question),
+        });
+      }
       return;
     }
 
-    await ctx.reply(answer);
+    // A failed catalog lookup must not swallow the answer itself.
+    const buttons = await productButtons(answer, ctx.me.username, isGroup).catch(() => undefined);
+    await ctx.reply(answer, { reply_markup: buttons });
 
     const updatedHistory = [
       ...history,
