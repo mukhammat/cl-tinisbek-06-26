@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `apps/nadeck-frontend` — React 19 + Vite + Tailwind 4 site: product catalog, AI Peptide Advisor chat widget, dosage calculator, admin panel.
 - `apps/nadeck-backend` — NestJS + Prisma (Postgres) API. Owns the catalog, orders, auth, and the `/api/chat` endpoint that powers the AI advisor.
-- `apps/nadeck-bot` — Telegram support + sales bot (grammy). Thin transport only: forwards every message to the backend's `/api/chat` — same knowledge base/prompt/model as the website widget. In private chats it sends `mode: "sales"`, and the advisor itself recommends products, collects contacts and places the order; the bot only hands the result to a manager who takes payment. Reply-only: it never posts on its own and has no scheduled messages.
+- `apps/nadeck-bot` — Telegram support + sales bot (grammy). Thin transport only: forwards every message to the backend's `/api/chat` — same knowledge base/prompt/model as the website widget. In private chats it sends `mode: "sales"`, and the advisor itself recommends products, collects contacts and places the order; the bot only hands the result to a manager who takes payment. Voice messages in private chats are transcribed by the backend (`/api/chat/transcribe`) and then answered like typed text. Reply-only: it never posts on its own and has no scheduled messages.
 - `apps/gender-router-bot` — separate Telegram bot, unrelated to the above: greets new group members with male/female routing buttons that link straight to the target chat.
 
 ## Commands

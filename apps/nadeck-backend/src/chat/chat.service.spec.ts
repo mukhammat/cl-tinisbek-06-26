@@ -100,4 +100,14 @@ describe('ChatService sales mode', () => {
       else process.env.OPENAI_CHAT_MODEL = previous;
     }
   });
+  it('transcribes a voice message for the bot', async () => {
+    const service = new ChatService(prisma, {} as any);
+    const create = jest.fn().mockResolvedValue({ text: ' Сколько стоит Рета? ' });
+    (service as any).openai = { audio: { transcriptions: { create } } };
+
+    const result = await service.transcribe({ buffer: Buffer.from('ogg'), originalname: 'file_1.oga', mimetype: 'audio/ogg' });
+
+    expect(result).toEqual({ text: 'Сколько стоит Рета?' });
+    expect(create.mock.calls[0][0].model).toBe('gpt-transcribe');
+  });
 });

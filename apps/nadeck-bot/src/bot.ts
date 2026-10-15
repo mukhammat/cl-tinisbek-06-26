@@ -90,7 +90,52 @@ bot.on("message:text", async (ctx) => {
   const question = isGroup ? stripSelfMention(ctx) : ctx.message.text.trim();
   if (!question) return;
 
-  const chatId = ctx.chat.id;
+  await answerQuestion(ctx, question, isGroup);
+});
+
+// Voice messages are understood only in private chats: in a group they're usually people
+// talking to each other, and transcribing every one of them would cost money for nothing.
+const MAX_VOICE_SECONDS = 5 * 60;
+
+bot.on(["message:voice", "message:audio"], async (ctx) => {
+  if (ctx.from?.is_bot || ctx.chat.type !== "private") return;
+
+  const media = ctx.message.voice ?? ctx.message.audio!;
+  if (media.duration > MAX_VOICE_SECONDS) {
+    await ctx.reply("Голосовое слишком длинное — запишите, пожалуйста, покороче (до 5 минут) или напишите текстом.");
+    return;
+  }
+
+  await ctx.replyWithChatAction("typing");
+
+  let question = "";
+  try {
+    const file = await ctx.getFile();
+    const audio = await fetch(`https://api.telegram.org/file/bot${TOKEN}/${file.file_path}`);
+    if (!audio.ok) throw new Error(`Telegram file download returned ${audio.status}`);
+
+    const form = new FormData();
+    form.append("file", new Blob([await audio.arrayBuffer()], { type: media.mime_type || "audio/ogg" }), file.file_path?.split("/").pop() || "voice.ogg");
+    const res = await fetch(`${BACKEND_URL}/api/chat/transcribe`, { method: "POST", body: form });
+    if (!res.ok) throw new Error(`Backend transcribe API returned ${res.status}`);
+    question = ((await res.json()) as { text?: string }).text?.trim() ?? "";
+  } catch (err) {
+    console.error(err);
+    await ctx.reply("Не получилось разобрать голосовое. Попробуйте ещё раз или напишите текстом.");
+    logInteraction({ userId: ctx.from?.id, username: ctx.from?.username, voice: true, error: String(err) });
+    return;
+  }
+
+  if (!question) {
+    await ctx.reply("Не расслышал 🙏 Повторите, пожалуйста, или напишите текстом.");
+    return;
+  }
+
+  await answerQuestion(ctx, question, false);
+});
+
+async function answerQuestion(ctx: Context, question: string, isGroup: boolean) {
+  const chatId = ctx.chat!.id;
   const history = chatHistories.get(chatId) ?? [];
 
   await ctx.replyWithChatAction("typing");
@@ -159,7 +204,7 @@ bot.on("message:text", async (ctx) => {
     await ctx.reply("Произошла ошибка при обработке запроса. Попробуйте ещё раз чуть позже.");
     logInteraction({ userId: ctx.from?.id, username: ctx.from?.username, question, error: String(err) });
   }
-});
+}
 
 bot.catch((err) => console.error("Bot error:", err));
 

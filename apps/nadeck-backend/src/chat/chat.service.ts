@@ -6,7 +6,7 @@
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 import { PrismaService } from '../database/prisma.service';
 import { OrdersService } from '../orders/orders.service';
 
@@ -216,6 +216,22 @@ ${unknownRule}
 4. Если вопрос касается индивидуальной медицинской ситуации, которая выходит за рамки обычных случаев (сопутствующие заболевания, беременность, комбинации с рецептурными лекарствами, дети, острые симптомы и т.п.), дай конкретный ответ по базе (если он там есть), но дополнительно рекомендуй проконсультироваться с врачом — не вместо ответа, а в дополнение к нему.
 5. Отвечай кратко и по делу, разговорным, но уважительным тоном на языке пользователя (русский, казахский, английский или арабский). Определяй язык по последнему сообщению пользователя и веди на нём весь ответ целиком — источники фактов выше на русском, но это не повод переключаться на русский посреди ответа: переводи факты на язык пользователя, а не копируй формулировки как есть. Никогда не смешивай два языка в одном ответе. Не используй markdown-заголовки.
 6. Ты не заменяешь врача. Это справочная информация на основе базы знаний и каталога Nadeck, а не медицинская консультация.${salesBlock}`;
+  }
+
+  // Speech-to-text for the Telegram bot's voice messages - the bot has no OpenAI client of its
+  // own, so it posts the audio here and then sends the text to /api/chat like a typed message.
+  async transcribe(file: { buffer: Buffer; originalname?: string; mimetype?: string } | undefined) {
+    if (!file?.buffer?.length) throw new BadRequestException('Audio file is required');
+    try {
+      const result = await this.getClient().audio.transcriptions.create({
+        file: await toFile(file.buffer, file.originalname || 'voice.ogg', { type: file.mimetype || 'audio/ogg' }),
+        model: process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-transcribe',
+      });
+      return { text: result.text?.trim() ?? '' };
+    } catch (err) {
+      console.error('Chat transcription error:', err);
+      throw new InternalServerErrorException('Transcription failed');
+    }
   }
 
   // body.mode === 'sales' is sent only by the Telegram bot's private chat, together with
