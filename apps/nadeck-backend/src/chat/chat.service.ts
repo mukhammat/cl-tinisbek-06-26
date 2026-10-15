@@ -237,8 +237,9 @@ ${unknownRule}
         this.getClient().chat.completions.create({
           model,
           messages,
-          // Newer (reasoning) models reject a custom temperature.
-          ...(model.startsWith('gpt-4') ? { temperature: 0.3 } : {}),
+          // Newer (reasoning) models reject a custom temperature, and only take function tools on
+          // Chat Completions with reasoning switched off - which also keeps replies quick.
+          ...(model.startsWith('gpt-4') ? { temperature: 0.3 } : { reasoning_effort: 'none' as any }),
           ...(sales ? { tools: [PLACE_ORDER_TOOL, SEND_PHOTOS_TOOL] } : {}),
         });
 

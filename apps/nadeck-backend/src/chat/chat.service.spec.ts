@@ -93,6 +93,7 @@ describe('ChatService sales mode', () => {
       expect(result.reply).toBe('Здравствуйте');
       expect(create.mock.calls.map((c: any) => c[0].model)).toEqual(['gpt-6-luna', 'gpt-4o-mini', 'gpt-4o-mini']);
       expect(create.mock.calls[0][0].temperature).toBeUndefined();
+      expect(create.mock.calls[0][0].reasoning_effort).toBe('none');
       expect(create.mock.calls[1][0].temperature).toBe(0.3);
     } finally {
       if (previous === undefined) delete process.env.OPENAI_CHAT_MODEL;
