@@ -224,7 +224,8 @@ ${unknownRule}
     if (!file?.buffer?.length) throw new BadRequestException('Audio file is required');
     try {
       const result = await this.getClient().audio.transcriptions.create({
-        file: await toFile(file.buffer, file.originalname || 'voice.ogg', { type: file.mimetype || 'audio/ogg' }),
+        // Telegram names voice notes *.oga, which OpenAI rejects by extension - it's the same Ogg.
+        file: await toFile(file.buffer, (file.originalname || 'voice.ogg').replace(/\.oga$/i, '.ogg'), { type: file.mimetype || 'audio/ogg' }),
         model: process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-transcribe',
       });
       return { text: result.text?.trim() ?? '' };

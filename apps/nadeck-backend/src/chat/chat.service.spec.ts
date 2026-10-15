@@ -109,5 +109,6 @@ describe('ChatService sales mode', () => {
 
     expect(result).toEqual({ text: 'Сколько стоит Рета?' });
     expect(create.mock.calls[0][0].model).toBe('gpt-transcribe');
+    expect(create.mock.calls[0][0].file.name).toBe('file_1.ogg');
   });
 });
