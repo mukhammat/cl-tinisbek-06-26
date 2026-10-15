@@ -34,7 +34,9 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-nadeck}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-nadeck}
       - JWT_SECRET=${JWT_SECRET}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL}
+      # Pinned here rather than read from the server .env so a model switch ships with a push.
+      # ChatService falls back to gpt-4o-mini if the API rejects this one.
+      - OPENAI_CHAT_MODEL=gpt-6-luna
       - R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
       - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
       - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}

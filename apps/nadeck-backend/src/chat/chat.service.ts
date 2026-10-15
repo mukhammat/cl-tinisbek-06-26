@@ -81,6 +81,11 @@ const SEND_PHOTOS_TOOL: OpenAI.Chat.ChatCompletionTool = {
 // that keeps calling tools can't loop forever.
 const MAX_TOOL_ROUNDS = 3;
 
+// Known to work with everything below (tools, temperature). If OPENAI_CHAT_MODEL names a model
+// the API rejects - unknown id, no tool calling on Chat Completions, no temperature - the
+// advisor falls back to this one instead of failing the customer's chat.
+const FALLBACK_MODEL = 'gpt-4o-mini';
+
 type Photo = { url: string; caption: string };
 
 @Injectable()
@@ -95,6 +100,9 @@ export class ChatService {
   private catalogText: string | null = null;
   private salesCatalogText: string | null = null;
   private catalogFetchedAt = 0;
+  // Set once the configured model has been rejected, so later messages don't pay for a failed
+  // request first. Cleared by a restart (i.e. the next deploy).
+  private configuredModelRejected = false;
 
   private getClient(): OpenAI {
     if (!this.openai) {
@@ -225,13 +233,27 @@ ${unknownRule}
         { role: 'user', content: message },
       ];
 
-      const complete = () =>
+      const request = (model: string) =>
         this.getClient().chat.completions.create({
-          model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
+          model,
           messages,
-          temperature: 0.3,
+          // Newer (reasoning) models reject a custom temperature.
+          ...(model.startsWith('gpt-4') ? { temperature: 0.3 } : {}),
           ...(sales ? { tools: [PLACE_ORDER_TOOL, SEND_PHOTOS_TOOL] } : {}),
         });
+
+      const complete = async () => {
+        const configured = process.env.OPENAI_CHAT_MODEL || FALLBACK_MODEL;
+        if (configured === FALLBACK_MODEL || this.configuredModelRejected) return request(FALLBACK_MODEL);
+        try {
+          return await request(configured);
+        } catch (err: any) {
+          if (err?.status !== 400 && err?.status !== 404) throw err;
+          console.error(`Chat model ${configured} rejected (${err.message}), falling back to ${FALLBACK_MODEL}`);
+          this.configuredModelRejected = true;
+          return request(FALLBACK_MODEL);
+        }
+      };
 
       let completion = await complete();
       let order: any = null;
@@ -259,7 +281,7 @@ ${unknownRule}
 
       const content = completion.choices[0]?.message?.content ?? '';
       const reply = content.trim() === NO_ANSWER_TOKEN ? '' : content;
-      return { reply, ...(order ? { order } : {}), ...(photos.length ? { photos: photos.slice(0, 10) } : {}) };
+      return { reply, model: completion.model, ...(order ? { order } : {}), ...(photos.length ? { photos: photos.slice(0, 10) } : {}) };
     } catch (err) {
       console.error('Chat service error:', err);
       throw new InternalServerErrorException('AI service error occurred');

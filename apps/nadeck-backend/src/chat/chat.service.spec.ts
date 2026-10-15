@@ -26,7 +26,7 @@ describe('ChatService sales mode', () => {
 
     const result = await service.processChat({ message: 'да', history: [], mode: 'sales', customer: { id: 7, username: 'u' } });
 
-    expect(result).toEqual({ reply: 'Заказ оформлен', order });
+    expect(result).toMatchObject({ reply: 'Заказ оформлен', order });
     expect(placeTelegramOrder.mock.calls[0][0]).toMatchObject({ telegram: { id: 7, username: 'u' }, address: { phone: '+7700', city: 'Алматы' } });
     expect(create.mock.calls[0][0].tools.map((t: any) => t.function.name)).toEqual(['place_order', 'send_product_photos']);
   });
@@ -74,5 +74,29 @@ describe('ChatService sales mode', () => {
     (service as any).knowledgeBase = '';
     await service.processChat({ message: 'привет', history: [] });
     expect(create.mock.calls[0][0].tools).toBeUndefined();
+  });
+  it('falls back to the default model when the configured one is rejected', async () => {
+    const previous = process.env.OPENAI_CHAT_MODEL;
+    process.env.OPENAI_CHAT_MODEL = 'gpt-6-luna';
+    try {
+      const service = new ChatService(prisma, {} as any);
+      const create = jest
+        .fn()
+        .mockRejectedValueOnce(Object.assign(new Error('tools not supported'), { status: 400 }))
+        .mockResolvedValue({ choices: [{ message: { role: 'assistant', content: 'Здравствуйте' } }] });
+      (service as any).openai = { chat: { completions: { create } } };
+      (service as any).knowledgeBase = '';
+
+      const result = await service.processChat({ message: 'привет', history: [], mode: 'sales' });
+      await service.processChat({ message: 'ещё', history: [], mode: 'sales' });
+
+      expect(result.reply).toBe('Здравствуйте');
+      expect(create.mock.calls.map((c: any) => c[0].model)).toEqual(['gpt-6-luna', 'gpt-4o-mini', 'gpt-4o-mini']);
+      expect(create.mock.calls[0][0].temperature).toBeUndefined();
+      expect(create.mock.calls[1][0].temperature).toBe(0.3);
+    } finally {
+      if (previous === undefined) delete process.env.OPENAI_CHAT_MODEL;
+      else process.env.OPENAI_CHAT_MODEL = previous;
+    }
   });
 });
