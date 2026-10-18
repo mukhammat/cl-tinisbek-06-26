@@ -2,15 +2,15 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { MEDICINES_DATA } from '../seeds/medicines.data';
 
-const DEFAULT_CATEGORY_NAMES: Record<string, { ru: string; en: string; ar: string }> = {
-  weightloss: { ru: 'Похудение & GLP-1', en: 'Fat Loss & GLP-1', ar: 'تخسيس الوزن & GLP-1' },
-  healing: { ru: 'Восстановление & Суставы', en: 'Recovery & Healing', ar: 'الاستشفاء & المفاصل' },
-  antiaging: { ru: 'Омоложение & Красота', en: 'Anti-Aging & Beauty', ar: 'مكافحة الشيخوخة والجمال' },
-  painkiller: { ru: 'Обезболивающие', en: 'Painkillers', ar: 'مسكنات الألم' },
-  vitamin: { ru: 'Витамины', en: 'Vitamins', ar: 'الفيتامينات' },
-  antiallergic: { ru: 'Противоаллергические', en: 'Antiallergic', ar: 'مضادات الحساسية' },
-  digestive: { ru: 'Пищеварение', en: 'Digestive', ar: 'الهضم' },
-  additional: { ru: 'Дополнительные товары', en: 'Additional Goods', ar: 'المنتجات الإضافية' },
+const DEFAULT_CATEGORY_NAMES: Record<string, { ru: string; en: string }> = {
+  weightloss: { ru: 'Похудение & GLP-1', en: 'Fat Loss & GLP-1' },
+  healing: { ru: 'Восстановление & Суставы', en: 'Recovery & Healing' },
+  antiaging: { ru: 'Омоложение & Красота', en: 'Anti-Aging & Beauty' },
+  painkiller: { ru: 'Обезболивающие', en: 'Painkillers' },
+  vitamin: { ru: 'Витамины', en: 'Vitamins' },
+  antiallergic: { ru: 'Противоаллергические', en: 'Antiallergic' },
+  digestive: { ru: 'Пищеварение', en: 'Digestive' },
+  additional: { ru: 'Дополнительные товары', en: 'Additional Goods' },
 };
 
 @Injectable()
@@ -34,7 +34,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     const ids = Array.from(new Set([...Object.keys(DEFAULT_CATEGORY_NAMES), ...MEDICINES_DATA.map((med) => med.category)]));
     return ids.map((id, index) => ({
       id,
-      name: DEFAULT_CATEGORY_NAMES[id] || { ru: id, en: id, ar: id },
+      name: DEFAULT_CATEGORY_NAMES[id] || { ru: id, en: id },
       sortOrder: index,
       isActive: true,
     }));

@@ -48,7 +48,7 @@ export default function AuthModal({
     setLoading(true);
 
     if (!email || !password) {
-      setErrorMsg(currentLang === 'ru' ? 'Заполните ключевые поля!' : currentLang === 'ar' ? 'يرجى ملء جميع الحقول الأساسية!' : 'Please fill all core fields.');
+      setErrorMsg(currentLang === 'ru' ? 'Заполните ключевые поля!' : 'Please fill all core fields.');
       setLoading(false);
       return;
     }
@@ -56,7 +56,7 @@ export default function AuthModal({
     try {
       if (isRegistering) {
         if (!fullName || !phone) {
-          setErrorMsg(currentLang === 'ru' ? 'Пожалуйста, укажите имя и телефон.' : currentLang === 'ar' ? 'يرجى إدخال الاسم الكامل ورقم الهاتف.' : 'Please enter full name and phone number.');
+          setErrorMsg(currentLang === 'ru' ? 'Пожалуйста, укажите имя и телефон.' : 'Please enter full name and phone number.');
           setLoading(false);
           return;
         }
@@ -196,7 +196,7 @@ export default function AuthModal({
                     onClick={onClose}
                     className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-sm transition-colors animate-pulse"
                   >
-                    {currentLang === 'ru' ? 'Закрыть' : currentLang === 'ar' ? 'إغلاق' : 'Close'}
+                    {currentLang === 'ru' ? 'Закрыть' : 'Close'}
                   </button>
                 </div>
               </div>

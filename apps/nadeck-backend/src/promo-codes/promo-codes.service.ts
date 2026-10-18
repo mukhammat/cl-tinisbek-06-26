@@ -71,7 +71,7 @@ export class PromoCodesService {
         this.prisma.promoCode.findMany(),
         this.prisma.order.findMany({
           where: { promoCode: { not: null } },
-          select: { promoCode: true, userEmail: true, totalPrice: true, totalPriceUsd: true, totalPriceSar: true, discountKzt: true },
+          select: { promoCode: true, userEmail: true, totalPrice: true, totalPriceUsd: true, discountKzt: true },
         }),
       ]);
 
@@ -104,7 +104,6 @@ export class PromoCodesService {
           guestOrders,
           revenueKzt: used.reduce((sum, o) => sum + o.totalPrice, 0),
           revenueUsd: used.reduce((sum, o) => sum + (o.totalPriceUsd || 0), 0),
-          revenueSar: used.reduce((sum, o) => sum + (o.totalPriceSar || 0), 0),
           discountGivenKzt: used.reduce((sum, o) => sum + (o.discountKzt || 0), 0),
         };
       });

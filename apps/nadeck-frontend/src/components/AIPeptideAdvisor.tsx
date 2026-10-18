@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Language } from '../types';
 import { Bot, X, Send, Sparkles, Loader } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MARKET } from '../market';
 
 // Same manager number the cart hands the order template to (see CartView).
 const WHATSAPP_NUMBER = '+77070222312';
@@ -21,8 +20,7 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     const welcomeMsgs: Record<Language, string> = {
       ru: 'Привет! Я ваш персональный AI-консультант Nadeck. Я могу помочь вам рассчитать дозировку, подсказать схемы разведения (разбавления) пептидов или порекомендовать препараты для восстановления, суставов или контроля веса. О чем вы хотите узнать?',
-      en: 'Hello! I am your Nadeck AI Consultant. I can help you calculate dosages, understand reconstitution patterns, or recommend the best peptides for healing, weight loss, or anti-aging. What would you like to discuss?',
-      ar: 'مرحباً! أنا مستشارك الطبي الذكي لشركة Nadeck. يمكنني مساعدتك في حساب الجرعات، وتوضيح كيفية تمديد الببتيدات، أو تقديم توصيات حول الببتيدات المناسبة للاستشفاء، فقدان الوزن، أو تجديد الخلايا. كيف يمكنني مساعدتك اليوم؟'
+      en: 'Hello! I am your Nadeck AI Consultant. I can help you calculate dosages, understand reconstitution patterns, or recommend the best peptides for healing, weight loss, or anti-aging. What would you like to discuss?'
     };
     return [
       {
@@ -57,17 +55,8 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
     'BPC-157 daily reconstitution'
   ];
 
-  const arabicSuggestions = [
-    'كيف يتم تمديد السيماجلوتايد؟',
-    'أفضل الببتيدات لإصلاح المفاصل والأربطة',
-    'ما هي الجرعة الصحيحة لميلانوتان ٢؟',
-    'كيفية استخدام ببتيد BPC-157 يومياً؟'
-  ];
-
   const suggestions = currentLang === 'ru' 
     ? russianSuggestions 
-    : currentLang === 'ar' 
-    ? arabicSuggestions 
     : englishSuggestions;
 
   const handleSend = async (textToSend: string) => {
@@ -103,8 +92,7 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
       console.error('AI chat error:', error);
       const errMsgs: Record<Language, string> = {
         ru: 'Извините, не удалось подключиться к AI-консультанту. Пожалуйста, попробуйте позже.',
-        en: 'Apologies, failed to connect to the AI Consultant. Please try again soon.',
-        ar: 'معذرة، فشل الاتصال بمستشار الذكاء الاصطناعي. يرجى المحاولة لاحقاً.'
+        en: 'Apologies, failed to connect to the AI Consultant. Please try again soon.'
       };
       setMessages((prev) => [
         ...prev,
@@ -134,7 +122,7 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
                 </div>
                 <div>
                   <h4 className="text-xs sm:text-sm font-extrabold tracking-tight">
-                    {currentLang === 'ru' ? 'AI Пептидный Помощник' : currentLang === 'ar' ? 'مستشار الببتيد الذكي' : 'AI Peptide Advisor'}
+                    {currentLang === 'ru' ? 'AI Пептидный Помощник' : 'AI Peptide Advisor'}
                   </h4>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -175,7 +163,7 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
                 <div className="flex justify-start" id="ai-chat-loader">
                   <div className="bg-white text-slate-500 border border-slate-100 rounded-2xl rounded-bl-none px-4 py-2.5 shadow-sm text-xs flex items-center gap-2">
                     <Loader className="w-4 h-4 animate-spin text-nadeck-500" />
-                    <span>{currentLang === 'ru' ? 'AI печатает...' : currentLang === 'ar' ? 'المستشار يكتب...' : 'AI is thinking...'}</span>
+                    <span>{currentLang === 'ru' ? 'AI печатает...' : 'AI is thinking...'}</span>
                   </div>
                 </div>
               )}
@@ -213,8 +201,6 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
                 placeholder={
                   currentLang === 'ru' 
                     ? 'Спросить у AI-помощника...' 
-                    : currentLang === 'ar' 
-                    ? 'اسأل المستشار الذكي...' 
                     : 'Ask our AI Peptide Advisor...'
                 }
                 className="flex-1 px-4 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-nadeck-500 focus:bg-white text-slate-800"
@@ -232,23 +218,21 @@ export default function AIPeptideAdvisor({ currentLang }: AIPeptideAdvisorProps)
         )}
       </AnimatePresence>
 
-      {/* WhatsApp Button - nadeck.net only; the 'ar' market has its own manager line */}
-      {MARKET === 'main' && (
-        <motion.a
-          id="btn-whatsapp-launcher"
-          href={`https://wa.me/${WHATSAPP_NUMBER}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="w-14 h-14 mb-4 bg-gradient-to-tr from-[#25D366] to-[#5BF07F] text-white rounded-full shadow-2xl border border-white/20 flex items-center justify-center relative cursor-pointer"
-          aria-label="WhatsApp"
-        >
-          <svg viewBox="0 0 24 24" className="w-7 h-7" fill="currentColor">
-            <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm0 1.67c2.2 0 4.27.86 5.83 2.42a8.2 8.2 0 0 1 2.41 5.82c0 4.54-3.7 8.24-8.25 8.24a8.23 8.23 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24Zm-3.2 4.4c-.15 0-.4.06-.6.29-.21.22-.8.78-.8 1.9s.82 2.2.93 2.35c.12.15 1.6 2.44 3.88 3.42.54.24.96.38 1.29.48.54.17 1.04.15 1.43.09.43-.06 1.34-.55 1.53-1.08.19-.53.19-.98.13-1.08-.06-.09-.21-.15-.44-.26-.22-.12-1.34-.66-1.55-.74-.21-.07-.36-.11-.51.12-.15.22-.58.73-.71.88-.13.15-.26.17-.49.06-.22-.12-.95-.35-1.81-1.12a6.8 6.8 0 0 1-1.25-1.56c-.13-.22-.02-.34.1-.46.1-.1.22-.26.33-.4.11-.14.15-.23.22-.38.08-.15.04-.29-.02-.4-.06-.12-.51-1.24-.7-1.69-.18-.44-.37-.38-.51-.39l-.44-.01Z" />
-          </svg>
-        </motion.a>
-      )}
+      {/* WhatsApp Button */}
+      <motion.a
+        id="btn-whatsapp-launcher"
+        href={`https://wa.me/${WHATSAPP_NUMBER}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="w-14 h-14 mb-4 bg-gradient-to-tr from-[#25D366] to-[#5BF07F] text-white rounded-full shadow-2xl border border-white/20 flex items-center justify-center relative cursor-pointer"
+        aria-label="WhatsApp"
+      >
+        <svg viewBox="0 0 24 24" className="w-7 h-7" fill="currentColor">
+          <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm0 1.67c2.2 0 4.27.86 5.83 2.42a8.2 8.2 0 0 1 2.41 5.82c0 4.54-3.7 8.24-8.25 8.24a8.23 8.23 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24Zm-3.2 4.4c-.15 0-.4.06-.6.29-.21.22-.8.78-.8 1.9s.82 2.2.93 2.35c.12.15 1.6 2.44 3.88 3.42.54.24.96.38 1.29.48.54.17 1.04.15 1.43.09.43-.06 1.34-.55 1.53-1.08.19-.53.19-.98.13-1.08-.06-.09-.21-.15-.44-.26-.22-.12-1.34-.66-1.55-.74-.21-.07-.36-.11-.51.12-.15.22-.58.73-.71.88-.13.15-.26.17-.49.06-.22-.12-.95-.35-1.81-1.12a6.8 6.8 0 0 1-1.25-1.56c-.13-.22-.02-.34.1-.46.1-.1.22-.26.33-.4.11-.14.15-.23.22-.38.08-.15.04-.29-.02-.4-.06-.12-.51-1.24-.7-1.69-.18-.44-.37-.38-.51-.39l-.44-.01Z" />
+        </svg>
+      </motion.a>
 
       {/* Telegram Button */}
       <motion.a

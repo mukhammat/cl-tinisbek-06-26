@@ -7,7 +7,7 @@ import { Inject, Injectable, BadRequestException, UnauthorizedException, NotFoun
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../database/prisma.service';
-import { isAdminEmail, getAdminMarket } from './admin-emails.util';
+import { isAdminEmail } from './admin-emails.util';
 
 const BCRYPT_ROUNDS = 10;
 
@@ -18,8 +18,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  private buildAuthResponse(user: { email: string; fullName: string; phone: string | null; address: string | null; isAdmin: boolean; adminMarket: string | null }) {
-    const token = this.jwtService.sign({ email: user.email, isAdmin: user.isAdmin, adminMarket: user.adminMarket });
+  private buildAuthResponse(user: { email: string; fullName: string; phone: string | null; address: string | null; isAdmin: boolean }) {
+    const token = this.jwtService.sign({ email: user.email, isAdmin: user.isAdmin });
 
     return {
       email: user.email,
@@ -28,7 +28,6 @@ export class AuthService {
       address: user.address || '',
       isAuthenticated: true,
       isAdmin: user.isAdmin,
-      adminMarket: user.adminMarket,
       token,
     };
   }
@@ -57,7 +56,6 @@ export class AuthService {
           phone: phone || '',
           address: address || '',
           isAdmin: isAdminEmail(emailLower),
-          adminMarket: getAdminMarket(emailLower),
         },
       });
 
@@ -107,11 +105,10 @@ export class AuthService {
       // isAdmin is stamped at registration, so an account created under a rule that has since
       // been dropped would keep it forever - re-derive it from the allowlist on every login.
       const isAdmin = isAdminEmail(emailLower);
-      const adminMarket = getAdminMarket(emailLower);
-      if (user.isAdmin !== isAdmin || user.adminMarket !== adminMarket) {
+      if (user.isAdmin !== isAdmin) {
         const synced = await this.prisma.user.update({
           where: { email: emailLower },
-          data: { isAdmin, adminMarket },
+          data: { isAdmin },
         });
         return this.buildAuthResponse(synced);
       }

@@ -7,7 +7,7 @@ describe('OrdersService.placeTelegramOrder', () => {
     name: { ru: 'Рета', en: 'Reta', ar: 'Reta' },
     unit: 'mg',
     inStock: 1,
-    medicine: { volumes: [{ mgPerUnit: 10, price: 53000, priceUsd: 116, priceSar: 0 }, { mgPerUnit: 20, price: 0, priceUsd: 0, priceSar: 0 }] },
+    medicine: { volumes: [{ mgPerUnit: 10, price: 53000, priceUsd: 116 }, { mgPerUnit: 20, price: 0, priceUsd: 0 }] },
     additionalGood: null,
   };
 
@@ -16,7 +16,7 @@ describe('OrdersService.placeTelegramOrder', () => {
       product: { findMany: jest.fn().mockResolvedValue(products) },
       order: { create: jest.fn().mockImplementation(({ data }) => Promise.resolve(data)) },
     };
-    const deliveryCountries = { resolveFee: jest.fn().mockResolvedValue({ code: 'KZ', priceKzt: 3000, priceUsd: 7, priceSar: 0 }) };
+    const deliveryCountries = { resolveFee: jest.fn().mockResolvedValue({ code: 'KZ', priceKzt: 3000, priceUsd: 7 }) };
     const service = new OrdersService(prisma as any, {} as any, deliveryCountries as any);
     return { service, prisma };
   };

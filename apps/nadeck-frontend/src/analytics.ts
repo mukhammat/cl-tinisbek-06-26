@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MARKET } from './market';
 
 /**
  * Site traffic counter for the admin dashboard ("how many people came").
@@ -100,7 +99,6 @@ export const trackView = (path: TrackedPath, options?: { productId?: string; lan
   const body = JSON.stringify({
     visitorId: getVisitorId(),
     sessionId: getSessionId(),
-    market: MARKET,
     path,
     productId: options?.productId,
     referrer: document.referrer,

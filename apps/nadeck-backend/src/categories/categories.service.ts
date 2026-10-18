@@ -1,14 +1,10 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 
 export interface LocalizedText {
   ru?: string;
   en?: string;
-  ar?: string;
 }
-
-type Market = 'main' | 'ar';
-const VALID_MARKETS: Market[] = ['main', 'ar'];
 
 export interface CategoryPayload {
   id?: string;
@@ -16,36 +12,13 @@ export interface CategoryPayload {
   icon?: string | null;
   sortOrder?: number;
   isActive?: boolean;
-  markets?: string[];
 }
 
 @Injectable()
 export class CategoriesService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  // Defaults to ['main'] so a category only shows up on ar.nadeck.net once explicitly opted
-  // into it - mirrors MedicinesService.normalizeMarkets.
-  private normalizeMarkets(markets: any): Market[] {
-    const valid = Array.isArray(markets) ? markets.filter((m) => VALID_MARKETS.includes(m)) : [];
-    return valid.length > 0 ? Array.from(new Set(valid)) : ['main'];
-  }
-
-  // A market-scoped admin's categories live only on their own market - overrides whatever the
-  // client sent, same reasoning as MedicinesService.resolveMarkets.
-  private resolveMarkets(markets: any, adminMarket?: string | null): Market[] {
-    if (adminMarket && VALID_MARKETS.includes(adminMarket as Market)) {
-      return [adminMarket as Market];
-    }
-    return this.normalizeMarkets(markets);
-  }
-
-  private assertMarketAccess(categoryMarkets: Market[], adminMarket?: string | null) {
-    if (adminMarket && !categoryMarkets.includes(adminMarket as Market)) {
-      throw new ForbiddenException('This category is outside your assigned market');
-    }
-  }
-
-  // Normalizes a localized-text payload into a { ru, en, ar } object, filling any
+  // Normalizes a localized-text payload into a { ru, en } object, filling any
   // missing language with the English value (mirrors MedicinesService's name handling).
   // Returned as a plain Record so it satisfies Prisma's Json input type directly.
   private normalizeName(name: LocalizedText | undefined): Record<string, string> {
@@ -53,7 +26,6 @@ export class CategoriesService {
     return {
       ru: String(name?.ru || en).trim(),
       en,
-      ar: String(name?.ar || en).trim(),
     };
   }
 
@@ -63,22 +35,16 @@ export class CategoriesService {
     return trimmed || null;
   }
 
-  // `market` filters to what a single storefront should list (e.g. ?market=ar for
-  // ar.nadeck.net); omit it to get every category regardless of market (used by
-  // getAllForAdmin below, passing a full admin's null scope through as "no filter").
-  async getAll(market?: string) {
+  async getAll() {
     try {
-      return await this.prisma.category.findMany({
-        where: VALID_MARKETS.includes(market as Market) ? { markets: { has: market as Market } } : undefined,
-        orderBy: { sortOrder: 'asc' },
-      });
+      return await this.prisma.category.findMany({ orderBy: { sortOrder: 'asc' } });
     } catch (err) {
       console.error('Error fetching categories:', err);
       throw new InternalServerErrorException('Database error occurred');
     }
   }
 
-  async create(body: CategoryPayload, adminMarket?: string | null) {
+  async create(body: CategoryPayload) {
     const id = String(body?.id || '').trim().toLowerCase();
     const name = this.normalizeName(body?.name);
 
@@ -94,7 +60,6 @@ export class CategoriesService {
           icon: this.normalizeIcon(body?.icon),
           sortOrder: Number(body?.sortOrder || 0),
           isActive: body?.isActive !== false,
-          markets: this.resolveMarkets(body?.markets, adminMarket),
         },
       });
 
@@ -105,16 +70,11 @@ export class CategoriesService {
     }
   }
 
-  async update(id: string, body: CategoryPayload, adminMarket?: string | null) {
+  async update(id: string, body: CategoryPayload) {
     const name = this.normalizeName(body?.name);
 
     if (!name.en) {
       throw new BadRequestException('Category name is required');
-    }
-
-    const before = await this.prisma.category.findUnique({ where: { id } });
-    if (before) {
-      this.assertMarketAccess(before.markets as Market[], adminMarket);
     }
 
     try {
@@ -125,7 +85,6 @@ export class CategoriesService {
           icon: this.normalizeIcon(body?.icon),
           sortOrder: Number(body?.sortOrder || 0),
           isActive: body?.isActive !== false,
-          markets: this.resolveMarkets(body?.markets, adminMarket),
         },
       });
 
@@ -139,12 +98,7 @@ export class CategoriesService {
     }
   }
 
-  async delete(id: string, adminMarket?: string | null) {
-    const existing = await this.prisma.category.findUnique({ where: { id } });
-    if (existing) {
-      this.assertMarketAccess(existing.markets as Market[], adminMarket);
-    }
-
+  async delete(id: string) {
     try {
       const linkedMedicines = await this.prisma.product.count({ where: { categoryId: id } });
       if (linkedMedicines > 0) {

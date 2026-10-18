@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Body, Controller, Delete, Get, Inject, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
 import { DeliveryCountriesService, DeliveryCountryPayload } from './delivery-countries.service';
 
@@ -13,32 +13,32 @@ export class DeliveryCountriesController {
 
   // Public: what the checkout country picker offers, so switched-off countries stay hidden.
   @Get('delivery-countries')
-  getAll(@Query('market') market?: string) {
-    return this.deliveryCountriesService.getAll(market, { activeOnly: true });
+  getAll() {
+    return this.deliveryCountriesService.getAll({ activeOnly: true });
   }
 
   // Admin panel read - every country, including the switched-off ones.
   @UseGuards(AdminGuard)
   @Get('admin/delivery-countries')
-  getAllForAdmin(@Req() req: any) {
-    return this.deliveryCountriesService.getAll(req.user.adminMarket ?? undefined);
+  getAllForAdmin() {
+    return this.deliveryCountriesService.getAll();
   }
 
   @UseGuards(AdminGuard)
   @Post('admin/delivery-countries')
-  create(@Body() body: DeliveryCountryPayload, @Req() req: any) {
-    return this.deliveryCountriesService.create(body, req.user.adminMarket);
+  create(@Body() body: DeliveryCountryPayload) {
+    return this.deliveryCountriesService.create(body);
   }
 
   @UseGuards(AdminGuard)
   @Put('admin/delivery-countries/:code')
-  update(@Param('code') code: string, @Body() body: DeliveryCountryPayload, @Req() req: any) {
-    return this.deliveryCountriesService.update(code, body, req.user.adminMarket);
+  update(@Param('code') code: string, @Body() body: DeliveryCountryPayload) {
+    return this.deliveryCountriesService.update(code, body);
   }
 
   @UseGuards(AdminGuard)
   @Delete('admin/delivery-countries/:code')
-  remove(@Param('code') code: string, @Req() req: any) {
-    return this.deliveryCountriesService.remove(code, req.user.adminMarket);
+  remove(@Param('code') code: string) {
+    return this.deliveryCountriesService.remove(code);
   }
 }

@@ -140,7 +140,7 @@ export class ChatService {
     try {
       const [products, countries] = await Promise.all([
         this.prisma.product.findMany({ include: { category: true, medicine: true, additionalGood: true } }),
-        this.prisma.deliveryCountry.findMany({ where: { isActive: true, markets: { has: 'main' } } }),
+        this.prisma.deliveryCountry.findMany({ where: { isActive: true } }),
       ]);
 
       const lines = products.map((p) => {
@@ -156,7 +156,7 @@ export class ChatService {
         const packs = priced.length
           ? priced.map((v) => `${v.mgPerUnit} ${unit} — ${Number(v.price).toLocaleString('ru-RU')} тг`).join('; ')
           : 'цена по запросу, заказ только через менеджера';
-        const sellable = p.inStock && p.markets.includes('main');
+        const sellable = !!p.inStock;
         const kit = p.type === 'peptide' ? ` В комплекте с каждым флаконом бесплатно: ${PEPTIDE_KIT}.` : '';
         return {
           catalog: `${name} — категория: ${category}, ${typeLabel}, ${priceLabel}, ${stockLabel}.${kit} ${description}`.trim(),
@@ -337,14 +337,13 @@ ${unknownRule}
     }
   }
 
-  // Cover photo of each requested product, as nadeck.net shows it (its own gallery, else the
-  // ar.nadeck.net one - same fallback as MedicinesService).
+  // Cover photo of each requested product.
   private async findPhotos(rawArgs: string): Promise<Photo[]> {
     try {
       const ids: string[] = (JSON.parse(rawArgs || '{}').productIds || []).map(String).slice(0, 3);
       const products = await this.prisma.product.findMany({ where: { id: { in: ids } } });
       return products.flatMap((p) => {
-        const gallery = [p.images, p.imagesAr].find((g) => Array.isArray(g) && g.length) as string[] | undefined;
+        const gallery = Array.isArray(p.images) ? (p.images as string[]) : undefined;
         const name = String((p.name as any)?.ru || p.id).split(/\s+—\s+/)[0].trim();
         return gallery?.[0] ? [{ url: gallery[0], caption: name }] : [];
       });

@@ -3,32 +3,20 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig, Plugin } from 'vite';
 
-// index.html itself (title/meta/lang) is static markup shared by both market builds - without
-// this it stays hardcoded to Russian even on the ar.nadeck.net bundle (visible in the browser
-// tab before React mounts, and in what search engines/social previews see).
-const SEO_BY_MARKET = {
-  main: {
-    lang: 'ru',
-    origin: 'https://nadeck.net',
-    title: 'Купить пептиды с доставкой по Казахстану и СНГ &mdash; Nadeck',
-    ogTitle: 'Купить пептиды с доставкой по Казахстану и СНГ',
-    description: 'Пептиды и аминокислоты высочайшего качества для вашего здоровья и научного прогресса. Доставка по Казахстану и странам СНГ от 24 часов. Точный калькулятор дозировки.',
-    ogLocale: 'ru_RU',
-    siteName: 'nadeck.net',
-  },
-  ar: {
-    lang: 'ar',
-    origin: 'https://ar.nadeck.net',
-    title: 'اشترِ الببتيدات مع التوصيل إلى كازاخستان ودول رابطة الدول المستقلة &mdash; Nadeck',
-    ogTitle: 'اشترِ الببتيدات مع التوصيل إلى كازاخستان ودول رابطة الدول المستقلة',
-    description: 'ببتيدات وأحماض أمينية بأعلى جودة لصحتك وتقدمك العلمي. التوصيل إلى كازاخستان ودول رابطة الدول المستقلة خلال 24 ساعة. حاسبة دقيقة للجرعات.',
-    ogLocale: 'ar_AR',
-    siteName: 'ar.nadeck.net',
-  },
+// Fills index.html's title/meta/canonical and emits robots.txt/sitemap.xml from one place, so
+// the SEO copy and the site origin aren't repeated across the static files.
+const SEO = {
+  lang: 'ru',
+  origin: 'https://nadeck.net',
+  title: 'Купить пептиды с доставкой по Казахстану и СНГ &mdash; Nadeck',
+  ogTitle: 'Купить пептиды с доставкой по Казахстану и СНГ',
+  description: 'Пептиды и аминокислоты высочайшего качества для вашего здоровья и научного прогресса. Доставка по Казахстану и странам СНГ от 24 часов. Точный калькулятор дозировки.',
+  ogLocale: 'ru_RU',
+  siteName: 'nadeck.net',
 } as const;
 
-function marketHtmlPlugin(): Plugin {
-  const seo = SEO_BY_MARKET[process.env.VITE_MARKET === 'ar' ? 'ar' : 'main'];
+function seoHtmlPlugin(): Plugin {
+  const seo = SEO;
   const canonicalUrl = `${seo.origin}/`;
   const ogImage = `${seo.origin}/og-image.png`;
   const structuredData = {
@@ -41,7 +29,7 @@ function marketHtmlPlugin(): Plugin {
   };
 
   return {
-    name: 'market-html',
+    name: 'seo-html',
     transformIndexHtml(html) {
       return html
         .replace('<html lang="ru">', `<html lang="${seo.lang}">`)
@@ -63,9 +51,7 @@ function marketHtmlPlugin(): Plugin {
         );
     },
 
-    // robots.txt/sitemap.xml can't live in public/ - that directory is copied verbatim into both
-    // market bundles, so ar.nadeck.net used to serve nadeck.net's sitemap (zero URLs of its own,
-    // which is why Google had no way to discover the Arabic site at all).
+    // robots.txt/sitemap.xml are generated so they always name the same origin as the canonical URL.
     generateBundle() {
       this.emitFile({
         type: 'asset',
@@ -91,7 +77,7 @@ function marketHtmlPlugin(): Plugin {
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss(), marketHtmlPlugin()],
+    plugins: [react(), tailwindcss(), seoHtmlPlugin()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

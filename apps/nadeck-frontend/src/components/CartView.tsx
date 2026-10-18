@@ -7,7 +7,6 @@ import React, { useEffect, useState } from 'react';
 import { Language, CartItem, User, Order, AppliedPromo, PromoRejection, DeliveryCountry } from '../types';
 import { TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume, FALLBACK_DELIVERY_COST } from '../currency';
-import { MARKET } from '../market';
 import { Trash2, Phone, ShoppingBag, Plus, Minus, ArrowRight, MessageCircle, CheckCircle2, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -65,19 +64,17 @@ export default function CartView({
 
   const unitPriceKzt = (item: CartItem) => item.unitPrice ?? getPrimaryVolume(item.medicine).price;
   const unitPriceUsdOf = (item: CartItem) => item.unitPriceUsd ?? getPrimaryVolume(item.medicine).priceUsd ?? 0;
-  const unitPriceSarOf = (item: CartItem) => item.unitPriceSar ?? getPrimaryVolume(item.medicine).priceSar ?? 0;
-  const unitPriceDisplay = (item: CartItem) => resolvePrice(unitPriceKzt(item), unitPriceUsdOf(item), unitPriceSarOf(item), currentLang);
+  const unitPriceDisplay = (item: CartItem) => resolvePrice(unitPriceKzt(item), unitPriceUsdOf(item), currentLang);
 
   const calculateSubtotalKzt = () => cart.reduce((total, item) => total + unitPriceKzt(item) * item.quantity, 0);
   const calculateSubtotalUsd = () => cart.reduce((total, item) => total + unitPriceUsdOf(item) * item.quantity, 0);
-  const calculateSubtotalSar = () => cart.reduce((total, item) => total + unitPriceSarOf(item) * item.quantity, 0);
-  const calculateSubtotal = () => resolvePrice(calculateSubtotalKzt(), calculateSubtotalUsd(), calculateSubtotalSar(), currentLang);
+  const calculateSubtotal = () => resolvePrice(calculateSubtotalKzt(), calculateSubtotalUsd(), currentLang);
 
   // Destinations and their shipping fees are maintained in the admin panel. Until the first
   // one is added the picker stays hidden and the fallback rate applies, so checkout still works
   // on a fresh install.
   useEffect(() => {
-    fetch(`/api/delivery-countries?market=${MARKET}`)
+    fetch('/api/delivery-countries')
       .then((res) => (res.ok ? res.json() : []))
       .then((data: DeliveryCountry[]) => {
         setCountries(data);
@@ -91,18 +88,16 @@ export default function CartView({
 
   // Flat fee per currency, taken from the chosen country. No free-delivery tier: shipping is
   // charged on every order, and the server re-reads the rate when the order is placed.
-  type DeliveryCurrency = 'kzt' | 'usd' | 'sar';
+  type DeliveryCurrency = 'kzt' | 'usd';
   const getDeliveryCostForCurrency = (currency: DeliveryCurrency) => {
     if (cart.length === 0) return 0;
     if (selectedCountry) {
-      if (currency === 'kzt') return selectedCountry.priceKzt;
-      if (currency === 'usd') return selectedCountry.priceUsd;
-      return selectedCountry.priceSar;
+      return currency === 'kzt' ? selectedCountry.priceKzt : selectedCountry.priceUsd;
     }
     return FALLBACK_DELIVERY_COST[currency];
   };
 
-  const activeDeliveryCurrency: DeliveryCurrency = MARKET === 'ar' ? (currentLang === 'ar' ? 'sar' : 'usd') : (currentLang === 'ru' ? 'kzt' : 'usd');
+  const activeDeliveryCurrency: DeliveryCurrency = currentLang === 'ru' ? 'kzt' : 'usd';
   const getDeliveryCost = () => getDeliveryCostForCurrency(activeDeliveryCurrency);
 
   // A promo code takes its percentage off the goods only - delivery is never discounted, and
@@ -111,35 +106,29 @@ export default function CartView({
   const round2 = (value: number) => Math.round(value * 100) / 100;
   const discountKzt = round2((calculateSubtotalKzt() * promoPercent) / 100);
   const discountUsd = round2((calculateSubtotalUsd() * promoPercent) / 100);
-  const discountSar = round2((calculateSubtotalSar() * promoPercent) / 100);
-  const discountDisplay = resolvePrice(discountKzt, discountUsd, discountSar, currentLang);
+  const discountDisplay = resolvePrice(discountKzt, discountUsd, currentLang);
 
   const grandTotalKzt = calculateSubtotalKzt() - discountKzt + getDeliveryCostForCurrency('kzt');
   const grandTotalUsd = calculateSubtotalUsd() - discountUsd + getDeliveryCostForCurrency('usd');
-  const grandTotalSar = calculateSubtotalSar() - discountSar + getDeliveryCostForCurrency('sar');
-  const grandTotal = resolvePrice(grandTotalKzt, grandTotalUsd, grandTotalSar, currentLang);
+  const grandTotal = resolvePrice(grandTotalKzt, grandTotalUsd, currentLang);
 
   const promoErrorText = (reason: PromoRejection) => {
     const messages: Record<PromoRejection, Record<Language, string>> = {
       not_found: {
         ru: 'Такого промокода нет',
         en: 'No such promo code',
-        ar: 'هذا الرمز الترويجي غير موجود',
       },
       inactive: {
         ru: 'Промокод отключён',
         en: 'This promo code is disabled',
-        ar: 'تم إيقاف هذا الرمز الترويجي',
       },
       expired: {
         ru: 'Срок действия промокода истёк',
         en: 'This promo code has expired',
-        ar: 'انتهت صلاحية هذا الرمز الترويجي',
       },
       exhausted: {
         ru: 'Промокод больше не действует — исчерпан лимит применений',
         en: 'This promo code has reached its usage limit',
-        ar: 'تم استخدام هذا الرمز الترويجي بالكامل',
       },
     };
     return messages[reason][currentLang] || messages[reason].en;
@@ -172,7 +161,7 @@ export default function CartView({
       })
       .catch((err) => {
         console.error(err);
-        setPromoError(currentLang === 'ru' ? 'Не удалось проверить промокод' : currentLang === 'ar' ? 'تعذّر التحقق من الرمز الترويجي' : 'Could not check the promo code');
+        setPromoError(currentLang === 'ru' ? 'Не удалось проверить промокод' : 'Could not check the promo code');
       })
       .finally(() => setPromoChecking(false));
   };
@@ -184,7 +173,7 @@ export default function CartView({
   };
 
   const buildWhatsAppMessage = () => {
-    const heading = currentLang === 'ru' ? 'Новый заказ с сайта Nadeck' : currentLang === 'ar' ? 'طلب جديد من موقع Nadeck' : 'New order from Nadeck website';
+    const heading = currentLang === 'ru' ? 'Новый заказ с сайта Nadeck' : 'New order from Nadeck website';
     const lines = [heading, ''];
 
     cart.forEach((item) => {
@@ -194,7 +183,7 @@ export default function CartView({
 
     lines.push('');
     if (appliedPromo) {
-      const promoLabel = currentLang === 'ru' ? 'Промокод' : currentLang === 'ar' ? 'الرمز الترويجي' : 'Promo code';
+      const promoLabel = currentLang === 'ru' ? 'Промокод' : 'Promo code';
       lines.push(`${promoLabel}: ${appliedPromo.code} (−${appliedPromo.discountPercent}%) — −${discountDisplay.toLocaleString()} ${t('currencySymbol')}`);
     }
     lines.push(`${t('totalToPay')}: ${grandTotal.toLocaleString()} ${t('currencySymbol')}`);
@@ -214,11 +203,11 @@ export default function CartView({
 
     // Delivery fields validation
     if (countries.length > 0 && !selectedCountry) {
-      setFormError(currentLang === 'ru' ? 'Выберите страну доставки!' : currentLang === 'ar' ? 'يرجى اختيار بلد الشحن!' : 'Please choose a delivery country.');
+      setFormError(currentLang === 'ru' ? 'Выберите страну доставки!' : 'Please choose a delivery country.');
       return;
     }
     if (!city || !street || !phoneNumber) {
-      setFormError(currentLang === 'ru' ? 'Заполните адрес доставки и номер телефона!' : currentLang === 'ar' ? 'يرجى إدخال عنوان الشحن ورقم الهاتف!' : 'Please enter delivery address and phone number.');
+      setFormError(currentLang === 'ru' ? 'Заполните адрес доставки и номер телефона!' : 'Please enter delivery address and phone number.');
       return;
     }
 
@@ -235,20 +224,16 @@ export default function CartView({
         medicineName: item.medicine.name,
         price: unitPriceKzt(item),
         priceUsd: unitPriceUsdOf(item),
-        priceSar: unitPriceSarOf(item),
         quantity: item.quantity
       })),
       totalPrice: grandTotalKzt,
       totalPriceUsd: grandTotalUsd,
-      totalPriceSar: grandTotalSar,
       // Goods and delivery are sent apart from the total so the server can re-apply the
       // discount itself - it takes the percentage from the database, not from this payload.
       subtotalPrice: calculateSubtotalKzt(),
       subtotalPriceUsd: calculateSubtotalUsd(),
-      subtotalPriceSar: calculateSubtotalSar(),
       deliveryPrice: getDeliveryCostForCurrency('kzt'),
       deliveryPriceUsd: getDeliveryCostForCurrency('usd'),
-      deliveryPriceSar: getDeliveryCostForCurrency('sar'),
       promoCode: appliedPromo?.code || null,
       address: {
         // The server charges shipping by this code, so it travels inside the address rather
@@ -259,10 +244,7 @@ export default function CartView({
         apartment: apartment || '',
         postalCode: postalCode || '050000'
       },
-      paymentMethod: t('payViaWhatsApp'),
-      // Which storefront this checkout happened on - the admin analytics dashboard pairs the
-      // order with the visits of the same site.
-      market: MARKET
+      paymentMethod: t('payViaWhatsApp')
     };
 
     fetch('/api/orders', {
@@ -288,7 +270,7 @@ export default function CartView({
     .catch(err => {
       console.error(err);
       whatsAppTab?.close();
-      setFormError(currentLang === 'ru' ? 'Ошибка при создании заказа!' : currentLang === 'ar' ? 'حدث خطأ أثناء إتمام الطلب!' : 'Error creating order!');
+      setFormError(currentLang === 'ru' ? 'Ошибка при создании заказа!' : 'Error creating order!');
     })
     .finally(() => {
       setLoading(false);
@@ -337,16 +319,16 @@ export default function CartView({
           </div>
           {orderConfirmed.promoCode ? (
             <div className="flex justify-between font-semibold text-emerald-700" id="receipt-promo">
-              <span>{currentLang === 'ru' ? 'Промокод' : currentLang === 'ar' ? 'الرمز الترويجي' : 'Promo code'}:</span>
+              <span>{currentLang === 'ru' ? 'Промокод' : 'Promo code'}:</span>
               <span>
                 {orderConfirmed.promoCode} (−{orderConfirmed.discountPercent}%) −
-                {resolvePrice(orderConfirmed.discountKzt || 0, orderConfirmed.discountUsd || 0, orderConfirmed.discountSar || 0, currentLang).toLocaleString()} {t('currencySymbol')}
+                {resolvePrice(orderConfirmed.discountKzt || 0, orderConfirmed.discountUsd || 0, currentLang).toLocaleString()} {t('currencySymbol')}
               </span>
             </div>
           ) : null}
           <div className="flex justify-between font-extrabold text-sm text-slate-900 pt-2 border-t border-slate-200">
             <span>Итого к оплате:</span>
-            <span>{resolvePrice(orderConfirmed.totalPrice, orderConfirmed.totalPriceUsd, orderConfirmed.totalPriceSar, currentLang).toLocaleString()} {t('currencySymbol')}</span>
+            <span>{resolvePrice(orderConfirmed.totalPrice, orderConfirmed.totalPriceUsd, currentLang).toLocaleString()} {t('currencySymbol')}</span>
           </div>
         </div>
 
@@ -466,8 +448,8 @@ export default function CartView({
             <div className="flex items-center gap-2 text-slate-500">
               <Ticket className="w-4 h-4 text-emerald-600" />
               <div className="flex flex-col leading-tight">
-                <span className="font-semibold">{currentLang === 'ru' ? 'Промокод или скидочный купон' : currentLang === 'ar' ? 'رمز ترويجي أو قسيمة خصم' : 'Promo code or discount coupon'}</span>
-                <span className="text-[10px] text-slate-400 font-medium">{currentLang === 'ru' ? 'не обязательно' : currentLang === 'ar' ? 'اختياري' : 'optional'}</span>
+                <span className="font-semibold">{currentLang === 'ru' ? 'Промокод или скидочный купон' : 'Promo code or discount coupon'}</span>
+                <span className="text-[10px] text-slate-400 font-medium">{currentLang === 'ru' ? 'не обязательно' : 'optional'}</span>
               </div>
             </div>
 
@@ -482,7 +464,7 @@ export default function CartView({
                   onClick={handleClearPromo}
                   className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg font-extrabold hover:bg-slate-200"
                 >
-                  {currentLang === 'ru' ? 'Убрать' : currentLang === 'ar' ? 'إزالة' : 'Remove'}
+                  {currentLang === 'ru' ? 'Убрать' : 'Remove'}
                 </button>
               </div>
             ) : (
@@ -516,9 +498,7 @@ export default function CartView({
             <p id="promo-success" className="text-[11px] font-semibold text-emerald-700">
               {currentLang === 'ru'
                 ? `Скидка ${appliedPromo.discountPercent}% применена к товарам`
-                : currentLang === 'ar'
-                  ? `تم تطبيق خصم ${appliedPromo.discountPercent}% على المنتجات`
-                  : `${appliedPromo.discountPercent}% off the items applied`}
+                : `${appliedPromo.discountPercent}% off the items applied`}
             </p>
           )}
         </div>
@@ -548,7 +528,7 @@ export default function CartView({
             {countries.length > 0 && (
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-700">
-                  {currentLang === 'ru' ? 'Страна доставки' : currentLang === 'ar' ? 'بلد الشحن' : 'Delivery country'} *
+                  {currentLang === 'ru' ? 'Страна доставки' : 'Delivery country'} *
                 </label>
                 <select
                   id="checkout-country"
@@ -656,7 +636,7 @@ export default function CartView({
             {appliedPromo && (
               <div className="flex justify-between items-center text-emerald-400" id="promo-discount-line">
                 <span>
-                  {currentLang === 'ru' ? 'Промокод' : currentLang === 'ar' ? 'الرمز الترويجي' : 'Promo code'} {appliedPromo.code} (−{appliedPromo.discountPercent}%):
+                  {currentLang === 'ru' ? 'Промокод' : 'Promo code'} {appliedPromo.code} (−{appliedPromo.discountPercent}%):
                 </span>
                 <span className="font-bold">−{discountDisplay.toLocaleString()} {t('currencySymbol')}</span>
               </div>

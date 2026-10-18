@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Inject, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { AnalyticsService, MarketScope } from './analytics.service';
+import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Inject, Post, Query, UseGuards } from '@nestjs/common';
+import { AnalyticsService } from './analytics.service';
 import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('api')
@@ -21,12 +21,7 @@ export class AnalyticsController {
 
   @UseGuards(AdminGuard)
   @Get('admin/analytics')
-  summary(@Req() req: any, @Query('days') days?: string, @Query('market') market?: string, @Query('tz') tz?: string) {
-    // A market-scoped admin (User.adminMarket) only ever gets their own storefront's traffic;
-    // a full admin sees both and may narrow to one with the picker.
-    const requested: MarketScope = market === 'main' || market === 'ar' ? market : undefined;
-    const scope: MarketScope = req.user?.adminMarket ?? requested;
-
-    return this.analyticsService.summary({ days, market: scope, tzOffsetMinutes: tz });
+  summary(@Query('days') days?: string, @Query('tz') tz?: string) {
+    return this.analyticsService.summary({ days, tzOffsetMinutes: tz });
   }
 }

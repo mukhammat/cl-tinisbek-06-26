@@ -4,15 +4,12 @@
  */
 
 import { ReactNode, useEffect, useMemo, useState } from 'react';
-import { AnalyticsBreakdown, AnalyticsSummary, Language, LANGUAGE_NAME_TRANSLATIONS, SiteMarket } from '../types';
+import { AnalyticsBreakdown, AnalyticsSummary, Language, LANGUAGE_NAME_TRANSLATIONS } from '../types';
 import { Users, Eye, MousePointerClick, ShoppingBag, ArrowUpRight, ArrowDownRight, RefreshCw, Globe, Smartphone, Languages as LanguagesIcon, Compass, Layers, AlertTriangle } from 'lucide-react';
 
 interface AnalyticsDashboardProps {
   currentLang: Language;
   token?: string;
-  // Present only for a market-scoped admin (User.adminMarket): the server already reports on
-  // their storefront alone, so the market picker is theirs to lose, not to change.
-  adminMarket?: SiteMarket | null;
 }
 
 const PERIODS = [7, 30, 90] as const;
@@ -40,11 +37,9 @@ const flagOf = (code: string): string => {
   return String.fromCodePoint(...Array.from(code, (letter) => letter.charCodeAt(0) + 127397));
 };
 
-export default function AnalyticsDashboard({ currentLang, token, adminMarket }: AnalyticsDashboardProps) {
+export default function AnalyticsDashboard({ currentLang, token }: AnalyticsDashboardProps) {
   const isRu = currentLang === 'ru';
   const [days, setDays] = useState<number>(30);
-  // Only a full admin gets this: '' means both storefronts at once.
-  const [marketFilter, setMarketFilter] = useState<'' | SiteMarket>('');
   const [data, setData] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -59,7 +54,6 @@ export default function AnalyticsDashboard({ currentLang, token, adminMarket }: 
     // both hours ahead, so a UTC "today" would still be showing yesterday all morning.
     const tz = -new Date().getTimezoneOffset();
     const query = new URLSearchParams({ days: String(days), tz: String(tz) });
-    if (marketFilter) query.set('market', marketFilter);
 
     fetch(`/api/admin/analytics?${query.toString()}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -102,7 +96,7 @@ export default function AnalyticsDashboard({ currentLang, token, adminMarket }: 
       .finally(() => setLoading(false));
   };
 
-  useEffect(fetchSummary, [days, marketFilter, token]);
+  useEffect(fetchSummary, [days, token]);
 
   // Chart scale: a rounded ceiling above the busiest day, so the axis reads 0 / 25 / 50
   // instead of 0 / 23 / 46.
@@ -230,21 +224,6 @@ export default function AnalyticsDashboard({ currentLang, token, adminMarket }: 
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* A market-scoped admin has nothing to switch between - the server only ever
-              answers for their own storefront. */}
-          {!adminMarket && (
-            <select
-              id="analytics-market-filter"
-              value={marketFilter}
-              onChange={(event) => setMarketFilter(event.target.value as '' | SiteMarket)}
-              className="px-3 py-2 text-xs font-bold bg-white rounded-xl border border-slate-200 text-slate-700 focus:outline-none focus:border-nadeck-500"
-            >
-              <option value="">{isRu ? 'Оба сайта' : 'Both storefronts'}</option>
-              <option value="main">🇷🇺 nadeck.net</option>
-              <option value="ar">🇸🇦 ar.nadeck.net</option>
-            </select>
-          )}
-
           <span
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-extrabold"
             id="analytics-online"
@@ -377,7 +356,7 @@ export default function AnalyticsDashboard({ currentLang, token, adminMarket }: 
                               ? 'start-0'
                               : index > data.daily.length - 1 - data.daily.length / 6
                                 ? 'end-0'
-                                : 'start-1/2 -translate-x-1/2 rtl:translate-x-1/2'
+                                : 'start-1/2 -translate-x-1/2'
                           }`}
                         >
                           <p className="text-[10px] font-black uppercase tracking-wider text-slate-300">
@@ -497,7 +476,7 @@ export default function AnalyticsDashboard({ currentLang, token, adminMarket }: 
               <LanguagesIcon className="w-4 h-4" />,
               isRu ? 'Язык интерфейса' : 'Interface language',
               breakdownRows(data.languages, (key) =>
-                key === 'ru' || key === 'en' || key === 'ar' ? LANGUAGE_NAME_TRANSLATIONS[key][currentLang] : isRu ? 'Не указан' : 'Unknown',
+                key === 'ru' || key === 'en' ? LANGUAGE_NAME_TRANSLATIONS[key][currentLang] : key || (isRu ? 'Не указан' : 'Unknown'),
               ),
               isRu ? 'Пока нет данных' : 'No data yet',
             )}

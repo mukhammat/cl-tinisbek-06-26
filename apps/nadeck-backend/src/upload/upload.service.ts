@@ -80,14 +80,12 @@ export class UploadService {
     return { url: `${this.publicUrl}/${key}` };
   }
 
-  // Every image URL the catalog currently points at: both storefront galleries of every
-  // product plus every category icon. Deleting one of these would leave a broken picture on a
-  // live site, so it's what listImages() flags and deleteImages() refuses. Both galleries are
-  // collected regardless of market - an ar-scoped admin can't see nadeck.net's products, so
-  // this check is the only thing standing between them and someone else's photo.
+  // Every image URL the catalog currently points at: every product photo plus every category
+  // icon. Deleting one of these would leave a broken picture on the live site, so it's what
+  // listImages() flags and deleteImages() refuses.
   private async collectUsedUrls(): Promise<Set<string>> {
     const [products, categories] = await Promise.all([
-      this.prisma.product.findMany({ select: { images: true, imagesAr: true } }),
+      this.prisma.product.findMany({ select: { images: true } }),
       this.prisma.category.findMany({ select: { icon: true } }),
     ]);
 
@@ -98,7 +96,6 @@ export class UploadService {
 
     for (const product of products) {
       for (const url of Array.isArray(product.images) ? product.images : []) add(url);
-      for (const url of Array.isArray(product.imagesAr) ? product.imagesAr : []) add(url);
     }
     for (const category of categories) add(category.icon);
 

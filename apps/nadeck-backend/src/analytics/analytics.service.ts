@@ -6,8 +6,6 @@
 import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 
-export type MarketScope = 'main' | 'ar' | undefined;
-
 // The screens the storefront reports. Anything else is filed under 'other' rather than
 // trusted verbatim, so a malformed or hand-crafted request can't invent rows in the table.
 const KNOWN_PATHS = new Set(['catalog', 'product', 'calculator', 'cart', 'orders', 'checkout']);
@@ -18,7 +16,7 @@ const BOT_PATTERN =
   /(bot|crawl|spider|slurp|facebookexternalhit|headless|lighthouse|pingdom|uptime|monitor|curl|wget|python-requests|axios|scrapy|semrush|ahrefs)/i;
 
 // Our own hosts are not a traffic source - arriving from them is just moving around the site.
-const OWN_HOSTS = ['nadeck.net', 'ar.nadeck.net', 'localhost'];
+const OWN_HOSTS = ['nadeck.net', 'localhost'];
 
 const MIN_DAYS = 1;
 const MAX_DAYS = 365;
@@ -73,7 +71,6 @@ export class AnalyticsService {
         data: {
           visitorId,
           sessionId,
-          market: body?.market === 'ar' ? 'ar' : 'main',
           path,
           productId: path === 'product' ? this.trim(body?.productId, 64) || null : null,
           referrer: this.normalizeReferrer(body?.referrer),
@@ -139,16 +136,14 @@ export class AnalyticsService {
    * Everything the dashboard shows for the last `days` days, plus the same figures for the
    * period right before it so each tile can show whether things are going up or down.
    *
-   * `market` is the storefront to report on (undefined = both, which is what a full admin
-   * sees by default). `tzOffsetMinutes` is the admin's own UTC offset, so "today" ends at
+   * `tzOffsetMinutes` is the admin's own UTC offset, so "today" ends at
    * their midnight rather than UTC's.
    */
-  async summary(options: { days?: unknown; market?: MarketScope; tzOffsetMinutes?: unknown }) {
+  async summary(options: { days?: unknown; tzOffsetMinutes?: unknown }) {
     const days = this.clamp(Math.round(Number(options.days) || DEFAULT_DAYS), MIN_DAYS, MAX_DAYS);
     // ±14h covers every real zone; anything else is a broken client, not a place.
     const offsetMinutes = this.clamp(Math.round(Number(options.tzOffsetMinutes) || 0), -840, 840);
     const offsetMs = offsetMinutes * 60 * 1000;
-    const market = options.market;
 
     // A "day" is a day in the admin's timezone: shift the instant, then cut the date off it.
     const dayKeyOf = (date: Date) => new Date(date.getTime() + offsetMs).toISOString().slice(0, 10);
@@ -164,7 +159,7 @@ export class AnalyticsService {
       const [events, orders] = await Promise.all([
         this.prisma.visitEvent.findMany({
           // Both periods in one read: the previous one only feeds the "vs previous period" deltas.
-          where: { createdAt: { gte: previousStart }, ...(market ? { market } : {}) },
+          where: { createdAt: { gte: previousStart } },
           select: {
             visitorId: true,
             sessionId: true,
@@ -181,8 +176,7 @@ export class AnalyticsService {
         // Orders are stored with a ru-RU date string and no timestamp, so they can't be
         // range-filtered in SQL - the whole (small) table is read and bucketed by day here.
         this.prisma.order.findMany({
-          where: market ? { market } : {},
-          select: { date: true, market: true, totalPrice: true, totalPriceUsd: true, totalPriceSar: true },
+          select: { date: true, totalPrice: true, totalPriceUsd: true },
         }),
       ]);
 
@@ -197,15 +191,14 @@ export class AnalyticsService {
       }
       const inPeriod = new Set(dayKeys);
 
-      const ordersByDay = new Map<string, { count: number; kzt: number; usd: number; sar: number }>();
+      const ordersByDay = new Map<string, { count: number; kzt: number; usd: number }>();
       for (const order of orders) {
         const key = this.orderDayKey(order.date);
         if (!key) continue;
-        const bucket = ordersByDay.get(key) || { count: 0, kzt: 0, usd: 0, sar: 0 };
+        const bucket = ordersByDay.get(key) || { count: 0, kzt: 0, usd: 0 };
         bucket.count += 1;
         bucket.kzt += order.totalPrice || 0;
         bucket.usd += order.totalPriceUsd || 0;
-        bucket.sar += order.totalPriceSar || 0;
         ordersByDay.set(key, bucket);
       }
 
@@ -247,7 +240,6 @@ export class AnalyticsService {
 
       return {
         days,
-        market: market ?? null,
         generatedAt: now.toISOString(),
         online,
         totals: { ...this.countPeople(current), ...currentOrders },
@@ -283,19 +275,17 @@ export class AnalyticsService {
     return { visitors, visits, pageViews: events.length };
   }
 
-  private sumOrders(byDay: Map<string, { count: number; kzt: number; usd: number; sar: number }>, keep: (key: string) => boolean) {
+  private sumOrders(byDay: Map<string, { count: number; kzt: number; usd: number }>, keep: (key: string) => boolean) {
     let orders = 0;
     let revenueKzt = 0;
     let revenueUsd = 0;
-    let revenueSar = 0;
     for (const [key, bucket] of byDay) {
       if (!keep(key)) continue;
       orders += bucket.count;
       revenueKzt += bucket.kzt;
       revenueUsd += bucket.usd;
-      revenueSar += bucket.sar;
     }
-    return { orders, revenueKzt, revenueUsd, revenueSar };
+    return { orders, revenueKzt, revenueUsd };
   }
 
   // Orders carry a ru-RU date ("11.08.2026") written at checkout, not a timestamp - see
@@ -355,18 +345,17 @@ export class AnalyticsService {
     const ranked = this.groupBy(viewed, (event) => event.productId as string).slice(0, 10);
     const products = await this.prisma.product.findMany({
       where: { id: { in: ranked.map((row) => row.key) } },
-      select: { id: true, name: true, images: true, imagesAr: true },
+      select: { id: true, name: true, images: true },
     });
     const byId = new Map(products.map((product) => [product.id, product]));
 
     return ranked.map((row) => {
       const product = byId.get(row.key);
       const images = (product?.images as string[] | null) || [];
-      const imagesAr = (product?.imagesAr as string[] | null) || [];
       return {
         id: row.key,
         name: (product?.name as Record<string, string> | undefined) || null,
-        image: images[0] || imagesAr[0] || null,
+        image: images[0] || null,
         views: row.views,
         visitors: row.visitors,
       };

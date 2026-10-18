@@ -77,7 +77,7 @@ let aliasCache: { aliases: string[]; fetchedAt: number } = { aliases: [], fetche
 async function productAliases(): Promise<string[]> {
   if (Date.now() - aliasCache.fetchedAt < CATALOG_CACHE_MS) return aliasCache.aliases;
   try {
-    const res = await fetch(`${BACKEND_URL}/api/medicines?market=main`);
+    const res = await fetch(`${BACKEND_URL}/api/medicines`);
     if (!res.ok) throw new Error(`catalog returned ${res.status}`);
     const products = (await res.json()) as { name: Record<string, string>; inStock: boolean }[];
     const aliases = new Set<string>();

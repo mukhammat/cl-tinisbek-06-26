@@ -3,11 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type Language = 'ru' | 'en' | 'ar';
-
-// Which storefront(s) a product is visible on - independent of Language (a product can be
-// shown in Arabic translation on nadeck.net too; this controls the site, not the wording).
-export type SiteMarket = 'main' | 'ar';
+export type Language = 'ru' | 'en';
 
 export interface LanguageConfig {
   code: Language;
@@ -18,16 +14,14 @@ export interface LanguageConfig {
 
 export const SUPPORTED_LANGUAGES: LanguageConfig[] = [
   { code: 'ru', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺' },
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
-  { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' }
+  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' }
 ];
 
 // Name of each language (rows) as written in each UI language (columns) - e.g. how to label
-// "English" when the page itself is currently displayed in Arabic ('الإنجليزية', not 'English').
+// "English" when the page itself is currently displayed in Russian ('Английский', not 'English').
 export const LANGUAGE_NAME_TRANSLATIONS: Record<Language, Record<Language, string>> = {
-  ru: { ru: 'Русский', en: 'Russian', ar: 'الروسية' },
-  en: { ru: 'Английский', en: 'English', ar: 'الإنجليزية' },
-  ar: { ru: 'Арабский', en: 'Arabic', ar: 'العربية' }
+  ru: { ru: 'Русский', en: 'Russian' },
+  en: { ru: 'Английский', en: 'English' }
 };
 
 export type DosageFrequency = 'daily' | 'twice_daily' | 'every_other_day' | 'weekly' | 'custom';
@@ -45,7 +39,6 @@ export interface ProductVolume {
   mgPerUnit: number; // for peptides: strength in mg. For additional goods: units/pack size.
   price: number; // this volume's own price in KZT (₸), may differ from other volumes of the same product
   priceUsd: number; // this volume's own price in USD ($), shown for non-Russian languages
-  priceSar?: number; // this volume's own price in SAR - ar.nadeck.net, Arabic language only (English there still shows priceUsd)
 }
 
 export interface Category {
@@ -54,7 +47,6 @@ export interface Category {
   icon?: string | null; // uploaded icon (data URI or URL); falls back to the default red logo mark when unset
   sortOrder: number;
   isActive: boolean;
-  markets?: SiteMarket[]; // which storefront(s) list this category; defaults to ['main'] server-side
 }
 
 export interface Product {
@@ -63,20 +55,12 @@ export interface Product {
   unit: ProductUnit;
   name: Record<Language, string>;
   category: string; // category id from database
-  // ar.nadeck.net's own category id, sent only to the admin panel - a storefront read already
-  // gets the right market's category in `category` (unset here borrows the nadeck.net one).
-  // The two markets keep separate Category rows, so one shared id can't serve both.
-  categoryAr?: string;
   description: Record<Language, string>;
   fullDescription: Record<Language, string>;
   images: string[]; // gallery of image URLs; images[0] is the cover photo shown in listings
-  // ar.nadeck.net's own gallery, sent only to the admin panel - a storefront read already
-  // gets the right market's photos in `images` (an empty gallery borrows the other market's).
-  imagesAr?: string[];
   rating: number;
   volumes: ProductVolume[]; // all available package volumes; the price lives here, per volume (see getPrimaryVolume)
   inStock?: boolean;
-  markets?: SiteMarket[]; // which storefront(s) list this product; defaults to ['main'] server-side
 
   // Peptide-only fields - present only when type === 'peptide'.
   indications?: Record<Language, string[]>;
@@ -106,7 +90,6 @@ export interface CartItem {
   selectedStrength?: number; // the chosen volume's mgPerUnit
   unitPrice?: number; // resolved KZT price for the chosen volume, falls back to its primary volume's price when absent
   unitPriceUsd?: number; // resolved USD price for the chosen volume, falls back to its primary volume's price when absent
-  unitPriceSar?: number; // resolved SAR price for the chosen volume, falls back to its primary volume's price when absent
 }
 
 export interface User {
@@ -116,9 +99,6 @@ export interface User {
   address: string;
   isAuthenticated: boolean;
   isAdmin?: boolean;
-  // null/absent = full admin (every market); a specific market confines this admin to only
-  // that storefront's products - see apps/nadeck-backend's User.adminMarket.
-  adminMarket?: SiteMarket | null;
   token?: string;
 }
 
@@ -129,12 +109,10 @@ export interface Order {
     medicineName: Record<Language, string>;
     price: number; // unit price in KZT
     priceUsd: number; // unit price in USD
-    priceSar?: number; // unit price in SAR
     quantity: number;
   }[];
   totalPrice: number; // grand total in KZT
   totalPriceUsd: number; // grand total in USD
-  totalPriceSar?: number; // grand total in SAR
   address: {
     country?: string; // DeliveryCountry code, absent on orders placed before countries existed
     city: string;
@@ -154,7 +132,6 @@ export interface Order {
   discountPercent?: number;
   discountKzt?: number;
   discountUsd?: number;
-  discountSar?: number;
   userEmail?: string;
 }
 
@@ -165,10 +142,8 @@ export interface DeliveryCountry {
   name: Record<Language, string>;
   priceKzt: number;
   priceUsd: number;
-  priceSar: number;
   isActive: boolean;
   sortOrder: number;
-  markets?: SiteMarket[]; // which storefront(s) offer it; defaults to ['main'] server-side
 }
 
 // A code given to a partner, whose clients get discountPercent off the goods subtotal.
@@ -199,7 +174,6 @@ export interface PromoCodeStats {
   guestOrders: number;
   revenueKzt: number;
   revenueUsd: number;
-  revenueSar: number;
   discountGivenKzt: number;
 }
 
@@ -228,13 +202,12 @@ export interface AnalyticsBreakdown {
 
 export interface AnalyticsSummary {
   days: number;
-  market: SiteMarket | null; // null = both storefronts together
   generatedAt: string;
   // Distinct visitors whose last page view was under 5 minutes ago.
   online: number;
-  totals: TrafficCounts & { orders: number; revenueKzt: number; revenueUsd: number; revenueSar: number };
+  totals: TrafficCounts & { orders: number; revenueKzt: number; revenueUsd: number };
   // The equally long period right before this one, so every tile can show a trend.
-  previous: TrafficCounts & { orders: number; revenueKzt: number; revenueUsd: number; revenueSar: number };
+  previous: TrafficCounts & { orders: number; revenueKzt: number; revenueUsd: number };
   today: TrafficCounts & { orders: number };
   daily: AnalyticsDay[];
   topProducts: {

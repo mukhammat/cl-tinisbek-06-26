@@ -4,9 +4,8 @@
  */
 
 import { useState, useEffect, FormEvent } from 'react';
-import { Language, Product, CartItem, User, Order, AppNotification, Category, LANGUAGE_NAME_TRANSLATIONS } from './types';
+import { Language, Product, CartItem, User, Order, AppNotification, Category, LANGUAGE_NAME_TRANSLATIONS, SUPPORTED_LANGUAGES } from './types';
 import { MEDICINES_DATA, TRANSLATIONS } from './data';
-import { currentMarket, marketLanguages, MARKET } from './market';
 import { trackView } from './analytics';
 import Navbar from './components/Navbar';
 import MedicineGrid from './components/MedicineGrid';
@@ -24,10 +23,10 @@ import nadeckIconWhite from './assets/nadeck-icon-white.png';
 import heroBannerBg from './assets/hero-banner-office.png';
 
 export default function App() {
-  // Lang state (initializes from localStorage if available, fallback to the current market's default)
+  // Lang state (initializes from localStorage if available, falls back to Russian)
   const [currentLang, setLang] = useState<Language>(() => {
     const saved = localStorage.getItem('pharmacy_lang') as Language | null;
-    return saved && currentMarket.availableLanguages.includes(saved) ? saved : currentMarket.defaultLang;
+    return saved && SUPPORTED_LANGUAGES.some((lang) => lang.code === saved) ? saved : 'ru';
   });
 
   // Active navigation tab
@@ -41,19 +40,13 @@ export default function App() {
 
   // Load medicines list from database, default to empty to allow loading inside Grid
   const [medicinesList, setMedicinesList] = useState<Product[]>([]);
-  // Distinguishes "haven't loaded yet" from "loaded and this market legitimately has zero
+  // Distinguishes "haven't loaded yet" from "loaded and there legitimately are zero
   // products" - the latter must not fall back to the static demo catalog below.
   const [medicinesLoaded, setMedicinesLoaded] = useState(false);
-  // Unfiltered catalog (every market) for the admin panel only - so an admin working from
-  // either site can still see/manage products that aren't (yet) visible on that site.
-  const [adminMedicinesList, setAdminMedicinesList] = useState<Product[]>([]);
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
-  // Distinguishes "haven't loaded yet" from "loaded and this market legitimately has zero
+  // Distinguishes "haven't loaded yet" from "loaded and there legitimately are zero
   // categories" - mirrors medicinesLoaded above.
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
-  // Scoped catalog (this admin's own market, or everything for a full admin) for the admin
-  // panel only - mirrors adminMedicinesList above.
-  const [adminCategoriesList, setAdminCategoriesList] = useState<Category[]>([]);
 
   // Retries a couple of times with backoff before giving up - covers the brief window right
   // after a deploy where the backend container is still restarting/migrating and a single
@@ -76,7 +69,7 @@ export default function App() {
   };
 
   const fetchMedicinesList = () => {
-    fetchWithRetry(`/api/medicines?market=${MARKET}`, (data) => {
+    fetchWithRetry('/api/medicines', (data) => {
       if (Array.isArray(data)) {
         setMedicinesList(data);
         setMedicinesLoaded(true);
@@ -84,36 +77,13 @@ export default function App() {
     });
   };
 
-  // Scoped server-side to the logged-in admin's own market (or the full catalog for a full
-  // admin) - see MedicinesController.getAllForAdmin. Needs the auth token so the backend knows
-  // which admin is asking.
-  const fetchAdminMedicinesList = () => {
-    if (!user.token) return;
-    fetchWithRetry('/api/medicines/admin', (data) => {
-      if (Array.isArray(data)) {
-        setAdminMedicinesList(data);
-      }
-    }, 0, { headers: { Authorization: `Bearer ${user.token}` } });
-  };
-
   const fetchCategoriesList = () => {
-    fetchWithRetry(`/api/categories?market=${MARKET}`, (data) => {
+    fetchWithRetry('/api/categories', (data) => {
       if (Array.isArray(data)) {
         setCategoriesList(data);
         setCategoriesLoaded(true);
       }
     });
-  };
-
-  // Scoped server-side to the logged-in admin's own market (or every category for a full
-  // admin) - mirrors fetchAdminMedicinesList above.
-  const fetchAdminCategoriesList = () => {
-    if (!user.token) return;
-    fetchWithRetry('/api/categories/admin', (data) => {
-      if (Array.isArray(data)) {
-        setAdminCategoriesList(data);
-      }
-    }, 0, { headers: { Authorization: `Bearer ${user.token}` } });
   };
 
   useEffect(() => {
@@ -161,13 +131,6 @@ export default function App() {
     setActiveTab(open ? 'cart' : 'catalog');
   };
 
-  useEffect(() => {
-    if (user.isAdmin) {
-      fetchAdminMedicinesList();
-      fetchAdminCategoriesList();
-    }
-  }, [user.isAdmin, user.token]);
-
   // Traffic counter for the admin dashboard: every screen the visitor opens is one page view
   // (see analytics.ts). Admins are skipped on purpose - the people running the shop spend all
   // day in the catalog and would otherwise be the site's most loyal "customers".
@@ -182,11 +145,7 @@ export default function App() {
     localStorage.setItem('pharmacy_lang', currentLang);
   }, [currentLang]);
 
-  // Arabic reads right-to-left - flips the whole layout (flex ordering, text alignment) via
-  // the `dir` attribute; components that pin things with physical left/right utilities instead
-  // of logical ones need their own `rtl:` overrides on top of this.
   useEffect(() => {
-    document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = currentLang;
   }, [currentLang]);
 
@@ -336,12 +295,12 @@ export default function App() {
 
   // Used only until /api/categories has loaded (or if it fails) - derived straight from
   // whatever medicine data is on hand, so it always covers every category id in use.
-  const fallbackCategories: Category[] = Array.from(new Set(catalogSourceMedicines.map((medicine) => medicine.category).filter(Boolean)))
+  const fallbackCategories: Category[] = Array.from(new Set<string>(catalogSourceMedicines.map((medicine) => medicine.category).filter(Boolean)))
     .map((category, index) => {
       const translated = TRANSLATIONS[`cat${category.charAt(0).toUpperCase()}${category.slice(1)}`];
       return {
         id: category,
-        name: { ru: translated?.ru || category, en: translated?.en || category, ar: translated?.ar || category },
+        name: { ru: translated?.ru || category, en: translated?.en || category },
         sortOrder: index,
         isActive: true,
       };
@@ -363,10 +322,6 @@ export default function App() {
   const categoryIconById: Record<string, string | null | undefined> = Object.fromEntries(
     allCategories.map((category) => [category.id, category.icon])
   );
-  // Admin panel gets its own market-scoped fetch (adminCategoriesList) rather than the
-  // storefront's allCategories, so a market-scoped admin only sees/manages their own market's
-  // categories - mirrors adminMedicinesList vs medicinesList.
-  const adminCategories = adminCategoriesList;
 
   // Cart operations. Different volumes of the same product carry different prices, so
   // cart lines are keyed by (medicine id + selected volume), not just the product id.
@@ -477,15 +432,11 @@ export default function App() {
                   <h2 id="hero-title" className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
                     {currentLang === 'ru'
                       ? 'Высококачественные пептиды и аминокислоты для здоровья и развития научного прогресса.'
-                      : currentLang === 'ar'
-                      ? 'ببتيدات وأحماض أمينية عالية النقاء والجودة والمساهمة في التقدم العلمي.'
                       : 'Premium-grade peptides and amino acids for health and the advancement of scientific progress.'}
                   </h2>
                   <p className="text-xs sm:text-sm text-white/90 font-medium leading-relaxed">
                     {currentLang === 'ru'
                       ? 'Быстрая доставка по всему Казахстану и странам СНГ — от 24 часов.'
-                      : currentLang === 'ar'
-                      ? 'مع توصيل سريع إلى جميع مدن المملكة العربية السعودية ودول الخليج.'
                       : 'Fast delivery across Kazakhstan and the CIS countries — starting from 24 hours.'}
                   </p>
                   
@@ -552,7 +503,7 @@ export default function App() {
                   <div className="space-y-6">
                     {/* <div className="flex justify-between items-baseline pb-2 border-b border-slate-100">
                       <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                        {currentLang === 'ru' ? 'Каталог медицинских товаров' : currentLang === 'ar' ? 'دليل المنتجات الطبية' : 'Pharmacy Drug Catalog'}
+                        {currentLang === 'ru' ? 'Каталог медицинских товаров' : 'Pharmacy Drug Catalog'}
                       </h3>
                       <span className="text-xs text-slate-400 font-semibold uppercase">{currentLang === 'ru' ? 'Только оригинал' : 'Certified supply'}</span>
                     </div> */}
@@ -581,7 +532,7 @@ export default function App() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                     <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                      {currentLang === 'ru' ? 'Калькулятор Курса Лечения' : currentLang === 'ar' ? 'حاسبة الجرعات والميزانية' : 'Dosage Schedule & Budgeting'}
+                      {currentLang === 'ru' ? 'Калькулятор Курса Лечения' : 'Dosage Schedule & Budgeting'}
                     </h3>
                   </div>
                   <DosageCalculator
@@ -598,14 +549,14 @@ export default function App() {
                 <div className="space-y-6" id="cart-drawer-view">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                      {currentLang === 'ru' ? 'Ваша Корзина' : currentLang === 'ar' ? 'سلة المشتريات' : 'Your Shopping Cart'}
+                      {currentLang === 'ru' ? 'Ваша Корзина' : 'Your Shopping Cart'}
                     </h3>
                     <button
                       id="back-cart-link"
                       onClick={() => setActiveTab('catalog')}
                       className="text-nadeck-600 hover:text-nadeck-800 text-xs sm:text-sm font-semibold flex items-center gap-1 transition-colors"
                     >
-                      {currentLang === 'ar' ? '→' : '←'} {currentLang === 'ru' ? 'Вернуться к покупкам' : currentLang === 'ar' ? 'مواصلة التسوق' : 'Continue Shopping'}
+                      {'←'} {currentLang === 'ru' ? 'Вернуться к покупкам' : 'Continue Shopping'}
                     </button>
                   </div>
                   <CartView
@@ -632,12 +583,11 @@ export default function App() {
               {activeTab === 'admin' && (
                 <AdminPanel
                   currentLang={currentLang}
-                  onRefreshMedicines={() => { fetchMedicinesList(); fetchAdminMedicinesList(); }}
-                  onRefreshCategories={() => { fetchCategoriesList(); fetchAdminCategoriesList(); }}
-                  allMedicines={adminMedicinesList}
-                  categories={adminCategories}
+                  onRefreshMedicines={fetchMedicinesList}
+                  onRefreshCategories={fetchCategoriesList}
+                  allMedicines={medicinesList}
+                  categories={categoriesList}
                   token={user.token}
-                  adminMarket={user.adminMarket}
                 />
               )}
             </div>
@@ -699,13 +649,13 @@ export default function App() {
             <div className="space-y-2 text-xs">
               <h5 className="text-white font-bold">{t('footerContactsTitle')}</h5>
               <p className="text-slate-500">{t('footerAddress')}</p>
-              <p className="text-slate-500">📞 <a href={currentMarket.contactPhoneHref} dir="ltr" className="hover:text-white transition-colors inline-block" style={{ unicodeBidi: 'isolate' }}>{currentMarket.contactPhone}</a></p>
+              <p className="text-slate-500">📞 <a href="tel:+77070222312" className="hover:text-white transition-colors inline-block">+7 (707) 022-23-12</a></p>
               <p className="text-slate-500">✉ <a href="mailto:support@nadeck.net" className="hover:text-white transition-colors">support@nadeck.net</a></p>
             </div>
 
             <div className="space-y-2 text-xs">
               <h5 className="text-white font-bold">{t('footerLanguagesTitle')}</h5>
-              {marketLanguages.map((lang) => {
+              {SUPPORTED_LANGUAGES.map((lang) => {
                 const translatedName = LANGUAGE_NAME_TRANSLATIONS[lang.code][currentLang];
                 return (
                   <p key={lang.code} className="text-slate-500">
@@ -714,19 +664,6 @@ export default function App() {
                   </p>
                 );
               })}
-              {/* Crawlable link to the sibling storefront, labelled in that site's own language.
-                  Google treats ar.nadeck.net as a separate site, so without this the two markets
-                  have no link between them for the crawler to follow. */}
-              <p className="pt-1">
-                <a
-                  href={MARKET === 'ar' ? 'https://nadeck.net/' : 'https://ar.nadeck.net/'}
-                  className="text-slate-500 hover:text-white transition-colors"
-                  dir={MARKET === 'ar' ? 'ltr' : 'rtl'}
-                  style={{ unicodeBidi: 'isolate' }}
-                >
-                  {MARKET === 'ar' ? '🇷🇺 Nadeck на русском' : '🇸🇦 نديك بالعربية'}
-                </a>
-              </p>
             </div>
 
             <div className="space-y-2 text-xs">

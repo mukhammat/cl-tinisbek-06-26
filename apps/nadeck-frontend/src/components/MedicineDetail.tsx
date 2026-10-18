@@ -212,14 +212,14 @@ export default function MedicineDetail({
               <div className="flex flex-col gap-1 text-xs text-slate-500 font-medium">
                 <p>
                   <span className="text-slate-400 font-semibold">
-                    {currentLang === 'ru' ? 'Форма выпуска' : currentLang === 'ar' ? 'شكل الدواء' : 'Dosage Form'}:
+                    {currentLang === 'ru' ? 'Форма выпуска' : 'Dosage Form'}:
                   </span>{' '}
                   <span className="text-slate-700 font-bold">
                     {medicine.form === 'tablet'
-                      ? (currentLang === 'ru' ? 'Таблетки' : currentLang === 'ar' ? 'أقراص' : 'Tablets')
+                      ? (currentLang === 'ru' ? 'Таблетки' : 'Tablets')
                       : medicine.form === 'capsule'
-                      ? (currentLang === 'ru' ? 'Капсулы' : currentLang === 'ar' ? 'كبسولات' : 'Capsules')
-                      : (currentLang === 'ru' ? 'Раствор' : currentLang === 'ar' ? 'محلول' : 'Liquid suspension')
+                      ? (currentLang === 'ru' ? 'Капсулы' : 'Capsules')
+                      : (currentLang === 'ru' ? 'Раствор' : 'Liquid suspension')
                     }
                   </span>
                 </p>
@@ -262,7 +262,7 @@ export default function MedicineDetail({
             <div>
               <span className="text-xs text-slate-400 font-semibold uppercase">{t('priceLabel')}</span>
               <div id="detail-product-price" className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {resolvePrice(currentVolumeInfo.price, currentVolumeInfo.priceUsd, currentVolumeInfo.priceSar, currentLang).toLocaleString()} {t('currencySymbol')}
+                {resolvePrice(currentVolumeInfo.price, currentVolumeInfo.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')}
               </div>
             </div>
 

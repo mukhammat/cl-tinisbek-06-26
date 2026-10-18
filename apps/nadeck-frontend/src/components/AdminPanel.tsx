@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Product, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency, SiteMarket, PromoCodeStats, DeliveryCountry } from '../types';
+import { Product, Order, Language, SUPPORTED_LANGUAGES, Category, DosageFrequency, PromoCodeStats, DeliveryCountry } from '../types';
 import { unitLabel } from '../currency';
 import { uniqueSlug } from '../slug';
 import {
@@ -38,12 +38,10 @@ import MediaLibraryModal from './MediaLibraryModal';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import BotDialogs from './BotDialogs';
 
-// The product form edits one photo gallery per storefront: `images` is nadeck.net's,
-// `imagesAr` is ar.nadeck.net's. Leaving one empty is fine - the backend serves the other
-// market's photos there instead of nothing.
-type ProductImageField = 'images' | 'imagesAr';
+// The product form's photo gallery field.
+type ProductImageField = 'images';
 
-// Stand-in cover for a product saved without a single photo in either gallery.
+// Stand-in cover for a product saved without a single photo.
 const DEFAULT_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1579154204601-01588f351166?w=600&auto=format&fit=crop&q=80';
 
 interface AdminPanelProps {
@@ -53,10 +51,6 @@ interface AdminPanelProps {
   allMedicines: Product[];
   categories: Category[];
   token?: string;
-  // Present only for a market-scoped admin (see User.adminMarket) - null/absent means a full
-  // admin with no market restriction. allMedicines is already server-filtered to this market;
-  // this only drives what the product form's market controls look like.
-  adminMarket?: SiteMarket | null;
 }
 
 export default function AdminPanel({
@@ -65,8 +59,7 @@ export default function AdminPanel({
   onRefreshCategories,
   allMedicines,
   categories,
-  token,
-  adminMarket
+  token
 }: AdminPanelProps) {
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
   const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo' | 'delivery' | 'analytics' | 'dialogs'>('products');
@@ -88,14 +81,12 @@ export default function AdminPanel({
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliverySaving, setDeliverySaving] = useState(false);
   const [newCountryCode, setNewCountryCode] = useState('');
-  const [newCountryNames, setNewCountryNames] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
+  const [newCountryNames, setNewCountryNames] = useState<Record<Language, string>>({ ru: '', en: '' });
   const [newCountryPriceKzt, setNewCountryPriceKzt] = useState('');
   const [newCountryPriceUsd, setNewCountryPriceUsd] = useState('');
-  const [newCountryPriceSar, setNewCountryPriceSar] = useState('');
-  const [newCountryMarkets, setNewCountryMarkets] = useState<SiteMarket[]>([adminMarket || 'main']);
   // Editing an existing row's prices in place - the whole point of the tab is changing rates.
   const [editingCountry, setEditingCountry] = useState<string | null>(null);
-  const [editCountryPrices, setEditCountryPrices] = useState<{ kzt: string; usd: string; sar: string }>({ kzt: '', usd: '', sar: '' });
+  const [editCountryPrices, setEditCountryPrices] = useState<{ kzt: string; usd: string }>({ kzt: '', usd: '' });
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -112,45 +103,33 @@ export default function AdminPanel({
   const [isEditingCategory, setIsEditingCategory] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [categoryForm, setCategoryForm] = useState<Partial<Category>>({});
-  const [locCategoryNames, setLocCategoryNames] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
+  const [locCategoryNames, setLocCategoryNames] = useState<Record<Language, string>>({ ru: '', en: '' });
   const [isTranslatingCategory, setIsTranslatingCategory] = useState(false);
   const [isTranslatingProduct, setIsTranslatingProduct] = useState(false);
   const [isUploadingCategoryIcon, setIsUploadingCategoryIcon] = useState(false);
-  // Which of the two per-storefront galleries is currently uploading (null = neither), so an
-  // upload into one gallery doesn't lock the other one's buttons.
+  // The gallery currently uploading (null = none).
   const [uploadingImageField, setUploadingImageField] = useState<ProductImageField | null>(null);
 
-  // Volumes list (mg + own price in KZT, USD and SAR) available for the product, plus the pending "new volume" inputs
-  const [volumesList, setVolumesList] = useState<{ mgPerUnit: number; price: number; priceUsd: number; priceSar: number }[]>([]);
+  // Volumes list (mg + own price in KZT and USD) available for the product, plus the pending "new volume" inputs
+  const [volumesList, setVolumesList] = useState<{ mgPerUnit: number; price: number; priceUsd: number }[]>([]);
   const [newVolumeMg, setNewVolumeMg] = useState('');
   const [newVolumePrice, setNewVolumePrice] = useState('');
   const [newVolumePriceUsd, setNewVolumePriceUsd] = useState('');
-  const [newVolumePriceSar, setNewVolumePriceSar] = useState('');
 
   // Localized form inputs
-  const [locNames, setLocNames] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
-  const [locDescs, setLocDescs] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
-  const [locFullDescs, setLocFullDescs] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
-  const [locUsages, setLocUsages] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' });
-  const [locInds, setLocInds] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' }); // comma or newline separated
-  const [locContras, setLocContras] = useState<Record<Language, string>>({ ru: '', en: '', ar: '' }); // comma or newline
+  const [locNames, setLocNames] = useState<Record<Language, string>>({ ru: '', en: '' });
+  const [locDescs, setLocDescs] = useState<Record<Language, string>>({ ru: '', en: '' });
+  const [locFullDescs, setLocFullDescs] = useState<Record<Language, string>>({ ru: '', en: '' });
+  const [locUsages, setLocUsages] = useState<Record<Language, string>>({ ru: '', en: '' });
+  const [locInds, setLocInds] = useState<Record<Language, string>>({ ru: '', en: '' }); // comma or newline separated
+  const [locContras, setLocContras] = useState<Record<Language, string>>({ ru: '', en: '' }); // comma or newline
 
   const activeCategories = categories.filter((category) => category.isActive !== false);
   const categoryLabelById = Object.fromEntries(
     categories.map((category) => [category.id, category.name[currentLang] || category.name.en || category.id])
   );
-  // Each storefront has its own category rows, so the product form offers each market only its
-  // own - picking across markets is what leaves a product filed under a category that doesn't
-  // exist on the site showing it (the storefront then falls back to printing the raw id).
-  const categoriesForMarket = (market: SiteMarket) =>
-    activeCategories.filter((category) =>
-      (category.markets && category.markets.length > 0 ? category.markets : ['main']).includes(market)
-    );
-  const mainCategories = categoriesForMarket('main');
-  const arCategories = categoriesForMarket('ar');
   // Single source of truth for "no category picked yet" - reused everywhere a default is needed below.
-  const defaultCategoryId = (adminMarket === 'ar' ? arCategories : mainCategories)[0]?.id || activeCategories[0]?.id || 'weightloss';
-  const defaultCategoryIdAr = adminMarket === 'ar' ? (arCategories[0]?.id || '') : '';
+  const defaultCategoryId = activeCategories[0]?.id || 'weightloss';
 
   // Clinical/dosing fields (indications, dosageRules, mg strength, ...) only apply to peptides -
   // additional goods (syringes, vitamins, protein, ...) only need a name, image and a priced volume.
@@ -276,13 +255,11 @@ export default function AdminPanel({
     setFormData((prev) => ({ ...prev, [field]: (prev[field] || []).filter((_, i) => i !== index) }));
   };
 
-  // Both storefronts' galleries are managed identically (upload, pick from R2, remove), so the
-  // block is rendered once per market instead of being duplicated in the form markup.
+  // Upload, pick from R2 and remove are all handled here for the product's gallery.
   const renderProductGallery = (field: ProductImageField, label: string, hint: string) => {
     const gallery = formData[field] || [];
     const isUploading = uploadingImageField === field;
-    // The nadeck.net gallery keeps the original element ids; the Arabic one gets the suffix.
-    const idSuffix = field === 'images' ? '' : '-ar';
+    const idSuffix = '';
     const uploadInputId = `form-input-image-upload${idSuffix}`;
 
     return (
@@ -430,17 +407,15 @@ export default function AdminPanel({
     setLocNames({ ...med.name });
     setLocDescs({ ...med.description });
     setLocFullDescs({ ...med.fullDescription });
-    setLocUsages({ ...med.usage || { ru: '', en: '', ar: '' } });
+    setLocUsages({ ...med.usage || { ru: '', en: '' } });
 
     setLocInds({
       ru: (med.indications?.ru || []).join('\n'),
-      en: (med.indications?.en || []).join('\n'),
-      ar: (med.indications?.ar || []).join('\n')
+      en: (med.indications?.en || []).join('\n')
     });
     setLocContras({
       ru: (med.contraindications?.ru || []).join('\n'),
-      en: (med.contraindications?.en || []).join('\n'),
-      ar: (med.contraindications?.ar || []).join('\n')
+      en: (med.contraindications?.en || []).join('\n')
     });
 
     setIsEditing(true);
@@ -454,11 +429,7 @@ export default function AdminPanel({
       type: 'peptide',
       unit: 'mg',
       category: defaultCategoryId,
-      categoryAr: defaultCategoryIdAr,
       images: [DEFAULT_PRODUCT_IMAGE],
-      // Left empty on purpose: ar.nadeck.net shows the photos above until someone uploads
-      // pictures specific to that storefront.
-      imagesAr: [],
       rating: 5.0,
       form: 'vial',
       mgPerUnit: 5,
@@ -466,19 +437,18 @@ export default function AdminPanel({
         mgPerKgPerDay: 0.005,
         defaultDailyDoses: 1
       },
-      inStock: true,
-      markets: [adminMarket || 'main']
+      inStock: true
     });
     setVolumesList([{ mgPerUnit: 5, price: 15000, priceUsd: 50 }]);
     setNewVolumeMg('');
     setNewVolumePrice('');
     setNewVolumePriceUsd('');
-    setLocNames({ ru: '', en: '', ar: '' });
-    setLocDescs({ ru: '', en: '', ar: '' });
-    setLocFullDescs({ ru: '', en: '', ar: '' });
-    setLocUsages({ ru: '', en: '', ar: '' });
-    setLocInds({ ru: '', en: '', ar: '' });
-    setLocContras({ ru: '', en: '', ar: '' });
+    setLocNames({ ru: '', en: '' });
+    setLocDescs({ ru: '', en: '' });
+    setLocFullDescs({ ru: '', en: '' });
+    setLocUsages({ ru: '', en: '' });
+    setLocInds({ ru: '', en: '' });
+    setLocContras({ ru: '', en: '' });
 
     setIsAdding(true);
     setIsEditing(false);
@@ -491,9 +461,8 @@ export default function AdminPanel({
       id: '',
       sortOrder: categories.length,
       isActive: true,
-      markets: [adminMarket || 'main'],
     });
-    setLocCategoryNames({ ru: '', en: '', ar: '' });
+    setLocCategoryNames({ ru: '', en: '' });
     setIsAddingCategory(true);
     setIsEditingCategory(false);
     setIsAdding(false);
@@ -509,15 +478,12 @@ export default function AdminPanel({
     setIsEditing(false);
   };
 
-  // Add a new volume (mg + its own KZT/USD/SAR price) to the pending list, or update the
-  // prices of an existing volume when the mg value already matches one in the list. SAR is
-  // optional (unlike KZT/USD) - it's only ever shown on ar.nadeck.net, so a main-only product
-  // has no reason to require one.
+  // Add a new volume (mg + its own KZT/USD price) to the pending list, or update the
+  // prices of an existing volume when the mg value already matches one in the list.
   const handleAddVolume = () => {
     const mg = Number(newVolumeMg);
     const price = Number(newVolumePrice);
     const priceUsd = Number(newVolumePriceUsd);
-    const priceSar = newVolumePriceSar ? Number(newVolumePriceSar) : 0;
     if (!newVolumeMg || Number.isNaN(mg) || mg <= 0) {
       showFeedback('error', currentLang === 'ru' ? 'Введите корректное значение объёма (мг)' : 'Enter a valid volume value (mg)');
       return;
@@ -530,20 +496,15 @@ export default function AdminPanel({
       showFeedback('error', currentLang === 'ru' ? 'Введите корректную цену в долларах для этого объёма' : 'Enter a valid USD price for this volume');
       return;
     }
-    if (newVolumePriceSar && (Number.isNaN(priceSar) || priceSar < 0)) {
-      showFeedback('error', currentLang === 'ru' ? 'Введите корректную цену в риалах для этого объёма' : 'Enter a valid SAR price for this volume');
-      return;
-    }
     const existingIndex = volumesList.findIndex((v) => v.mgPerUnit === mg);
     if (existingIndex >= 0) {
-      setVolumesList(volumesList.map((v, i) => (i === existingIndex ? { mgPerUnit: mg, price, priceUsd, priceSar } : v)));
+      setVolumesList(volumesList.map((v, i) => (i === existingIndex ? { mgPerUnit: mg, price, priceUsd } : v)));
     } else {
-      setVolumesList([...volumesList, { mgPerUnit: mg, price, priceUsd, priceSar }].sort((a, b) => a.mgPerUnit - b.mgPerUnit));
+      setVolumesList([...volumesList, { mgPerUnit: mg, price, priceUsd }].sort((a, b) => a.mgPerUnit - b.mgPerUnit));
     }
     setNewVolumeMg('');
     setNewVolumePrice('');
     setNewVolumePriceUsd('');
-    setNewVolumePriceSar('');
   };
 
   const handleRemoveVolume = (mg: number) => {
@@ -584,8 +545,7 @@ export default function AdminPanel({
       return str.split('\n').map(s => s.trim()).filter(s => s.length > 0);
     };
 
-    const mainImages = formData.images || [];
-    const arImages = formData.imagesAr || [];
+    const images = formData.images || [];
 
     const payload = {
       id: targetId,
@@ -593,31 +553,23 @@ export default function AdminPanel({
       unit: formData.unit || 'mg',
       name: nameVal,
       categoryId: formData.category || defaultCategoryId,
-      // One category per storefront - blank means ar.nadeck.net borrows the nadeck.net one.
-      categoryIdAr: formData.categoryAr || '',
       description: locDescs,
       fullDescription: locFullDescs,
-      // Each storefront keeps its own gallery and borrows the other's when empty, so the
-      // placeholder is only needed when neither market has a photo at all.
-      images: mainImages.length > 0 || arImages.length > 0 ? mainImages : [DEFAULT_PRODUCT_IMAGE],
-      imagesAr: arImages,
+      images: images.length > 0 ? images : [DEFAULT_PRODUCT_IMAGE],
       rating: Number(formData.rating || 5.0),
       volumes: volumesList,
       inStock: formData.inStock !== false,
-      markets: formData.markets && formData.markets.length > 0 ? formData.markets : ['main'],
       // Clinical/dosing fields only mean something for peptides - omitted entirely for
       // additional goods rather than sent as empty placeholders.
       ...(isPeptideForm
         ? {
             indications: {
               ru: parseList(locInds.ru),
-              en: parseList(locInds.en),
-              ar: parseList(locInds.ar)
+              en: parseList(locInds.en)
             },
             contraindications: {
               ru: parseList(locContras.ru),
-              en: parseList(locContras.en),
-              ar: parseList(locContras.ar)
+              en: parseList(locContras.en)
             },
             usage: locUsages,
             form: formData.form || 'vial',
@@ -651,7 +603,7 @@ export default function AdminPanel({
       });
   };
 
-  // Fills every EN/AR field from the RU ones via AI in a single request, locking the form
+  // Fills every EN field from the RU ones via AI in a single request, locking the form
   // while the request is in flight so the admin can't edit fields mid-translation.
   const handleTranslateProduct = () => {
     if (!locNames.ru.trim()) {
@@ -677,12 +629,12 @@ export default function AdminPanel({
         return res.json();
       })
       .then((data) => {
-        setLocNames((prev) => ({ ...prev, en: data.en?.name || prev.en, ar: data.ar?.name || prev.ar }));
-        setLocDescs((prev) => ({ ...prev, en: data.en?.description || prev.en, ar: data.ar?.description || prev.ar }));
-        setLocFullDescs((prev) => ({ ...prev, en: data.en?.fullDescription || prev.en, ar: data.ar?.fullDescription || prev.ar }));
-        setLocUsages((prev) => ({ ...prev, en: data.en?.usage || prev.en, ar: data.ar?.usage || prev.ar }));
-        setLocInds((prev) => ({ ...prev, en: data.en?.indications || prev.en, ar: data.ar?.indications || prev.ar }));
-        setLocContras((prev) => ({ ...prev, en: data.en?.contraindications || prev.en, ar: data.ar?.contraindications || prev.ar }));
+        setLocNames((prev) => ({ ...prev, en: data.en?.name || prev.en }));
+        setLocDescs((prev) => ({ ...prev, en: data.en?.description || prev.en }));
+        setLocFullDescs((prev) => ({ ...prev, en: data.en?.fullDescription || prev.en }));
+        setLocUsages((prev) => ({ ...prev, en: data.en?.usage || prev.en }));
+        setLocInds((prev) => ({ ...prev, en: data.en?.indications || prev.en }));
+        setLocContras((prev) => ({ ...prev, en: data.en?.contraindications || prev.en }));
         showFeedback('success', currentLang === 'ru' ? 'Переведено!' : 'Translated!');
       })
       .catch((err) => {
@@ -701,7 +653,6 @@ export default function AdminPanel({
     const name = { ...locCategoryNames };
     if (!name.en && name.ru) name.en = name.ru;
     if (!name.ru && name.en) name.ru = name.en;
-    if (!name.ar) name.ar = name.en || name.ru;
 
     if (!targetId || !name.en) {
       showFeedback('error', currentLang === 'ru' ? 'Укажите ID и название категории (минимум на английском)' : 'Category id and name (at least English) are required');
@@ -720,7 +671,6 @@ export default function AdminPanel({
         icon: categoryForm.icon || null,
         sortOrder: Number(categoryForm.sortOrder || 0),
         isActive: categoryForm.isActive !== false,
-        markets: categoryForm.markets && categoryForm.markets.length > 0 ? categoryForm.markets : ['main'],
       }),
     })
       .then((res) => {
@@ -740,7 +690,7 @@ export default function AdminPanel({
       });
   };
 
-  // Fills EN/AR from the RU name via AI, locking the form while the request is in flight
+  // Fills EN from the RU name via AI, locking the form while the request is in flight
   const handleTranslateCategory = () => {
     const ru = locCategoryNames.ru.trim();
     if (!ru) {
@@ -759,7 +709,7 @@ export default function AdminPanel({
         return res.json();
       })
       .then((data) => {
-        setLocCategoryNames((prev) => ({ ...prev, en: data.en || prev.en, ar: data.ar || prev.ar }));
+        setLocCategoryNames((prev) => ({ ...prev, en: data.en || prev.en }));
         showFeedback('success', currentLang === 'ru' ? 'Переведено!' : 'Translated!');
       })
       .catch((err) => {
@@ -910,8 +860,6 @@ export default function AdminPanel({
         name: newCountryNames,
         priceKzt: Number(newCountryPriceKzt) || 0,
         priceUsd: Number(newCountryPriceUsd) || 0,
-        priceSar: Number(newCountryPriceSar) || 0,
-        markets: newCountryMarkets.length > 0 ? newCountryMarkets : ['main'],
       }),
     })
       .then(async (res) => {
@@ -924,10 +872,9 @@ export default function AdminPanel({
       .then(() => {
         showFeedback('success', currentLang === 'ru' ? `Страна ${code} добавлена` : `Country ${code} added`);
         setNewCountryCode('');
-        setNewCountryNames({ ru: '', en: '', ar: '' });
+        setNewCountryNames({ ru: '', en: '' });
         setNewCountryPriceKzt('');
         setNewCountryPriceUsd('');
-        setNewCountryPriceSar('');
         fetchDeliveryCountries();
       })
       .catch((err) => {
@@ -963,7 +910,6 @@ export default function AdminPanel({
     patchCountry(code, {
       priceKzt: Number(editCountryPrices.kzt) || 0,
       priceUsd: Number(editCountryPrices.usd) || 0,
-      priceSar: Number(editCountryPrices.sar) || 0,
     });
   };
 
@@ -1202,21 +1148,18 @@ export default function AdminPanel({
           <BarChart3 className="w-4 h-4" />
           <span>{currentLang === 'ru' ? 'Аналитика' : 'Analytics'}</span>
         </button>
-        {/* The Telegram bot sells for nadeck.net only, so its chats are a full admin's business. */}
-        {!adminMarket && (
-          <button
-            id="admin-tab-dialogs"
-            onClick={() => { setActiveSubTab('dialogs'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
-            className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
-              activeSubTab === 'dialogs' && !isEditing && !isAdding
-                ? 'border-nadeck-600 text-nadeck-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <MessagesSquare className="w-4 h-4" />
-            <span>{currentLang === 'ru' ? 'Диалоги бота' : 'Bot chats'}</span>
-          </button>
-        )}
+        <button
+          id="admin-tab-dialogs"
+          onClick={() => { setActiveSubTab('dialogs'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
+          className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
+            activeSubTab === 'dialogs' && !isEditing && !isAdding
+              ? 'border-nadeck-600 text-nadeck-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <MessagesSquare className="w-4 h-4" />
+          <span>{currentLang === 'ru' ? 'Диалоги бота' : 'Bot chats'}</span>
+        </button>
         {(isEditing || isAdding || isEditingCategory || isAddingCategory) && (
           <div className="px-5 py-3 text-xs sm:text-sm font-bold text-nadeck-600 border-b-2 border-nadeck-600 flex items-center gap-1">
             <Edit2 className="w-4 h-4 animate-bounce" />
@@ -1263,7 +1206,7 @@ export default function AdminPanel({
                           <td className="py-4 px-5">
                             <div className="flex items-center gap-3">
                               <img
-                                src={med.images?.[0] || med.imagesAr?.[0]}
+                                src={med.images?.[0]}
                                 alt={med.name.en}
                                 className="w-11 h-11 rounded-lg object-cover bg-slate-50 border border-slate-100 shrink-0" 
                               />
@@ -1278,27 +1221,11 @@ export default function AdminPanel({
                             </div>
                           </td>
 
-                          {/* Col 2 Category - a product carries one category per storefront, so a
-                              market-scoped admin is shown the one their own site files it under
-                              (falling back to the nadeck.net category, exactly as the site does). */}
+                          {/* Col 2 Category */}
                           <td className="py-4 px-4">
-                            <div className="flex flex-wrap items-center gap-1">
-                              {(adminMarket === 'ar' ? [med.categoryAr || med.category] : [med.category, ...(adminMarket ? [] : [med.categoryAr])])
-                                .filter((categoryId): categoryId is string => Boolean(categoryId))
-                                .map((categoryId) => (
-                              <span key={categoryId} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                                {categoryLabelById[categoryId] || categoryId}
-                              </span>
-                              ))}
-                              {(med.markets && med.markets.length > 0 ? med.markets : ['main']).map((market) => (
-                                <span
-                                  key={market}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200"
-                                >
-                                  {market === 'main' ? '🇷🇺 nadeck.net' : '🇸🇦 ar.nadeck.net'}
-                                </span>
-                              ))}
-                            </div>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                              {categoryLabelById[med.category] || med.category}
+                            </span>
                           </td>
 
                           {/* Col 3 Info tag */}
@@ -1413,16 +1340,6 @@ export default function AdminPanel({
                               </span>
                               <div className="flex flex-col gap-1">
                                 <span>{category.name[currentLang] || category.name.en}</span>
-                                <div className="flex flex-wrap gap-1">
-                                  {(category.markets && category.markets.length > 0 ? category.markets : ['main']).map((market) => (
-                                    <span
-                                      key={market}
-                                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200"
-                                    >
-                                      {market === 'main' ? 'nadeck.net' : 'ar.nadeck.net'}
-                                    </span>
-                                  ))}
-                                </div>
                               </div>
                             </div>
                           </td>
@@ -1500,7 +1417,7 @@ export default function AdminPanel({
               </div>
 
               <fieldset disabled={isTranslatingCategory} className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
                     {currentLang === 'ru' ? 'ID категории' : 'Category ID'} *
@@ -1550,20 +1467,6 @@ export default function AdminPanel({
                     className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
                   />
                 </div>
-
-                <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                    🇸🇦 {currentLang === 'ru' ? 'Название (AR)' : 'Name (AR)'}
-                  </label>
-                  <input
-                    type="text"
-                    dir="rtl"
-                    placeholder="مثال: منتجات إضافية"
-                    value={locCategoryNames.ar}
-                    onChange={(e) => setLocCategoryNames({ ...locCategoryNames, ar: e.target.value })}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none text-right"
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -1592,44 +1495,6 @@ export default function AdminPanel({
                 </div>
               </div>
 
-              {/* Which storefront(s) list this category - same idea as the product form's
-                  market box. A scoped admin can't change this (the backend pins it), so they
-                  get a locked readout instead of checkboxes. */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50 space-y-2.5" id="category-form-markets-box">
-                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
-                  {currentLang === 'ru' ? 'Показывать на сайтах' : 'Visible on'}
-                </span>
-                {adminMarket ? (
-                  <p className="text-xs font-semibold text-slate-500">
-                    {adminMarket === 'ar' ? 'ar.nadeck.net' : 'nadeck.net'}
-                    {' '}
-                    <span className="font-normal text-slate-400">
-                      {currentLang === 'ru' ? '(закреплено за вашей учётной записью)' : '(fixed for your account)'}
-                    </span>
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-4">
-                    {(['main', 'ar'] as const).map((market) => {
-                      const active = (categoryForm.markets && categoryForm.markets.length > 0 ? categoryForm.markets : ['main']).includes(market);
-                      return (
-                        <label key={market} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={active}
-                            onChange={() => {
-                              const current = categoryForm.markets && categoryForm.markets.length > 0 ? categoryForm.markets : ['main'];
-                              const next = active ? current.filter((m) => m !== market) : [...current, market];
-                              setCategoryForm({ ...categoryForm, markets: next });
-                            }}
-                            className="w-4 h-4 rounded border-slate-300 text-nadeck-600 focus:ring-nadeck-500"
-                          />
-                          {market === 'main' ? 'nadeck.net' : 'ar.nadeck.net'}
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
 
               <div>
                 <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
@@ -2051,11 +1916,11 @@ export default function AdminPanel({
         {/* Traffic dashboard - fetches its own data (GET /api/admin/analytics), which is why
             it isn't part of the tab-driven loader above. */}
         {activeSubTab === 'analytics' && !isEditing && !isAdding && (
-          <AnalyticsDashboard currentLang={currentLang} token={token} adminMarket={adminMarket} />
+          <AnalyticsDashboard currentLang={currentLang} token={token} />
         )}
 
         {/* Telegram bot chats - polls its own data (GET /api/admin/dialogs) like the dashboard above. */}
-        {activeSubTab === 'dialogs' && !adminMarket && !isEditing && !isAdding && (
+        {activeSubTab === 'dialogs' && !isEditing && !isAdding && (
           <BotDialogs currentLang={currentLang} token={token} />
         )}
 
@@ -2091,14 +1956,14 @@ export default function AdminPanel({
                       type="text"
                       value={newCountryNames[lang.code]}
                       onChange={(e) => setNewCountryNames({ ...newCountryNames, [lang.code]: e.target.value })}
-                      placeholder={lang.code === 'ru' ? 'Казахстан' : lang.code === 'en' ? 'Kazakhstan' : 'كازاخستان'}
+                      placeholder={lang.code === 'ru' ? 'Казахстан' : 'Kazakhstan'}
                       className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-nadeck-500 focus:bg-white"
                     />
                   </div>
                 ))}
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentLang === 'ru' ? 'Доставка, ₸' : 'Delivery, ₸'}</label>
                   <input
@@ -2124,59 +1989,14 @@ export default function AdminPanel({
                     className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 font-bold focus:outline-none focus:border-nadeck-500 focus:bg-white"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentLang === 'ru' ? 'Доставка, ﷼' : 'Delivery, ﷼'}</label>
-                  <input
-                    id="country-new-price-sar"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newCountryPriceSar}
-                    onChange={(e) => setNewCountryPriceSar(e.target.value)}
-                    placeholder="50"
-                    className="w-full px-3 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 font-bold focus:outline-none focus:border-nadeck-500 focus:bg-white"
-                  />
-                </div>
               </div>
 
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50 space-y-2.5" id="country-form-markets-box">
-                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
-                  {currentLang === 'ru' ? 'Предлагать на сайтах' : 'Offered on'}
-                </span>
-                {adminMarket ? (
-                  <p className="text-xs font-semibold text-slate-500">
-                    {adminMarket === 'ar' ? 'ar.nadeck.net' : 'nadeck.net'}{' '}
-                    <span className="font-normal text-slate-400">
-                      {currentLang === 'ru' ? '(закреплено за вашей учётной записью)' : '(fixed for your account)'}
-                    </span>
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-4">
-                    {(['main', 'ar'] as const).map((market) => {
-                      const active = newCountryMarkets.includes(market);
-                      return (
-                        <label key={market} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={active}
-                            onChange={() => {
-                              setNewCountryMarkets(active ? newCountryMarkets.filter((m) => m !== market) : [...newCountryMarkets, market]);
-                            }}
-                            className="w-4 h-4 rounded border-slate-300 text-nadeck-600 focus:ring-nadeck-500"
-                          />
-                          {market === 'main' ? 'nadeck.net' : 'ar.nadeck.net'}
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
 
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-[11px] text-slate-400 font-medium">
                   {currentLang === 'ru'
-                    ? 'Цена берётся в валюте, в которой покупатель видит сайт (₸ — русский, $ — английский, ﷼ — арабский). Бесплатной доставки нет: 0 означает «уточняется менеджером».'
-                    : 'The fee is charged in the currency the shopper sees (₸ Russian, $ English, ﷼ Arabic). There is no free tier: 0 reads as "confirmed by manager".'}
+                    ? 'Цена берётся в валюте, в которой покупатель видит сайт (₸ — русский, $ — английский). Бесплатной доставки нет: 0 означает «уточняется менеджером».'
+                    : 'The fee is charged in the currency the shopper sees (₸ Russian, $ English). There is no free tier: 0 reads as "confirmed by manager".'}
                 </p>
                 <button
                   id="country-create-btn"
@@ -2204,8 +2024,6 @@ export default function AdminPanel({
                         <th className="py-4 px-5">{currentLang === 'ru' ? 'Страна' : 'Country'}</th>
                         <th className="py-4 px-4 text-center">₸</th>
                         <th className="py-4 px-4 text-center">$</th>
-                        <th className="py-4 px-4 text-center">﷼</th>
-                        <th className="py-4 px-4">{currentLang === 'ru' ? 'Сайты' : 'Sites'}</th>
                         <th className="py-4 px-4 text-center">{currentLang === 'ru' ? 'Статус' : 'Status'}</th>
                         <th className="py-4 px-5 text-right">{currentLang === 'ru' ? 'Опции' : 'Actions'}</th>
                       </tr>
@@ -2219,7 +2037,7 @@ export default function AdminPanel({
                               <span className="text-xs font-black text-slate-900">{country.name[currentLang] || country.name.en || country.code}</span>
                               <span className="block text-[10px] text-slate-400 font-mono font-bold mt-0.5">{country.code}</span>
                             </td>
-                            {(['kzt', 'usd', 'sar'] as const).map((currency) => (
+                            {(['kzt', 'usd'] as const).map((currency) => (
                               <td key={currency} className="py-4 px-4 text-center">
                                 {isEditingRow ? (
                                   <input
@@ -2233,20 +2051,11 @@ export default function AdminPanel({
                                   />
                                 ) : (
                                   <span className="text-xs font-extrabold text-slate-800">
-                                    {(currency === 'kzt' ? country.priceKzt : currency === 'usd' ? country.priceUsd : country.priceSar).toLocaleString()}
+                                    {(currency === 'kzt' ? country.priceKzt : country.priceUsd).toLocaleString()}
                                   </span>
                                 )}
                               </td>
                             ))}
-                            <td className="py-4 px-4">
-                              <div className="flex flex-wrap gap-1">
-                                {(country.markets && country.markets.length > 0 ? country.markets : ['main']).map((market) => (
-                                  <span key={market} className="text-[9px] font-black px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
-                                    {market === 'main' ? 'nadeck.net' : 'ar.nadeck.net'}
-                                  </span>
-                                ))}
-                              </div>
-                            </td>
                             <td className="py-4 px-4 text-center">
                               <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border ${
                                 country.isActive
@@ -2287,7 +2096,6 @@ export default function AdminPanel({
                                       setEditCountryPrices({
                                         kzt: String(country.priceKzt),
                                         usd: String(country.priceUsd),
-                                        sar: String(country.priceSar),
                                       });
                                     }}
                                     title={currentLang === 'ru' ? 'Изменить цены' : 'Edit prices'}
@@ -2442,13 +2250,9 @@ export default function AdminPanel({
                   </select>
                 </div>
 
-                {/* One category per storefront, each offering only that market's own rows. A
-                    market-scoped admin sees just their own, same as the galleries below. */}
-                {adminMarket !== 'ar' && (
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                    {currentLang === 'ru' ? 'Категория' : 'Category'}
-                    {adminMarket ? '' : ' — nadeck.net'} *
+                    {currentLang === 'ru' ? 'Категория' : 'Category'} *
                   </label>
                   <select
                     id="form-select-category"
@@ -2456,70 +2260,24 @@ export default function AdminPanel({
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
                   >
-                    {mainCategories.map((category) => (
+                    {activeCategories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {categoryLabelById[category.id]}
                       </option>
                     ))}
                   </select>
                 </div>
-                )}
-
-                {adminMarket !== 'main' && (
-                <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                    {currentLang === 'ru' ? 'Категория' : 'Category'}
-                    {adminMarket ? '' : ' — ar.nadeck.net'} {adminMarket ? '*' : ''}
-                  </label>
-                  <select
-                    id="form-select-category-ar"
-                    value={formData.categoryAr || defaultCategoryIdAr}
-                    onChange={(e) => setFormData({ ...formData, categoryAr: e.target.value })}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-nadeck-500 focus:outline-none"
-                  >
-                    {/* Optional for a full admin: left blank, the Arabic site falls back to the
-                        nadeck.net category above. A scoped ar admin has no such fallback to
-                        offer - that product's only category is this one. */}
-                    {!adminMarket && (
-                      <option value="">
-                        {currentLang === 'ru' ? '— как на nadeck.net —' : '— same as nadeck.net —'}
-                      </option>
-                    )}
-                    {arCategories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {categoryLabelById[category.id]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                )}
               </div>
 
               {/* Grid 2 Block: Images, Form, and Ratings */}
               <div className={`grid grid-cols-1 gap-5 ${isPeptideForm ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
-                {/* One gallery per storefront - the same product can be photographed differently
-                    for nadeck.net and ar.nadeck.net. A market-scoped admin manages only their own
-                    storefront (see User.adminMarket), so the other market's gallery is hidden from
-                    them entirely - along with the cross-market fallback note, which is only
-                    actionable for a full admin who can see both. */}
                 <div className="md:col-span-2 space-y-4">
-                  {adminMarket !== 'ar' && renderProductGallery(
+                  {renderProductGallery(
                     'images',
-                    currentLang === 'ru' ? 'Фото для nadeck.net' : 'Photos for nadeck.net',
+                    currentLang === 'ru' ? 'Фото товара' : 'Product photos',
                     currentLang === 'ru'
-                      ? `Первое фото — обложка в каталоге. На странице товара покупатель сможет пролистать все фото.${adminMarket ? '' : ' Если пусто — возьмутся фото ar.nadeck.net.'}`
-                      : `The first photo is the catalog cover. Shoppers can flip through all photos on the product page.${adminMarket ? '' : ' Left empty, the ar.nadeck.net photos are used instead.'}`,
-                  )}
-                  {adminMarket !== 'main' && renderProductGallery(
-                    'imagesAr',
-                    currentLang === 'ru' ? 'Фото для ar.nadeck.net' : 'Photos for ar.nadeck.net',
-                    currentLang === 'ru'
-                      ? (adminMarket
-                        ? 'Первое фото — обложка в каталоге. На странице товара покупатель сможет пролистать все фото.'
-                        : 'Отдельная галерея для арабского сайта. Если пусто — там показываются фото nadeck.net.')
-                      : (adminMarket
-                        ? 'The first photo is the catalog cover. Shoppers can flip through all photos on the product page.'
-                        : 'A separate gallery for the Arabic site. Left empty, it shows the nadeck.net photos.'),
+                      ? 'Первое фото — обложка в каталоге. На странице товара покупатель сможет пролистать все фото.'
+                      : 'The first photo is the catalog cover. Shoppers can flip through all photos on the product page.',
                   )}
                 </div>
 
@@ -2559,45 +2317,6 @@ export default function AdminPanel({
                 </div>
               </div>
 
-              {/* Which storefront(s) list this product - independent of translated content.
-                  A market-scoped admin can't change this (the backend pins it to their own
-                  market regardless), so they get a locked readout instead of checkboxes. */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50 space-y-2.5" id="form-markets-box">
-                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
-                  {currentLang === 'ru' ? 'Показывать на сайтах' : 'Visible on'}
-                </span>
-                {adminMarket ? (
-                  <p className="text-xs font-semibold text-slate-500">
-                    {adminMarket === 'ar' ? 'ar.nadeck.net' : 'nadeck.net'}
-                    {' '}
-                    <span className="font-normal text-slate-400">
-                      {currentLang === 'ru' ? '(закреплено за вашей учётной записью)' : '(fixed for your account)'}
-                    </span>
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-4">
-                    {(['main', 'ar'] as const).map((market) => {
-                      const active = (formData.markets && formData.markets.length > 0 ? formData.markets : ['main']).includes(market);
-                      return (
-                        <label key={market} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
-                          <input
-                            id={`form-checkbox-market-${market}`}
-                            type="checkbox"
-                            checked={active}
-                            onChange={() => {
-                              const current = formData.markets && formData.markets.length > 0 ? formData.markets : ['main'];
-                              const next = active ? current.filter((m) => m !== market) : [...current, market];
-                              setFormData({ ...formData, markets: next });
-                            }}
-                            className="w-4 h-4 rounded border-slate-300 text-nadeck-600 focus:ring-nadeck-500"
-                          />
-                          {market === 'main' ? 'nadeck.net' : 'ar.nadeck.net'}
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
 
               {/* Grid 3 Block: Medicine Dose Parameters for precise calculation engine support -
                   peptide-only. The volumes/pricing manager below it applies to every product type. */}
@@ -2736,7 +2455,7 @@ export default function AdminPanel({
                         id={`form-volume-chip-${vol.mgPerUnit}`}
                         className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full bg-white border border-nadeck-500/20 text-xs font-bold text-nadeck-800"
                       >
-                        {vol.mgPerUnit} {volumeUnitLabel} — {vol.price.toLocaleString()} ₸ / ${(vol.priceUsd || 0).toLocaleString()}{vol.priceSar ? ` / ${vol.priceSar.toLocaleString()} SAR` : ''}
+                        {vol.mgPerUnit} {volumeUnitLabel} — {vol.price.toLocaleString()} ₸ / ${(vol.priceUsd || 0).toLocaleString()}
                         <button
                           id={`form-volume-remove-${vol.mgPerUnit}`}
                           type="button"
@@ -2798,22 +2517,6 @@ export default function AdminPanel({
                       }}
                       className="w-28 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
                     />
-                    <input
-                      id="form-input-new-volume-price-sar"
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder={currentLang === 'ru' ? 'Цена, SAR (необязательно)' : 'Price, SAR (optional)'}
-                      value={newVolumePriceSar}
-                      onChange={(e) => setNewVolumePriceSar(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddVolume();
-                        }
-                      }}
-                      className="w-32 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-nadeck-500 focus:outline-none"
-                    />
                     <button
                       id="form-btn-add-volume"
                       type="button"
@@ -2837,11 +2540,11 @@ export default function AdminPanel({
                     type="button"
                     id="product-translate-btn"
                     onClick={handleTranslateProduct}
-                    title={currentLang === 'ru' ? 'Заполнить EN/AR через ИИ по русским полям' : 'Fill EN/AR from Russian fields with AI'}
+                    title={currentLang === 'ru' ? 'Заполнить EN через ИИ по русским полям' : 'Fill EN from Russian fields with AI'}
                     className="normal-case font-bold text-[11px] text-nadeck-600 hover:text-nadeck-700 flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-nadeck-500/10 transition-colors"
                   >
                     <Languages className="w-3.5 h-3.5" />
-                    {currentLang === 'ru' ? 'Перевести ИИ (EN/AR)' : 'AI translate (EN/AR)'}
+                    {currentLang === 'ru' ? 'Перевести ИИ (EN)' : 'AI translate (EN)'}
                   </button>
                 </div>
 
@@ -3008,89 +2711,6 @@ export default function AdminPanel({
                 )}
               </div>
 
-              {/* Grid 6 Block: Arabic (AR) Localized fields */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50 space-y-4" id="form-ar-fields" dir="rtl">
-                <span className="text-xs uppercase font-black text-slate-800 tracking-wider flex items-center justify-start gap-1">
-                  🇸🇦 اللغة العربية (Arabic Translation Configuration)
-                </span>
-                
-                <div className="text-right">
-                  <label className="block text-[10px] font-bold text-slate-600 mb-1">الاسم التجاري (AR)</label>
-                  <input
-                    id="form-ar-name"
-                    type="text"
-                    placeholder="مثال: سيماجلوتايد 5 ملغ"
-                    value={locNames.ar}
-                    onChange={(e) => setLocNames({ ...locNames, ar: e.target.value })}
-                    className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 text-right"
-                  />
-                </div>
-
-                <div className={`grid grid-cols-1 gap-4 text-right ${isPeptideForm ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">وصف موجز (AR)</label>
-                    <textarea
-                      id="form-ar-desc"
-                      rows={2}
-                      placeholder="ببتيد ثوري لكبح الشهية..."
-                      value={locDescs.ar}
-                      onChange={(e) => setLocDescs({ ...locDescs, ar: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs text-right border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
-                    />
-                  </div>
-                  {isPeptideForm && (
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">طريقة الاستخدام (AR)</label>
-                    <textarea
-                      id="form-ar-usage"
-                      rows={2}
-                      placeholder="حقن تحت الجلد مرة واحدة في الأسبوع..."
-                      value={locUsages.ar}
-                      onChange={(e) => setLocUsages({ ...locUsages, ar: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs text-right border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
-                    />
-                  </div>
-                  )}
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">الوصف الكامل الطبي (AR)</label>
-                    <textarea
-                      id="form-ar-full-desc"
-                      rows={2}
-                      placeholder="سيماجلوتايد هو منبه لنبضات الغدد..."
-                      value={locFullDescs.ar}
-                      onChange={(e) => setLocFullDescs({ ...locFullDescs, ar: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs text-right border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 resize-none"
-                    />
-                  </div>
-                </div>
-
-                {isPeptideForm && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-right">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">دواعي الاستعمال (AR، كل سطر على حدة)</label>
-                    <textarea
-                      id="form-ar-inds"
-                      rows={2}
-                      placeholder="زيادة الوزن&#10;مقاومة الأنسولين"
-                      value={locInds.ar}
-                      onChange={(e) => setLocInds({ ...locInds, ar: e.target.value })}
-                      className="w-full px-3 py-1.5 text-[11px] text-right border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">موانع الاستعمال (AR، كل سطر على حدة)</label>
-                    <textarea
-                      id="form-ar-contras"
-                      rows={2}
-                      placeholder="فرط الحساسية&#10;الحمل"
-                      value={locContras.ar}
-                      onChange={(e) => setLocContras({ ...locContras, ar: e.target.value })}
-                      className="w-full px-3 py-1.5 text-[11px] text-right border border-slate-200 rounded-lg focus:outline-none focus:border-nadeck-500 font-mono"
-                    />
-                  </div>
-                </div>
-                )}
-              </div>
 
               {/* Form buttons block */}
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3" id="form-actions-row">

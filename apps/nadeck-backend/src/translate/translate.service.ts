@@ -28,7 +28,7 @@ export class TranslateService {
             role: 'system',
             content:
               'You are a precise medical/pharma translator for a peptide pharmacy admin panel. ' +
-              'Translate the given Russian text into English and Arabic. Preserve tone, terminology, ' +
+              'Translate the given Russian text into English. Preserve tone, terminology, ' +
               'and formatting exactly. When a field is a newline-separated list, the translation must ' +
               'have the exact same number of lines, in the same order. Respond with strict JSON only, no commentary.',
           },
@@ -53,14 +53,13 @@ export class TranslateService {
     }
 
     const result = await this.translateJson(
-      `Translate this pharmacy product category name from Russian into English and Arabic.\n` +
-        `Return JSON exactly like: {"en": "...", "ar": "..."}\n\n` +
+      `Translate this pharmacy product category name from Russian into English.\n` +
+        `Return JSON exactly like: {"en": "..."}\n\n` +
         `Russian: ${name}`
     );
 
     return {
       en: String(result?.en || '').trim(),
-      ar: String(result?.ar || '').trim(),
     };
   }
 
@@ -81,16 +80,15 @@ export class TranslateService {
     };
 
     const result = await this.translateJson(
-      `Translate the following pharmacy product fields from Russian into English and Arabic.\n` +
+      `Translate the following pharmacy product fields from Russian into English.\n` +
         `"indications" and "contraindications" are newline-separated lists - the translation must keep ` +
         `the exact same number of lines, in the same order, still separated by newlines.\n` +
         `Return strict JSON with exactly this shape:\n` +
-        `{"en": {"name":"","description":"","fullDescription":"","usage":"","indications":"","contraindications":""}, ` +
-        `"ar": {"name":"","description":"","fullDescription":"","usage":"","indications":"","contraindications":""}}\n\n` +
+        `{"en": {"name":"","description":"","fullDescription":"","usage":"","indications":"","contraindications":""}}\n\n` +
         `Russian fields (JSON):\n${JSON.stringify(fields)}`
     );
 
-    const pick = (lang: 'en' | 'ar') => ({
+    const pick = (lang: 'en') => ({
       name: String(result?.[lang]?.name || '').trim(),
       description: String(result?.[lang]?.description || '').trim(),
       fullDescription: String(result?.[lang]?.fullDescription || '').trim(),
@@ -99,6 +97,6 @@ export class TranslateService {
       contraindications: String(result?.[lang]?.contraindications || '').trim(),
     });
 
-    return { en: pick('en'), ar: pick('ar') };
+    return { en: pick('en') };
   }
 }

@@ -49,7 +49,7 @@ describe('ChatService sales mode', () => {
     const photoPrisma: any = {
       product: {
         findMany: jest.fn(async (q: any) =>
-          q?.where?.id ? [{ id: 'reta', name: { ru: 'Рета (Retarutide) — пептид' }, images: [], imagesAr: ['https://cdn/r.jpg'] }] : [],
+          q?.where?.id ? [{ id: 'reta', name: { ru: 'Рета (Retarutide) — пептид' }, images: ['https://cdn/r.jpg'] }] : [],
         ),
       },
       deliveryCountry: { findMany: jest.fn().mockResolvedValue([]) },

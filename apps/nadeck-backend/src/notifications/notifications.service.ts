@@ -123,7 +123,6 @@ export class NotificationsService {
       const message = {
         ru: `Товар "${nameByLang.ru || nameByLang.en}" снова в наличии!`,
         en: `"${nameByLang.en || nameByLang.ru}" is back in stock!`,
-        ar: `المنتج "${nameByLang.ar || nameByLang.en}" متوفر الآن من جديد!`,
       };
 
       for (const sub of subs) {

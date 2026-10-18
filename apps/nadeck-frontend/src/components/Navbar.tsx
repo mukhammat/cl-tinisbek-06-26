@@ -4,9 +4,8 @@
  */
 
 import { useState } from 'react';
-import { Language, User, CartItem, AppNotification } from '../types';
+import { Language, User, CartItem, AppNotification, SUPPORTED_LANGUAGES } from '../types';
 import { TRANSLATIONS } from '../data';
-import { marketLanguages } from '../market';
 import { ShoppingCart, Calculator, User as UserIcon, LogIn, Search, Heart, Plus, Bell } from 'lucide-react';
 import nadeckIcon from '../assets/nadeck-icon.png';
 
@@ -151,7 +150,7 @@ export default function Navbar({
                 onChange={(e) => setLang(e.target.value as Language)}
                 className="appearance-none bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-nadeck-500 pe-6 cursor-pointer"
               >
-                {marketLanguages.map((lang) => (
+                {SUPPORTED_LANGUAGES.map((lang) => (
                   <option key={lang.code} value={lang.code}>
                     {lang.flag} {lang.code.toUpperCase()}
                   </option>

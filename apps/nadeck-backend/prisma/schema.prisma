@@ -14,36 +14,21 @@ model User {
   phone       String  @default("")
   address     String  @default("")
   isAdmin     Boolean @default(false)
-  // null = full admin (every market, current behavior); a specific Market scopes this admin
-  // to only that storefront's products - see admin-emails.util.ts and AdminGuard.
-  adminMarket Market?
 }
 
 model Category {
   id        String    @id
-  name      Json // { ru, en, ar }
+  name      Json // { ru, en }
   // Uploaded icon for the category filter pill (data URI or URL); null = fall back to the default red logo mark
   icon      String?
   sortOrder Int       @default(0)
   isActive  Boolean   @default(true)
-  // Which storefront(s) list this category - same semantics as Product.markets.
-  markets   Market[]  @default([main])
-  // Two back-relations because a product is filed under one category per storefront - see
-  // Product.categoryId / Product.categoryIdAr.
-  products   Product[] @relation("ProductCategoryMain")
-  productsAr Product[] @relation("ProductCategoryAr")
+  products  Product[]
 }
 
 enum ProductType {
   peptide
   additional_good
-}
-
-// Which storefront(s) a product is listed on - nadeck.net ('main') and/or ar.nadeck.net ('ar').
-// Independent of the product's translated content (name/description already carry ru/en/ar).
-enum Market {
-  main
-  ar
 }
 
 // The measurement unit each volume/price entry is denominated in. Independent of ProductType -
@@ -63,25 +48,14 @@ model Product {
   id              String      @id
   type            ProductType @default(peptide)
   unit            ProductUnit @default(mg)
-  name            Json // { ru, en, ar }
-  // One category per storefront, because the two markets keep entirely separate category
-  // rows (Category.markets) - a single shared id would always be an orphan on one of them.
-  // `categoryId` is nadeck.net's; `categoryIdAr` is ar.nadeck.net's and falls back to
-  // `categoryId` when unset, mirroring how images/imagesAr behave.
+  name            Json // { ru, en }
   categoryId      String      @default("weightloss")
-  category        Category    @relation("ProductCategoryMain", fields: [categoryId], references: [id], onDelete: Restrict)
-  categoryIdAr    String?
-  categoryAr      Category?   @relation("ProductCategoryAr", fields: [categoryIdAr], references: [id], onDelete: Restrict)
-  description     Json // { ru, en, ar }
-  fullDescription Json // { ru, en, ar }
-  images          Json @default("[]") // string[] of image URLs for nadeck.net - images[0] is the cover photo
-  // Same, but for ar.nadeck.net - the two storefronts can show different photos of the same
-  // product. Empty here means that site falls back to `images` (and an empty `images` falls
-  // back to this), so a product still only needs one gallery unless the markets differ.
-  imagesAr        Json @default("[]")
+  category        Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  description     Json // { ru, en }
+  fullDescription Json // { ru, en }
+  images          Json @default("[]") // string[] of image URLs - images[0] is the cover photo
   rating          Float
   inStock         Int
-  markets         Market[]    @default([main])
 
   medicine        MedicineDetails?
   additionalGood  AdditionalGoodDetails?
@@ -91,15 +65,13 @@ model Product {
 model MedicineDetails {
   productId         String  @id
   product           Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  indications       Json // { ru: string[], en: string[], ar: string[] }
-  contraindications Json // { ru: string[], en: string[], ar: string[] }
-  usage             Json // { ru, en, ar }
+  indications       Json // { ru: string[], en: string[] }
+  contraindications Json // { ru: string[], en: string[] }
+  usage             Json // { ru, en }
   form              String
   mgPerUnit         Float
   dosageRules       Json // { mgPerKgPerDay, defaultDailyDoses }
-  // [{ mgPerUnit, price, priceUsd, priceSar }] volume options - price lives only here, tied to
-  // the strength. priceSar (SAR) is independent of priceUsd, not derived from it - shown on
-  // ar.nadeck.net for the Arabic language (English there still shows priceUsd).
+  // [{ mgPerUnit, price, priceUsd }] volume options - price lives only here, tied to the strength.
   volumes           Json @default("[]")
 }
 
@@ -109,7 +81,7 @@ model MedicineDetails {
 model AdditionalGoodDetails {
   productId String  @id
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  // [{ mgPerUnit, price, priceUsd, priceSar }] pack-size options - mgPerUnit here just means
+  // [{ mgPerUnit, price, priceUsd }] pack-size options - mgPerUnit here just means
   // "units per pack"
   volumes   Json @default("[]")
 }
@@ -118,20 +90,17 @@ model AdditionalGoodDetails {
 // destination doesn't need a deploy - these fees used to be hardcoded in the frontend's
 // currency.ts. There is deliberately no free-delivery tier: every country charges its flat fee.
 model DeliveryCountry {
-  code      String   @id // ISO 3166-1 alpha-2, uppercase (KZ, SA, AE, ...)
-  name      Json // { ru, en, ar }
-  priceKzt  Float    @default(0)
-  priceUsd  Float    @default(0)
-  priceSar  Float    @default(0)
-  isActive  Boolean  @default(true)
-  sortOrder Int      @default(0)
-  // Which storefront offers this destination - same semantics as Product.markets/Category.markets.
-  markets   Market[] @default([main])
+  code      String  @id // ISO 3166-1 alpha-2, uppercase (KZ, RU, UZ, ...)
+  name      Json // { ru, en }
+  priceKzt  Float   @default(0)
+  priceUsd  Float   @default(0)
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
 }
 
 // A code handed to a partner, who passes it on to their clients: the client types it at
 // checkout and gets a percentage off. Percent rather than a fixed sum because the storefront
-// sells in three currencies (KZT/USD/SAR) - one percentage covers all of them.
+// sells in two currencies (KZT/USD) - one percentage covers both.
 model PromoCode {
   code            String  @id // uppercase, exactly what the customer types
   partnerName     String  @default("") // whose code this is - the label in the admin stats table
@@ -146,14 +115,9 @@ model Order {
   id            String @id
   date          String
   userEmail     String
-  // Which storefront the checkout happened on. Only the analytics dashboard reads it, so it
-  // can put an order next to the visits of the same site - every other order screen still
-  // shows both markets together. Rows placed before this column existed default to 'main'.
-  market        Market @default(main)
-  items         Json // [{ medicineName, price, priceUsd, priceSar, quantity }]
+  items         Json // [{ medicineName, price, priceUsd, quantity }]
   totalPrice    Float // KZT grand total
   totalPriceUsd Float @default(0) // USD grand total
-  totalPriceSar Float @default(0) // SAR grand total (ar.nadeck.net, Arabic language)
   address       Json // { city, street, apartment, postalCode }
   paymentMethod String
   status        String @default("pending")
@@ -166,7 +130,6 @@ model Order {
   // What the discount actually took off, per currency. The totalPrice* above are already net of it.
   discountKzt     Float   @default(0)
   discountUsd     Float   @default(0)
-  discountSar     Float   @default(0)
 
   @@index([promoCode])
 }
@@ -185,7 +148,7 @@ model Notification {
   id         String @id @default(cuid())
   email      String
   medicineId String
-  message    Json // { ru, en, ar }
+  message    Json // { ru, en }
   createdAt  String
   read       Int    @default(0)
 }
@@ -212,7 +175,6 @@ model VisitEvent {
   id        String   @id @default(cuid())
   visitorId String
   sessionId String
-  market    Market   @default(main)
   // The logical screen, not a URL: catalog | product | calculator | cart | orders | checkout
   path      String
   // Set only on `path = 'product'` - drives the "most viewed products" table
@@ -225,7 +187,6 @@ model VisitEvent {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
-  @@index([market, createdAt])
 }
 
 // A customer's private chat with the Telegram bot (nadeck-bot), recorded by ChatService so

@@ -126,7 +126,7 @@ export default function DosageCalculator({
   const totalInjectionsPerVial = desiredMcg > 0 ? Math.floor(totalMcgInVial / desiredMcg) : 0;
   
   // Cost per injection / single shot cost
-  const costPerInjection = totalInjectionsPerVial > 0 ? Math.round(resolvePrice(selectedMedVolume.price, selectedMedVolume.priceUsd, selectedMedVolume.priceSar, currentLang) / totalInjectionsPerVial) : 0;
+  const costPerInjection = totalInjectionsPerVial > 0 ? Math.round(resolvePrice(selectedMedVolume.price, selectedMedVolume.priceUsd, currentLang) / totalInjectionsPerVial) : 0;
 
   // Lasting duration estimation based on chosen active frequency
   const calculateDuration = () => {
@@ -179,143 +179,115 @@ export default function DosageCalculator({
   const l = {
     vialMgLabel: {
       ru: 'Препарат во флаконе',
-      en: 'Peptide Amount in Vial',
-      ar: 'كمية الببتيد في الزجاجة'
+      en: 'Peptide Amount in Vial'
     },
     diluentMlLabel: {
       ru: 'Флакон разбавителя (Стерильная вода)',
-      en: 'Bacteriostatic Water Added',
-      ar: 'كمية الماء المعقم المضاف'
+      en: 'Bacteriostatic Water Added'
     },
     syringeCapacityLabel: {
       ru: 'Калибровка инсулинового шприца',
-      en: 'Insulin Syringe Calibration',
-      ar: 'معايرة حقنة الأنسولين'
+      en: 'Insulin Syringe Calibration'
     },
     desiredMcgLabel: {
       ru: 'Желаемая доза за одну инъекцию',
-      en: 'Desired Single Dosage',
-      ar: 'الجرعة الفردية المطلوبة'
+      en: 'Desired Single Dosage'
     },
     concentrationTitle: {
       ru: 'Концентрация раствора',
-      en: 'Solution Concentration',
-      ar: 'تركيز المحلول'
+      en: 'Solution Concentration'
     },
     perUnitTitle: {
       ru: 'В 1 единице (U) шприца',
-      en: 'Active substance per 1 U',
-      ar: 'المادة الفعالة لكل وحدة (U)'
+      en: 'Active substance per 1 U'
     },
     totalLiquidTitle: {
       ru: 'Набрать готового раствора',
-      en: 'Total Liquid volume to draw',
-      ar: 'حجم السائل المطلوب سحبه'
+      en: 'Total Liquid volume to draw'
     },
     unitsToFillTitle: {
       ru: 'ОТМЕТКА НА СКАЛЕ (U / ЕДИНЦЫ)',
-      en: 'UNITS TO DRAW (U on scale)',
-      ar: 'الوحدات المراد سحبها (درجة U)'
+      en: 'UNITS TO DRAW (U on scale)'
     },
     warningOverSyringe: {
       ru: 'Внимание! Расчетный объем разовой дозы превосходит объем шприца. Добавьте больше жидкого разбавителя или замените шприц на больший.',
-      en: 'Warning: Required volume exceeds syringe limit! Add more sterile diluent water or switch to a larger syringe volume.',
-      ar: 'تحذير: الحجم المطلوب يتجاوز حد الحقنة! أضف المزيد من الماء المعقم للتخفيف أو اطلب حقنة بسعة أكبر.'
+      en: 'Warning: Required volume exceeds syringe limit! Add more sterile diluent water or switch to a larger syringe volume.'
     },
     warningOverVial: {
       ru: 'Направленная разовая доза превышает весь объем пептида во флаконе!',
-      en: 'Target single dose is higher than total peptide quantity in the vial!',
-      ar: 'تحذير: الجرعة الفردية المطلوبة تجتاز إجمالي كمية الببتيد في القارورة!'
+      en: 'Target single dose is higher than total peptide quantity in the vial!'
     },
     vialPriceLabel: {
       ru: 'Стоимость этого оригинального флакона',
-      en: 'Buy this active vial unit price',
-      ar: 'سعر شراء هذه القارورة الأصلية'
+      en: 'Buy this active vial unit price'
     },
     visualGuide: {
       ru: 'Клиническая схема разведения и забора пептида',
-      en: 'Clinical Reconstitution & Draw Scale representation',
-      ar: 'المخطط السريري لتخفيف وسحب الببتيد'
+      en: 'Clinical Reconstitution & Draw Scale representation'
     },
     injectionsPerVialLabel: {
       ru: 'Всего доз (уколов) во флаконе',
-      en: 'Total Injections per Vial',
-      ar: 'إجمالي الحقن لكل قارورة'
+      en: 'Total Injections per Vial'
     },
     costPerInjectionLabel: {
       ru: 'Себестоимость одного укола',
-      en: 'Cost per Single Shot/Injection',
-      ar: 'تكلفة الحقنة الواحدة'
+      en: 'Cost per Single Shot/Injection'
     },
     durationLabel: {
       ru: 'Одного флакона вам хватит на',
-      en: 'Single vial supply lasts',
-      ar: 'تكفي القارورة الواحدة لمدة'
+      en: 'Single vial supply lasts'
     },
     daysLabel: {
       ru: 'дн.',
-      en: 'days',
-      ar: 'أيام'
+      en: 'days'
     },
     weeksLabel: {
       ru: 'нед.',
-      en: 'weeks',
-      ar: 'أسابيع'
+      en: 'weeks'
     },
     howOftenLabel: {
       ru: 'Планируемый режим использования',
-      en: 'Selected Administration Frequency',
-      ar: 'طريقة الاستخدام الروتيني المحددة'
+      en: 'Selected Administration Frequency'
     },
     ruleNeverShake: {
       ru: 'Действуйте аккуратно: плавно вливайте воду во флакон по стеклянной стенке. Ни в коем случае не трясите флакон агрессивно — это разрушает пептидные белковые связи.',
-      en: 'Act gently: slowly inject bacteriostatic water along the sterile vial glass wall. Forceful shaking can denature and destroy delicate peptide sequences.',
-      ar: 'تعامل بلطف: احقن الماء المعقم ببطء على طول الجدار الزجاجي المعقم للقارورة. رج القارورة بقوة قد يكسر الروابط الببتيدية الحساسة ويخرب الببتيد.'
+      en: 'Act gently: slowly inject bacteriostatic water along the sterile vial glass wall. Forceful shaking can denature and destroy delicate peptide sequences.'
     },
     storageRule: {
       ru: 'Приготовленный жидкий препарат храните строго в холодильной камере при 2-8°C. Оберегайте от воздействия прямых солнечных лучей и яркого дневного света.',
-      en: 'Reconstituted liquid solution must be stored in refrigerator at 2°C to 8°C. Shield completely from direct light, heat sources, and freezing.',
-      ar: 'يرجى حفظ المحلول المجهز ببرودة الثلاجة من 2 إلى 8 درجات مئوية بشكل صارم. تجنب أشعة الشمس المباشرة والضوء الساطع.'
+      en: 'Reconstituted liquid solution must be stored in refrigerator at 2°C to 8°C. Shield completely from direct light, heat sources, and freezing.'
     },
     frequencyDaily: {
       ru: 'Ежедневно (1 раз в сутки)',
-      en: 'Everyday (1 injection daily)',
-      ar: 'يومياً (حقنة واحدة باليوم)'
+      en: 'Everyday (1 injection daily)'
     },
     frequencyTwiceDaily: {
       ru: '2 раза в день (утром и вечером)',
-      en: '2 times a day (Morning & Night)',
-      ar: 'مرتين يومياً (صباحاً ومساءً)'
+      en: '2 times a day (Morning & Night)'
     },
     frequencyOnceWeekly: {
       ru: 'Раз в неделю (стандарт для GLP-1 / похудения)',
-      en: 'Once per week (GLP-1 Weightloss standard)',
-      ar: 'مرة واحدة في الأسبوع (قياسي لـ GLP-1 للتخسيس)'
+      en: 'Once per week (GLP-1 Weightloss standard)'
     },
     frequencyEveryOtherDay: {
       ru: 'Через день (Раз в 48 часов)',
-      en: 'Every other day (Each 48h)',
-      ar: 'يوم بعد يوم (كل 48 ساعة)'
+      en: 'Every other day (Each 48h)'
     },
     vialVisualHeader: {
       ru: 'Флакон пептида',
-      en: 'Peptide Vial Reconstitution',
-      ar: 'قارورة الببتيد'
+      en: 'Peptide Vial Reconstitution'
     },
     vialLiquidStatePowder: {
       ru: 'Сухой лиофилизат',
-      en: 'Sterile Lyophilized Powder',
-      ar: 'مسحوق جاف معقم'
+      en: 'Sterile Lyophilized Powder'
     },
     vialLiquidStateDissolved: {
       ru: 'Растворенный пептид',
-      en: 'Reconstituted Liquid Peptide',
-      ar: 'الببتيد المحلول الجاهз'
+      en: 'Reconstituted Liquid Peptide'
     },
     calcResetBtn: {
       ru: 'Сбросить параметры',
-      en: 'Reset to standard parameters',
-      ar: 'إعادة تعيين المعايير الأساسية'
+      en: 'Reset to standard parameters'
     }
   };
 
@@ -792,7 +764,7 @@ export default function DosageCalculator({
                 </span>
                 <p id="target-units-draw" className="text-xl sm:text-2xl font-black text-nadeck-900 flex items-baseline gap-1 animate-pulse">
                   <span>{unitsToDraw}</span>
-                  <span className="text-[10px] lg:text-xs font-bold uppercase text-nadeck-700">{currentLang === 'ru' ? 'ЕДИНИЦ' : currentLang === 'ar' ? 'وحدات' : 'Units'} (U)</span>
+                  <span className="text-[10px] lg:text-xs font-bold uppercase text-nadeck-700">{currentLang === 'ru' ? 'ЕДИНИЦ' : 'Units'} (U)</span>
                 </p>
               </div>
 
@@ -921,7 +893,7 @@ export default function DosageCalculator({
             <div>
               <span className="text-[10px] lg:text-xs text-slate-400 font-bold uppercase">{getLocalText('vialPriceLabel')}</span>
               <div id="calc-res-cost" className="text-2xl lg:text-3xl font-black text-slate-950 flex items-baseline gap-1">
-                <span>{resolvePrice(selectedMedVolume.price, selectedMedVolume.priceUsd, selectedMedVolume.priceSar, currentLang).toLocaleString()} {t('currencySymbol')}</span>
+                <span>{resolvePrice(selectedMedVolume.price, selectedMedVolume.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')}</span>
                 <span className="text-xs lg:text-sm text-slate-400 font-medium">/ {currentLang === 'ru' ? 'за флакон (vial)' : 'per active vial'}</span>
               </div>
             </div>

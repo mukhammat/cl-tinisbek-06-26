@@ -24,17 +24,13 @@ export class OrdersService {
       items,
       totalPrice,
       totalPriceUsd,
-      totalPriceSar,
       subtotalPrice,
       subtotalPriceUsd,
-      subtotalPriceSar,
       deliveryPrice,
       deliveryPriceUsd,
-      deliveryPriceSar,
       promoCode,
       address,
       paymentMethod,
-      market,
     } = body;
     if (!items || !totalPrice || !address) {
       throw new BadRequestException('Invalid cart or address details');
@@ -52,15 +48,14 @@ export class OrdersService {
       const goods = {
         kzt: subtotalPrice !== undefined ? num(subtotalPrice) : num(totalPrice),
         usd: subtotalPriceUsd !== undefined ? num(subtotalPriceUsd) : num(totalPriceUsd),
-        sar: subtotalPriceSar !== undefined ? num(subtotalPriceSar) : num(totalPriceSar),
       };
       // Shipping is charged at the rate stored for the destination country, not the one the
       // browser reports. Falls back to the reported figure only while no country has been
       // configured yet - the country picker is hidden in that state too.
       const countryFee = await this.deliveryCountries.resolveFee(address?.country);
       const delivery = countryFee
-        ? { kzt: countryFee.priceKzt, usd: countryFee.priceUsd, sar: countryFee.priceSar }
-        : { kzt: num(deliveryPrice), usd: num(deliveryPriceUsd), sar: num(deliveryPriceSar) };
+        ? { kzt: countryFee.priceKzt, usd: countryFee.priceUsd }
+        : { kzt: num(deliveryPrice), usd: num(deliveryPriceUsd) };
 
       // Never trust a discount computed in the browser: the percentage is re-read from the
       // database here, and an expired or exhausted code silently charges full price.
@@ -71,7 +66,6 @@ export class OrdersService {
       const discount = {
         kzt: round2((goods.kzt * percent) / 100),
         usd: round2((goods.usd * percent) / 100),
-        sar: round2((goods.sar * percent) / 100),
       };
 
       const trackingNumber = 'PP-' + Math.floor(100000 + Math.random() * 900000);
@@ -83,13 +77,9 @@ export class OrdersService {
           id: trackingNumber,
           date: dateStr,
           userEmail: userEmailVal,
-          // Which storefront checked out, so the analytics dashboard can put this order next
-          // to that site's own traffic. Every other order screen still lists both markets.
-          market: market === 'ar' ? 'ar' : 'main',
           items,
           totalPrice: round2(goods.kzt - discount.kzt + delivery.kzt),
           totalPriceUsd: round2(goods.usd - discount.usd + delivery.usd),
-          totalPriceSar: round2(goods.sar - discount.sar + delivery.sar),
           address,
           paymentMethod,
           status: 'pending',
@@ -97,7 +87,6 @@ export class OrdersService {
           discountPercent: percent,
           discountKzt: discount.kzt,
           discountUsd: discount.usd,
-          discountSar: discount.sar,
         }
       });
 
@@ -108,7 +97,6 @@ export class OrdersService {
         items,
         totalPrice: order.totalPrice,
         totalPriceUsd: order.totalPriceUsd,
-        totalPriceSar: order.totalPriceSar,
         address,
         paymentMethod: order.paymentMethod,
         status: order.status,
@@ -116,7 +104,6 @@ export class OrdersService {
         discountPercent: order.discountPercent,
         discountKzt: order.discountKzt,
         discountUsd: order.discountUsd,
-        discountSar: order.discountSar,
       };
     } catch (err) {
       console.error('Place order error:', err);
@@ -141,7 +128,7 @@ export class OrdersService {
     }
 
     const products = await this.prisma.product.findMany({
-      where: { id: { in: items.map((i: any) => String(i?.productId)) }, markets: { has: 'main' } },
+      where: { id: { in: items.map((i: any) => String(i?.productId)) } },
       include: { medicine: true, additionalGood: true },
     });
 
@@ -163,7 +150,6 @@ export class OrdersService {
         unit: product.unit,
         price: Number(volume.price),
         priceUsd: Number(volume.priceUsd) || 0,
-        priceSar: Number(volume.priceSar) || 0,
         quantity,
       };
     });
@@ -171,12 +157,11 @@ export class OrdersService {
     const goods = {
       kzt: orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0),
       usd: orderItems.reduce((sum, i) => sum + i.priceUsd * i.quantity, 0),
-      sar: orderItems.reduce((sum, i) => sum + i.priceSar * i.quantity, 0),
     };
     const countryFee = await this.deliveryCountries.resolveFee(address?.country);
     const delivery = countryFee
-      ? { kzt: countryFee.priceKzt, usd: countryFee.priceUsd, sar: countryFee.priceSar }
-      : { kzt: 0, usd: 0, sar: 0 };
+      ? { kzt: countryFee.priceKzt, usd: countryFee.priceUsd }
+      : { kzt: 0, usd: 0 };
 
     const username = text(telegram?.username, 64);
     const telegramId = text(telegram?.id, 32);
@@ -189,11 +174,9 @@ export class OrdersService {
           date: new Date().toLocaleDateString('ru-RU'),
           // No account behind a Telegram customer - the handle is what the manager searches by.
           userEmail: username ? `tg:@${username}` : `tg:${telegramId || 'guest'}`,
-          market: 'main',
           items: orderItems,
           totalPrice: round2(goods.kzt + delivery.kzt),
           totalPriceUsd: round2(goods.usd + delivery.usd),
-          totalPriceSar: round2(goods.sar + delivery.sar),
           address: {
             country: countryFee?.code ?? '',
             city,
@@ -242,7 +225,6 @@ export class OrdersService {
         items: o.items,
         totalPrice: o.totalPrice,
         totalPriceUsd: o.totalPriceUsd,
-        totalPriceSar: o.totalPriceSar,
         address: o.address,
         paymentMethod: o.paymentMethod,
         status: o.status,
@@ -250,7 +232,6 @@ export class OrdersService {
         discountPercent: o.discountPercent,
         discountKzt: o.discountKzt,
         discountUsd: o.discountUsd,
-        discountSar: o.discountSar,
       }));
     } catch (err) {
       console.error('Get orders error:', err);
@@ -272,7 +253,6 @@ export class OrdersService {
         items: o.items,
         totalPrice: o.totalPrice,
         totalPriceUsd: o.totalPriceUsd,
-        totalPriceSar: o.totalPriceSar,
         address: o.address,
         paymentMethod: o.paymentMethod,
         status: o.status,
@@ -280,7 +260,6 @@ export class OrdersService {
         discountPercent: o.discountPercent,
         discountKzt: o.discountKzt,
         discountUsd: o.discountUsd,
-        discountSar: o.discountSar,
       }));
     } catch (err) {
       console.error('Get all orders error:', err);

@@ -133,7 +133,7 @@ export default function OrderHistory({
                     <div key={idx} className="flex gap-2 text-xs sm:text-sm text-slate-700 font-medium">
                       <span className="text-slate-400">{item.quantity} шт ×</span>
                       <span className="text-slate-900 font-bold">{item.medicineName[currentLang]}</span>
-                      <span className="text-slate-400 font-semibold">({resolvePrice(item.price, item.priceUsd, item.priceSar, currentLang).toLocaleString()} {t('currencySymbol')})</span>
+                      <span className="text-slate-400 font-semibold">({resolvePrice(item.price, item.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')})</span>
                     </div>
                   ))}
 
@@ -151,14 +151,14 @@ export default function OrderHistory({
                   <div>
                     <span className="block text-[10px] text-slate-400 font-semibold uppercase">{t('totalToPay')}</span>
                     <span id={`order-total-${order.id}`} className="text-base sm:text-lg font-black text-nadeck-800">
-                      {resolvePrice(order.totalPrice, order.totalPriceUsd, order.totalPriceSar, currentLang).toLocaleString()} {t('currencySymbol')}
+                      {resolvePrice(order.totalPrice, order.totalPriceUsd, currentLang).toLocaleString()} {t('currencySymbol')}
                     </span>
                     {/* This is the screen the customer lands on right after checkout, so the
                         discount has to be visible here and not only in the cart. */}
                     {order.promoCode ? (
                       <span id={`order-promo-${order.id}`} className="block text-[10px] font-bold text-emerald-600 mt-0.5">
-                        {currentLang === 'ru' ? 'Промокод' : currentLang === 'ar' ? 'الرمز الترويجي' : 'Promo code'} {order.promoCode} · −
-                        {resolvePrice(order.discountKzt || 0, order.discountUsd || 0, order.discountSar || 0, currentLang).toLocaleString()} {t('currencySymbol')}
+                        {currentLang === 'ru' ? 'Промокод' : 'Promo code'} {order.promoCode} · −
+                        {resolvePrice(order.discountKzt || 0, order.discountUsd || 0, currentLang).toLocaleString()} {t('currencySymbol')}
                       </span>
                     ) : null}
                   </div>
