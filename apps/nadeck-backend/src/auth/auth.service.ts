@@ -104,6 +104,18 @@ export class AuthService {
         });
       }
 
+      // isAdmin is stamped at registration, so an account created under a rule that has since
+      // been dropped would keep it forever - re-derive it from the allowlist on every login.
+      const isAdmin = isAdminEmail(emailLower);
+      const adminMarket = getAdminMarket(emailLower);
+      if (user.isAdmin !== isAdmin || user.adminMarket !== adminMarket) {
+        const synced = await this.prisma.user.update({
+          where: { email: emailLower },
+          data: { isAdmin, adminMarket },
+        });
+        return this.buildAuthResponse(synced);
+      }
+
       return this.buildAuthResponse(user);
     } catch (err: any) {
       if (err instanceof UnauthorizedException || err instanceof BadRequestException) throw err;

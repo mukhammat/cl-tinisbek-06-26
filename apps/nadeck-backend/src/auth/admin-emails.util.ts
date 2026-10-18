@@ -12,7 +12,7 @@ const AR_ADMIN_EMAILS = new Set(['arar@gmail.com']);
 
 export function isAdminEmail(email: string): boolean {
   const lower = email.toLowerCase();
-  return ADMIN_EMAILS.has(lower) || lower.endsWith('@admin.com') || AR_ADMIN_EMAILS.has(lower);
+  return ADMIN_EMAILS.has(lower) || AR_ADMIN_EMAILS.has(lower);
 }
 
 // null = full admin (every market); a specific market confines the account to that
