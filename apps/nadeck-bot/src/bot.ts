@@ -1,7 +1,7 @@
 import { config as loadEnv } from "dotenv";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { Bot, type Context, type Filter } from "grammy";
+import { Bot, InlineKeyboard, type Context, type Filter } from "grammy";
 import { isChatAdmin } from "./adminCache.js";
 import { rememberGroup, forgetGroup } from "./groupStore.js";
 import { groupOrderButton, handOverKeyboard, notifyManagers, type PlacedOrder } from "./shop.js";
@@ -60,6 +60,35 @@ bot.on("my_chat_member", (ctx) => {
     forgetGroup(ctx.chat.id);
     console.log(`Удалён из группы "${ctx.chat.title}" (id=${ctx.chat.id}).`);
   }
+});
+
+// Someone who just came in through the general chat's male/female buttons (gender-router-bot)
+// is greeted by name and told how to ask questions here: right in the group or in private.
+// Telegram posts "joined" as a service message, which reaches the bot whatever its privacy mode.
+const escHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+bot.on("message:new_chat_members", async (ctx) => {
+  if (ctx.chat.type !== "group" && ctx.chat.type !== "supergroup") return;
+  rememberGroup(ctx.chat.id);
+
+  const people = ctx.message.new_chat_members.filter((m) => !m.is_bot);
+  if (!people.length) return;
+
+  // A text mention notifies the person even without a public @username.
+  const mentions = people.map((m) => `<a href="tg://user?id=${m.id}">${escHtml(m.first_name || m.username || "друг")}</a>`).join(", ");
+  const botName = ctx.me.username;
+  await ctx
+    .reply(
+      `👋 ${mentions}, добро пожаловать!\n\n` +
+        `Если есть общие вопросы — задавайте прямо здесь, в чате, я отвечу. ` +
+        `А по личным вопросам, подбору и заказу пишите мне в личные сообщения: @${botName}`,
+      {
+        parse_mode: "HTML",
+        reply_markup: new InlineKeyboard().url("💬 Написать в личку", `https://t.me/${botName}?start=group`),
+      },
+    )
+    .catch((err) => console.error("Failed to greet new members", err));
+  logInteraction({ event: "welcomed", chatId: ctx.chat.id, userIds: people.map((m) => m.id) });
 });
 
 // Strips an @mention of the bot itself from the message text (cosmetic - so "@nadeck_ai_bot
@@ -148,13 +177,26 @@ async function answerQuestion(ctx: Context, question: string, isGroup: boolean) 
       body: JSON.stringify(
         isGroup
           ? { message: question, history }
-          : { message: question, history, mode: "sales", customer: { id: ctx.from?.id, username: ctx.from?.username } },
+          : {
+              message: question,
+              history,
+              mode: "sales",
+              // Shown in the admin panel's "Dialogs" tab, where managers read and answer these chats.
+              customer: { id: ctx.from?.id, username: ctx.from?.username, name: [ctx.from?.first_name, ctx.from?.last_name].filter(Boolean).join(" ") },
+            },
       ),
     });
 
     if (!res.ok) throw new Error(`Backend chat API returned ${res.status}`);
 
-    const data = (await res.json()) as { reply?: string; order?: PlacedOrder; photos?: { url: string; caption: string }[] };
+    const data = (await res.json()) as { reply?: string; operator?: boolean; order?: PlacedOrder; photos?: { url: string; caption: string }[] };
+
+    // A manager has taken this chat over in the admin panel and answers from there - the
+    // message is already saved for them, the bot just stays out of the way.
+    if (data.operator) {
+      logInteraction({ userId: ctx.from?.id, username: ctx.from?.username, question, operator: true });
+      return;
+    }
     // The prompt asks for plain text, but bold markers still slip through now and then, and
     // Telegram would show them as literal asterisks.
     // Same for markdown image embeds - the photos themselves are sent separately below.

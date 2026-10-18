@@ -227,3 +227,33 @@ model VisitEvent {
   @@index([createdAt])
   @@index([market, createdAt])
 }
+
+// A customer's private chat with the Telegram bot (nadeck-bot), recorded by ChatService so
+// the admin panel's "Dialogs" tab can show it and a manager can answer in the bot's place.
+// One row per Telegram user; group chats are never recorded.
+model BotDialog {
+  id            String             @id @default(cuid())
+  telegramId    String             @unique // Telegram user id as text - it can outgrow a 32-bit Int
+  username      String?
+  name          String             @default("")
+  // While this is in the future the advisor stays silent and a manager is answering instead.
+  // Set by a manager's reply (and by "take over"), so a forgotten chat returns to the bot.
+  pausedUntil   DateTime?
+  lastMessageAt DateTime           @default(now())
+  createdAt     DateTime           @default(now())
+  messages      BotDialogMessage[]
+
+  @@index([lastMessageAt])
+}
+
+model BotDialogMessage {
+  id        String    @id @default(cuid())
+  dialogId  String
+  dialog    BotDialog @relation(fields: [dialogId], references: [id], onDelete: Cascade)
+  role      String // customer | bot | operator
+  text      String
+  orderId   String?
+  createdAt DateTime  @default(now())
+
+  @@index([dialogId, createdAt])
+}

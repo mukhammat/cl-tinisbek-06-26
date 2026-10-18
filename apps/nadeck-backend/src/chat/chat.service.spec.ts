@@ -5,9 +5,11 @@ describe('ChatService sales mode', () => {
     product: { findMany: jest.fn().mockResolvedValue([]) },
     deliveryCountry: { findMany: jest.fn().mockResolvedValue([]) },
   };
+  // A fresh private chat: nothing stored yet, the bot is answering.
+  const noDialogs: any = { touch: async () => ({ id: 'd0', pausedUntil: null }), history: async () => [], record: async () => undefined, isPaused: () => false };
 
   const setup = (placeTelegramOrder: jest.Mock) => {
-    const service = new ChatService(prisma, { placeTelegramOrder } as any);
+    const service = new ChatService(prisma, { placeTelegramOrder } as any, noDialogs);
     const create = jest
       .fn()
       .mockResolvedValueOnce({
@@ -52,7 +54,7 @@ describe('ChatService sales mode', () => {
       },
       deliveryCountry: { findMany: jest.fn().mockResolvedValue([]) },
     };
-    const service = new ChatService(photoPrisma, {} as any);
+    const service = new ChatService(photoPrisma, {} as any, noDialogs);
     const create = jest
       .fn()
       .mockResolvedValueOnce({
@@ -68,7 +70,7 @@ describe('ChatService sales mode', () => {
   });
 
   it('never offers the tool to the website widget', async () => {
-    const service = new ChatService(prisma, {} as any);
+    const service = new ChatService(prisma, {} as any, noDialogs);
     const create = jest.fn().mockResolvedValue({ choices: [{ message: { content: 'ok' } }] });
     (service as any).openai = { chat: { completions: { create } } };
     (service as any).knowledgeBase = '';
@@ -79,7 +81,7 @@ describe('ChatService sales mode', () => {
     const previous = process.env.OPENAI_CHAT_MODEL;
     process.env.OPENAI_CHAT_MODEL = 'gpt-6-luna';
     try {
-      const service = new ChatService(prisma, {} as any);
+      const service = new ChatService(prisma, {} as any, noDialogs);
       const create = jest
         .fn()
         .mockRejectedValueOnce(Object.assign(new Error('tools not supported'), { status: 400 }))
@@ -101,7 +103,7 @@ describe('ChatService sales mode', () => {
     }
   });
   it('transcribes a voice message for the bot', async () => {
-    const service = new ChatService(prisma, {} as any);
+    const service = new ChatService(prisma, {} as any, noDialogs);
     const create = jest.fn().mockResolvedValue({ text: ' Сколько стоит Рета? ' });
     (service as any).openai = { audio: { transcriptions: { create } } };
 
@@ -110,5 +112,44 @@ describe('ChatService sales mode', () => {
     expect(result).toEqual({ text: 'Сколько стоит Рета?' });
     expect(create.mock.calls[0][0].model).toBe('gpt-transcribe');
     expect(create.mock.calls[0][0].file.name).toBe('file_1.ogg');
+  });
+
+  describe('bot dialogs', () => {
+    const dialogsStub = (pausedUntil: Date | null, stored: { role: 'user' | 'assistant'; text: string }[] = []) => ({
+      touch: jest.fn().mockResolvedValue({ id: 'd1', pausedUntil }),
+      history: jest.fn().mockResolvedValue(stored),
+      record: jest.fn().mockResolvedValue(undefined),
+      isPaused: (d: { pausedUntil: Date | null }) => !!d.pausedUntil && d.pausedUntil.getTime() > Date.now(),
+    });
+
+    it('stays silent while a manager has taken the chat over, but keeps the message', async () => {
+      const dialogs = dialogsStub(new Date(Date.now() + 60_000));
+      const service = new ChatService(prisma, {} as any, dialogs as any);
+      const create = jest.fn();
+      (service as any).openai = { chat: { completions: { create } } };
+
+      const result = await service.processChat({ message: 'алло', history: [], mode: 'sales', customer: { id: 7 } });
+
+      expect(result).toEqual({ reply: '', operator: true });
+      expect(create).not.toHaveBeenCalled();
+      expect(dialogs.record).toHaveBeenCalledWith('d1', 'customer', 'алло');
+    });
+
+    it('answers from the stored conversation, manager replies included, and records the answer', async () => {
+      const dialogs = dialogsStub(new Date(Date.now() - 1000), [
+        { role: 'user', text: 'есть Рета?' },
+        { role: 'assistant', text: 'Да, есть — менеджер Анна' },
+      ]);
+      const service = new ChatService(prisma, {} as any, dialogs as any);
+      const create = jest.fn().mockResolvedValue({ choices: [{ message: { role: 'assistant', content: 'Хорошо' } }] });
+      (service as any).openai = { chat: { completions: { create } } };
+      (service as any).knowledgeBase = '';
+
+      const result = await service.processChat({ message: 'беру', history: [{ role: 'user', text: 'stale' }], mode: 'sales', customer: { id: 7 } });
+
+      expect(result.reply).toBe('Хорошо');
+      expect(create.mock.calls[0][0].messages.slice(1).map((m: any) => m.content)).toEqual(['есть Рета?', 'Да, есть — менеджер Анна', 'беру']);
+      expect(dialogs.record).toHaveBeenLastCalledWith('d1', 'bot', 'Хорошо', undefined);
+    });
   });
 });

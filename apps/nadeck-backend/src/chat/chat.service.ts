@@ -9,6 +9,7 @@ import { join } from 'path';
 import OpenAI, { toFile } from 'openai';
 import { PrismaService } from '../database/prisma.service';
 import { OrdersService } from '../orders/orders.service';
+import { DialogsService } from '../dialogs/dialogs.service';
 
 interface FaqCard {
   question: string;
@@ -97,6 +98,7 @@ export class ChatService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(OrdersService) private readonly orders: OrdersService,
+    @Inject(DialogsService) private readonly dialogs: DialogsService,
   ) {}
 
   private openai: OpenAI | null = null;
@@ -241,10 +243,29 @@ ${unknownRule}
   }
 
   // body.mode === 'sales' is sent only by the Telegram bot's private chat, together with
-  // body.customer ({ id, username }) - the website widget keeps the plain Q&A behaviour.
+  // body.customer ({ id, username, name }) - the website widget keeps the plain Q&A behaviour.
+  // Those private chats are also recorded for the admin panel (DialogsService), and while a
+  // manager has taken one over the advisor stays silent: the reply is empty with operator: true.
   async processChat(body: any) {
-    const { message, history, mode, customer } = body;
+    const { message, mode, customer } = body;
     const sales = mode === 'sales';
+    let history = body.history;
+
+    let dialogId: string | null = null;
+    if (sales && customer?.id) {
+      try {
+        const dialog = await this.dialogs.touch(customer);
+        dialogId = dialog.id;
+        // The stored conversation also holds what a manager wrote, which the bot never saw.
+        const stored = await this.dialogs.history(dialog.id);
+        if (stored.length) history = stored;
+        await this.dialogs.record(dialog.id, 'customer', String(message ?? ''));
+        if (this.dialogs.isPaused(dialog)) return { reply: '', operator: true };
+      } catch (err) {
+        // Losing the transcript must not cost the customer their answer.
+        console.error('Chat service: failed to record bot dialog', err);
+      }
+    }
 
     try {
       const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
@@ -305,6 +326,10 @@ ${unknownRule}
 
       const content = completion.choices[0]?.message?.content ?? '';
       const reply = content.trim() === NO_ANSWER_TOKEN ? '' : content;
+      if (dialogId && reply) {
+        const shown = photos.length ? `${reply}\n\n[фото: ${photos.map((p) => p.caption).join(', ')}]` : reply;
+        await this.dialogs.record(dialogId, 'bot', shown, order?.id).catch((err) => console.error('Chat service: failed to record bot reply', err));
+      }
       return { reply, model: completion.model, ...(order ? { order } : {}), ...(photos.length ? { photos: photos.slice(0, 10) } : {}) };
     } catch (err) {
       console.error('Chat service error:', err);

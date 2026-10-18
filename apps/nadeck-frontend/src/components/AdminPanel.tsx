@@ -29,12 +29,14 @@ import {
   Ticket,
   Users,
   Power,
-  BarChart3
+  BarChart3,
+  MessagesSquare
 } from 'lucide-react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
 import { motion, AnimatePresence } from 'motion/react';
 import MediaLibraryModal from './MediaLibraryModal';
 import AnalyticsDashboard from './AnalyticsDashboard';
+import BotDialogs from './BotDialogs';
 
 // The product form edits one photo gallery per storefront: `images` is nadeck.net's,
 // `imagesAr` is ar.nadeck.net's. Leaving one empty is fine - the backend serves the other
@@ -67,7 +69,7 @@ export default function AdminPanel({
   adminMarket
 }: AdminPanelProps) {
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo' | 'delivery' | 'analytics'>('products');
+  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo' | 'delivery' | 'analytics' | 'dialogs'>('products');
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
@@ -1200,6 +1202,21 @@ export default function AdminPanel({
           <BarChart3 className="w-4 h-4" />
           <span>{currentLang === 'ru' ? 'Аналитика' : 'Analytics'}</span>
         </button>
+        {/* The Telegram bot sells for nadeck.net only, so its chats are a full admin's business. */}
+        {!adminMarket && (
+          <button
+            id="admin-tab-dialogs"
+            onClick={() => { setActiveSubTab('dialogs'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
+            className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
+              activeSubTab === 'dialogs' && !isEditing && !isAdding
+                ? 'border-nadeck-600 text-nadeck-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <MessagesSquare className="w-4 h-4" />
+            <span>{currentLang === 'ru' ? 'Диалоги бота' : 'Bot chats'}</span>
+          </button>
+        )}
         {(isEditing || isAdding || isEditingCategory || isAddingCategory) && (
           <div className="px-5 py-3 text-xs sm:text-sm font-bold text-nadeck-600 border-b-2 border-nadeck-600 flex items-center gap-1">
             <Edit2 className="w-4 h-4 animate-bounce" />
@@ -2035,6 +2052,11 @@ export default function AdminPanel({
             it isn't part of the tab-driven loader above. */}
         {activeSubTab === 'analytics' && !isEditing && !isAdding && (
           <AnalyticsDashboard currentLang={currentLang} token={token} adminMarket={adminMarket} />
+        )}
+
+        {/* Telegram bot chats - polls its own data (GET /api/admin/dialogs) like the dashboard above. */}
+        {activeSubTab === 'dialogs' && !adminMarket && !isEditing && !isAdding && (
+          <BotDialogs currentLang={currentLang} token={token} />
         )}
 
         {activeSubTab === 'delivery' && !isEditing && !isAdding && (

@@ -34,6 +34,9 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-nadeck}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-nadeck}
       - JWT_SECRET=${JWT_SECRET}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Same bot as nadeck-bot: a manager's reply from the admin panel's "Dialogs" tab is sent
+      # to the customer as this bot.
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       # Pinned here rather than read from the server .env so a model switch ships with a push.
       # ChatService falls back to gpt-4o-mini if the API rejects this one.
       - OPENAI_CHAT_MODEL=gpt-6-luna

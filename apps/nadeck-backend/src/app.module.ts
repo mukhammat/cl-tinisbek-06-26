@@ -12,8 +12,9 @@ import { TranslateModule } from './translate/translate.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
 import { UploadModule } from './upload/upload.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { DialogsModule } from './dialogs/dialogs.module';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, ChatModule, MedicinesModule, CategoriesModule, OrdersModule, PromoCodesModule, DeliveryCountriesModule, NotificationsModule, TranslateModule, NewsletterModule, UploadModule, AnalyticsModule],
+  imports: [DatabaseModule, AuthModule, ChatModule, MedicinesModule, CategoriesModule, OrdersModule, PromoCodesModule, DeliveryCountriesModule, NotificationsModule, TranslateModule, NewsletterModule, UploadModule, AnalyticsModule, DialogsModule],
 })
 export class AppModule {}
