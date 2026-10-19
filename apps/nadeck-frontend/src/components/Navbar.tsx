@@ -247,9 +247,11 @@ export default function Navbar({
               }`}
             >
               <UserIcon id="user-icon-navbar" className="w-4 h-4 text-nadeck-600" />
-              <span id="user-name-navbar" className="hidden lg:block text-xs font-semibold max-w-[120px] truncate">
-                {user.isAuthenticated ? user.fullName : t('loginBtn')}
-              </span>
+              {!user.isAuthenticated && (
+                <span id="user-name-navbar" className="hidden lg:block text-xs font-semibold max-w-[120px] truncate">
+                  {t('loginBtn')}
+                </span>
+              )}
             </button>
 
           </div>
