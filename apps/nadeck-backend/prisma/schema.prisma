@@ -22,6 +22,9 @@ model User {
   verifyCodeExpiresAt String? // ISO
   verifyCodeSentAt    String? // ISO, for the one-minute resend cooldown
   verifyAttempts      Int     @default(0)
+
+  // Registration time - null for accounts created before it was recorded (2026-10-19)
+  createdAt DateTime? @default(now())
 }
 
 model Category {

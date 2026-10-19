@@ -30,13 +30,15 @@ import {
   Users,
   Power,
   BarChart3,
-  MessagesSquare
+  MessagesSquare,
+  UsersRound,
 } from 'lucide-react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
 import { motion, AnimatePresence } from 'motion/react';
 import MediaLibraryModal from './MediaLibraryModal';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import BotDialogs from './BotDialogs';
+import AdminUsers from './AdminUsers';
 
 // The product form's photo gallery field.
 type ProductImageField = 'images';
@@ -62,7 +64,7 @@ export default function AdminPanel({
   token
 }: AdminPanelProps) {
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo' | 'delivery' | 'analytics' | 'dialogs'>('products');
+  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo' | 'delivery' | 'analytics' | 'dialogs' | 'users'>('products');
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
@@ -1160,6 +1162,18 @@ export default function AdminPanel({
           <MessagesSquare className="w-4 h-4" />
           <span>{currentLang === 'ru' ? 'Диалоги бота' : 'Bot chats'}</span>
         </button>
+        <button
+          id="admin-tab-users"
+          onClick={() => { setActiveSubTab('users'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
+          className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
+            activeSubTab === 'users' && !isEditing && !isAdding
+              ? 'border-nadeck-600 text-nadeck-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <UsersRound className="w-4 h-4" />
+          <span>{currentLang === 'ru' ? 'Пользователи' : 'Users'}</span>
+        </button>
         {(isEditing || isAdding || isEditingCategory || isAddingCategory) && (
           <div className="px-5 py-3 text-xs sm:text-sm font-bold text-nadeck-600 border-b-2 border-nadeck-600 flex items-center gap-1">
             <Edit2 className="w-4 h-4 animate-bounce" />
@@ -1931,6 +1945,11 @@ export default function AdminPanel({
         {/* Telegram bot chats - polls its own data (GET /api/admin/dialogs) like the dashboard above. */}
         {activeSubTab === 'dialogs' && !isEditing && !isAdding && (
           <BotDialogs currentLang={currentLang} token={token} />
+        )}
+
+        {/* Accounts, Telegram customers and guest buyers with their orders (GET /api/admin/users). */}
+        {activeSubTab === 'users' && !isEditing && !isAdding && (
+          <AdminUsers currentLang={currentLang} token={token} />
         )}
 
         {activeSubTab === 'delivery' && !isEditing && !isAdding && (
