@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { DatabaseModule } from '../database/database.module';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AdminGuard } from './admin.guard';
+import { OwnEmailGuard } from './own-email.guard';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { AdminGuard } from './admin.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard, AdminGuard],
-  exports: [JwtModule, JwtAuthGuard, AdminGuard],
+  providers: [AuthService, JwtAuthGuard, AdminGuard, OwnEmailGuard],
+  exports: [JwtModule, JwtAuthGuard, AdminGuard, OwnEmailGuard],
 })
 export class AuthModule {}

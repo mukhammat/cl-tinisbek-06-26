@@ -86,10 +86,11 @@ export class NotificationsService {
     }
   }
 
-  async markRead(id: string) {
+  // Scoped to the owner's email, so one account can't mark another's notifications as read.
+  async markRead(id: string, email: string) {
     try {
-      await this.prisma.notification.update({
-        where: { id },
+      await this.prisma.notification.updateMany({
+        where: { id, email: email.toLowerCase() },
         data: { read: 1 },
       });
       return { success: true };

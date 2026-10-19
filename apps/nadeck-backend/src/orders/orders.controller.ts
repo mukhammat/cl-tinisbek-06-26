@@ -6,6 +6,7 @@
 import { Controller, Get, Post, Put, Body, Param, Inject, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { AdminGuard } from '../auth/admin.guard';
+import { OwnEmailGuard } from '../auth/own-email.guard';
 
 @Controller('api')
 export class OrdersController {
@@ -22,6 +23,7 @@ export class OrdersController {
     return this.ordersService.placeTelegramOrder(body);
   }
 
+  @UseGuards(OwnEmailGuard)
   @Get('orders/:email')
   getUserOrders(@Param('email') email: string) {
     return this.ordersService.getUserOrders(email);

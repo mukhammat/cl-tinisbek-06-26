@@ -153,12 +153,27 @@ export default function App() {
     localStorage.setItem('pharmacy_cart', JSON.stringify(cart));
   }, [cart]);
 
+  // Requests for the signed-in account's own data carry its token. A 401 means the token has
+  // expired (they last 7 days), so the visitor is signed out and asked to log in again rather
+  // than left looking at an empty order history.
+  const userFetch = (url: string, init: RequestInit = {}) =>
+    fetch(url, {
+      ...init,
+      headers: { ...(init.headers as Record<string, string>), ...(user.token ? { Authorization: `Bearer ${user.token}` } : {}) },
+    }).then((res) => {
+      if (res.status === 401) {
+        setUser({ email: '', fullName: '', phone: '', address: '', isAuthenticated: false });
+        setOrders([]);
+      }
+      return res;
+    });
+
   useEffect(() => {
     localStorage.setItem('pharmacy_user', JSON.stringify(user));
     // Sync profile edits with the backend database
     if (user.isAuthenticated && user.email) {
       const controller = new AbortController();
-      fetch('/api/profile', {
+      userFetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -184,7 +199,7 @@ export default function App() {
   // Handle syncing live orders from backend Database on log in / update
   useEffect(() => {
     if (user.isAuthenticated && user.email) {
-      fetch(`/api/orders/${encodeURIComponent(user.email)}`)
+      userFetch(`/api/orders/${encodeURIComponent(user.email)}`)
         .then((res) => {
           if (res.ok) return res.json();
           throw new Error('Failed to load orders');
@@ -202,7 +217,7 @@ export default function App() {
       setSubscribedIds([]);
       return;
     }
-    fetch(`/api/notifications/subscriptions/${encodeURIComponent(user.email)}`)
+    userFetch(`/api/notifications/subscriptions/${encodeURIComponent(user.email)}`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => setSubscribedIds(Array.isArray(data) ? data : []))
       .catch((err) => console.error('Error fetching subscriptions:', err));
@@ -214,7 +229,7 @@ export default function App() {
       setNotifications([]);
       return;
     }
-    fetch(`/api/notifications/${encodeURIComponent(user.email)}`)
+    userFetch(`/api/notifications/${encodeURIComponent(user.email)}`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => setNotifications(Array.isArray(data) ? data : []))
       .catch((err) => console.error('Error fetching notifications:', err));
@@ -232,10 +247,10 @@ export default function App() {
   // Subscribe the logged-in user to a "back in stock" alert for a product
   const handleSubscribeNotify = (medicineId: string) => {
     if (!user.isAuthenticated || !user.email) return;
-    fetch('/api/notifications/subscribe', {
+    userFetch('/api/notifications/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: user.email, medicineId }),
+      body: JSON.stringify({ medicineId }),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -274,7 +289,7 @@ export default function App() {
 
   const handleMarkNotificationRead = (id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    fetch(`/api/notifications/${id}/read`, { method: 'POST' }).catch((err) =>
+    userFetch(`/api/notifications/${id}/read`, { method: 'POST' }).catch((err) =>
       console.error('Error marking notification read:', err)
     );
   };
@@ -282,7 +297,7 @@ export default function App() {
   const handleMarkAllNotificationsRead = () => {
     if (!user.email) return;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    fetch(`/api/notifications/read-all/${encodeURIComponent(user.email)}`, { method: 'POST' }).catch((err) =>
+    userFetch(`/api/notifications/read-all/${encodeURIComponent(user.email)}`, { method: 'POST' }).catch((err) =>
       console.error('Error marking all notifications read:', err)
     );
   };
