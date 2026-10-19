@@ -246,10 +246,19 @@ export class OrdersService {
       // Newest first, mimicking DESC order
       const reversed = [...rows].reverse();
 
+      // Whether the account behind each order has confirmed its email - null when there is no
+      // account (guest checkout, Telegram orders).
+      const accounts = await this.prisma.user.findMany({
+        where: { email: { in: [...new Set(rows.map((o) => o.userEmail.toLowerCase()))] } },
+        select: { email: true, emailVerified: true },
+      });
+      const verified = new Map(accounts.map((a) => [a.email, a.emailVerified]));
+
       return reversed.map((o) => ({
         id: o.id,
         date: o.date,
         userEmail: o.userEmail,
+        userEmailVerified: verified.get(o.userEmail.toLowerCase()) ?? null,
         items: o.items,
         totalPrice: o.totalPrice,
         totalPriceUsd: o.totalPriceUsd,

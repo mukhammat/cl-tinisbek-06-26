@@ -14,6 +14,14 @@ model User {
   phone       String  @default("")
   address     String  @default("")
   isAdmin     Boolean @default(false)
+
+  // Set once the customer types the 6-digit code mailed to them. Only a mark (shown to the
+  // customer and next to their orders in the admin panel) - nothing is blocked without it.
+  emailVerified       Boolean @default(false)
+  verifyCode          String? // SHA-256 of email:code, never the code itself
+  verifyCodeExpiresAt String? // ISO
+  verifyCodeSentAt    String? // ISO, for the one-minute resend cooldown
+  verifyAttempts      Int     @default(0)
 }
 
 model Category {

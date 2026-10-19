@@ -1630,6 +1630,15 @@ export default function AdminPanel({
                           <span className="text-xs font-bold text-nadeck-800 bg-nadeck-50 px-2.5 py-0.5 rounded-lg border border-nadeck-100/50">
                             {order.userEmail}
                           </span>
+                          {order.userEmailVerified != null && (
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${order.userEmailVerified ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'}`}
+                            >
+                              {order.userEmailVerified
+                                ? (currentLang === 'ru' ? '✓ почта подтверждена' : '✓ email confirmed')
+                                : (currentLang === 'ru' ? 'почта не подтверждена' : 'email not confirmed')}
+                            </span>
+                          )}
                         </div>
 
                         {/* Items list */}

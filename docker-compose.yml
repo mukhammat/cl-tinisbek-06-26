@@ -34,6 +34,9 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-nadeck}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-nadeck}
       - JWT_SECRET=${JWT_SECRET}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Email confirmation codes (resend.com). Unset = codes are only written to the log.
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - MAIL_FROM=${MAIL_FROM:-Nadeck <no-reply@nadeck.net>}
       # Same bot as nadeck-bot: a manager's reply from the admin panel's "Dialogs" tab is sent
       # to the customer as this bot.
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}

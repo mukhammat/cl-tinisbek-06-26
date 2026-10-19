@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { Language, User } from '../types';
 import { TRANSLATIONS } from '../data';
-import { X, User as UserIcon, LogIn, Mail, Lock, Phone, MapPin, Eye, EyeOff } from 'lucide-react';
+import { X, User as UserIcon, LogIn, Mail, Lock, Phone, MapPin, Eye, EyeOff, BadgeCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AuthModalProps {
@@ -41,6 +41,7 @@ export default function AuthModal({
   const t = (key: string) => {
     return TRANSLATIONS[key]?.[currentLang] || key;
   };
+  const isRu = currentLang === 'ru';
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +74,8 @@ export default function AuthModal({
         }
 
         onUpdateUser(data);
+        // Stay open: the profile view now asks for the code that was just mailed.
+        return;
       } else {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
@@ -157,9 +160,13 @@ export default function AuthModal({
                     <Mail className="w-4 h-4 text-slate-400 shrink-0" />
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase font-medium">Email</p>
-                      <p id="profile-email" className="font-semibold text-slate-800">{user.email}</p>
+                      <p id="profile-email" className="font-semibold text-slate-800 flex items-center gap-1.5">
+                        {user.email}
+                        {user.emailVerified && <BadgeCheck className="w-4 h-4 text-emerald-500" aria-label={isRu ? 'Почта подтверждена' : 'Email confirmed'} />}
+                      </p>
                     </div>
                   </div>
+                  {!user.emailVerified && <VerifyEmailBox user={user} isRu={isRu} onUpdateUser={onUpdateUser} />}
                   <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100">
                     <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                     <div>
@@ -338,5 +345,98 @@ export default function AuthModal({
         </motion.div>
       </div>
     </AnimatePresence>
+  );
+}
+
+// Shown in the profile until the address is confirmed: the code was mailed at registration,
+// and "send again" mails a new one (the server allows one a minute).
+function VerifyEmailBox({ user, isRu, onUpdateUser }: { user: User; isRu: boolean; onUpdateUser: (u: User) => void }) {
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ kind: 'error' | 'info'; text: string } | null>(null);
+
+  const call = async (url: string, payload?: object) => {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(user.token ? { Authorization: `Bearer ${user.token}` } : {}) },
+      body: JSON.stringify(payload ?? {}),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401) throw new Error(isRu ? 'Сессия истекла, войдите заново' : 'Session expired, please sign in again');
+    if (!res.ok) throw new Error(data.message || (isRu ? 'Ошибка' : 'Error'));
+    return data;
+  };
+
+  const confirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setMessage(null);
+    try {
+      const data = await call('/api/auth/verify-email', { code });
+      if (data.emailVerified) onUpdateUser({ ...user, emailVerified: true });
+    } catch (err: any) {
+      setMessage({ kind: 'error', text: err.message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resend = async () => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const data = await call('/api/auth/verify-email/send');
+      if (data.emailVerified) {
+        onUpdateUser({ ...user, emailVerified: true });
+        return;
+      }
+      setMessage({ kind: 'info', text: isRu ? 'Новый код отправлен на почту' : 'A new code is on its way' });
+    } catch (err: any) {
+      setMessage({ kind: 'error', text: err.message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={confirm} id="verify-email-box" className="p-3.5 rounded-2xl bg-amber-50 border border-amber-100 space-y-2.5">
+      <p className="text-xs text-amber-900 font-medium">
+        {isRu
+          ? 'Почта не подтверждена. Введите 6-значный код из письма (проверьте и «Спам»).'
+          : 'Email not confirmed yet. Enter the 6-digit code from our email (check spam too).'}
+      </p>
+      <div className="flex gap-2">
+        <input
+          id="input-verify-code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          placeholder="000000"
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+          className="w-full min-w-0 px-3 py-2 text-base font-mono tracking-[0.3em] bg-white border border-amber-200 focus:border-nadeck-500 rounded-xl focus:outline-none"
+        />
+        <button
+          id="btn-verify-code"
+          type="submit"
+          disabled={busy || code.length !== 6}
+          className="shrink-0 px-4 py-2 bg-nadeck-600 hover:bg-nadeck-700 disabled:bg-nadeck-300 text-white font-bold text-sm rounded-xl transition-colors"
+        >
+          {isRu ? 'Подтвердить' : 'Confirm'}
+        </button>
+      </div>
+      {message && (
+        <p className={`text-xs font-medium ${message.kind === 'error' ? 'text-rose-600' : 'text-emerald-700'}`}>{message.text}</p>
+      )}
+      <button
+        id="btn-resend-code"
+        type="button"
+        disabled={busy}
+        onClick={resend}
+        className="text-xs font-semibold text-nadeck-600 hover:text-nadeck-700 hover:underline disabled:opacity-50"
+      >
+        {isRu ? 'Отправить код ещё раз' : 'Send the code again'}
+      </button>
+    </form>
   );
 }

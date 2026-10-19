@@ -23,6 +23,21 @@ export class AuthController {
     return this.authService.login(body);
   }
 
+  // The code mailed at registration; "send again" mails a new one (at most once a minute).
+  @UseGuards(JwtAuthGuard)
+  @Post('auth/verify-email/send')
+  @HttpCode(HttpStatus.OK)
+  sendVerificationCode(@Req() req: any) {
+    return this.authService.sendVerificationCode(req.user.email);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('auth/verify-email')
+  @HttpCode(HttpStatus.OK)
+  verifyEmail(@Body('code') code: string, @Req() req: any) {
+    return this.authService.verifyEmail(req.user.email, code);
+  }
+
   // The account comes from the token, never from the body - otherwise anyone could rewrite
   // anyone's name, phone and address by posting their email.
   @UseGuards(JwtAuthGuard)

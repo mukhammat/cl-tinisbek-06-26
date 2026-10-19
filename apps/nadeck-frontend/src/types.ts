@@ -99,6 +99,8 @@ export interface User {
   address: string;
   isAuthenticated: boolean;
   isAdmin?: boolean;
+  // Confirmed with the code mailed after registration; only a mark, nothing is blocked without it
+  emailVerified?: boolean;
   token?: string;
 }
 
@@ -133,6 +135,8 @@ export interface Order {
   discountKzt?: number;
   discountUsd?: number;
   userEmail?: string;
+  // Admin list only: null when there is no account behind the order (guest, Telegram)
+  userEmailVerified?: boolean | null;
 }
 
 // A shipping destination, priced per currency in the admin panel. There is no free-delivery
