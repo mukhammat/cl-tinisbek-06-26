@@ -67,9 +67,6 @@ export default function Navbar({
               <h1 className="text-lg font-bold text-slate-950 leading-none tracking-tight">
                 {t('appName')}
               </h1>
-              <span className="hidden sm:block text-[10px] text-slate-500 font-medium">
-                {t('appSubtitle')}
-              </span>
             </div>
           </div>
 
