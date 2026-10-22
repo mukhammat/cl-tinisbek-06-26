@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Language, CartItem, User, Order, AppliedPromo, PromoRejection, DeliveryCountry } from '../types';
 import { TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume, FALLBACK_DELIVERY_COST } from '../currency';
-import { Trash2, Phone, ShoppingBag, Plus, Minus, ArrowRight, MessageCircle, CheckCircle2, Ticket } from 'lucide-react';
+import { Trash2, Phone, ShoppingBag, Plus, Minus, ArrowLeft, ArrowRight, MessageCircle, CheckCircle2, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface CartViewProps {
@@ -338,6 +338,7 @@ export default function CartView({
             onClick={() => setOrderConfirmed(null)}
             className="w-full sm:w-auto px-6 py-3 bg-nadeck-600 hover:bg-nadeck-700 text-white font-bold text-sm rounded-xl inline-flex items-center justify-center gap-2 transition"
           >
+            <ArrowLeft className="w-4 h-4" />
             {t('backToCatalog')}
           </button>
         </div>

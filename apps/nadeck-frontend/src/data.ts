@@ -455,8 +455,8 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     en: 'Rating'
   },
   backToCatalog: {
-    ru: '← Вернуться в каталог',
-    en: '← Back to Catalog'
+    ru: 'Вернуться в каталог',
+    en: 'Back to Catalog'
   },
   aboutDrug: {
     ru: 'Описание',
