@@ -442,6 +442,11 @@ export default function App() {
         notifications={notifications}
         onMarkNotificationRead={handleMarkNotificationRead}
         onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
+        sections={{
+          videos: mediaFeed.some((item) => item.kind === 'video'),
+          photos: mediaFeed.some((item) => item.kind === 'photo'),
+          reviews: reviewsList.length > 0,
+        }}
       />
 
       {/* Primary Dynamic Content Frame */}
