@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, FormEvent } from 'react';
-import { Language, Product, CartItem, User, Order, AppNotification, Category, MediaItem, LANGUAGE_NAME_TRANSLATIONS, SUPPORTED_LANGUAGES } from './types';
+import { Language, Product, CartItem, User, Order, AppNotification, Category, MediaItem, Review, LANGUAGE_NAME_TRANSLATIONS, SUPPORTED_LANGUAGES } from './types';
 import { MEDICINES_DATA, TRANSLATIONS } from './data';
 import { trackView } from './analytics';
 import Navbar from './components/Navbar';
@@ -19,6 +19,7 @@ import AIPeptideAdvisor from './components/AIPeptideAdvisor';
 import AdminPanel from './components/AdminPanel';
 import VideoFeed from './components/VideoFeed';
 import PhotoGallery from './components/PhotoGallery';
+import ReviewsCarousel from './components/ReviewsCarousel';
 import { ShoppingCart, Calculator, MapPin, Heart, Clock, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import nadeckIconWhite from './assets/nadeck-icon-white.png';
@@ -90,6 +91,7 @@ export default function App() {
 
   // Videos and photos shown under the catalog. Optional - both blocks just stay hidden if this fails.
   const [mediaFeed, setMediaFeed] = useState<MediaItem[]>([]);
+  const [reviewsList, setReviewsList] = useState<Review[]>([]);
 
   useEffect(() => {
     fetchMedicinesList();
@@ -97,6 +99,10 @@ export default function App() {
     fetch('/api/media-feed')
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => Array.isArray(data) && setMediaFeed(data))
+      .catch(() => {});
+    fetch('/api/reviews')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => Array.isArray(data) && setReviewsList(data))
       .catch(() => {});
   }, []);
 
@@ -558,6 +564,7 @@ export default function App() {
                       <>
                         <VideoFeed currentLang={currentLang} videos={mediaFeed.filter((item) => item.kind === 'video')} />
                         <PhotoGallery currentLang={currentLang} photos={mediaFeed.filter((item) => item.kind === 'photo')} />
+                        <ReviewsCarousel currentLang={currentLang} reviews={reviewsList} />
                       </>
                     )}
                   </div>

@@ -33,6 +33,7 @@ import {
   MessagesSquare,
   UsersRound,
   Film,
+  Star,
 } from 'lucide-react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
 import { motion, AnimatePresence } from 'motion/react';
@@ -41,6 +42,7 @@ import AnalyticsDashboard from './AnalyticsDashboard';
 import BotDialogs from './BotDialogs';
 import AdminUsers from './AdminUsers';
 import AdminMediaFeed from './AdminMediaFeed';
+import AdminReviews from './AdminReviews';
 
 // The product form's photo gallery field.
 type ProductImageField = 'images';
@@ -66,7 +68,7 @@ export default function AdminPanel({
   token
 }: AdminPanelProps) {
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo' | 'delivery' | 'analytics' | 'videos' | 'dialogs' | 'users'>('products');
+  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo' | 'delivery' | 'analytics' | 'videos' | 'reviews' | 'dialogs' | 'users'>('products');
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
@@ -1165,6 +1167,18 @@ export default function AdminPanel({
           <span>{currentLang === 'ru' ? 'Видео и фото' : 'Videos & photos'}</span>
         </button>
         <button
+          id="admin-tab-reviews"
+          onClick={() => { setActiveSubTab('reviews'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
+          className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
+            activeSubTab === 'reviews' && !isEditing && !isAdding
+              ? 'border-nadeck-600 text-nadeck-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Star className="w-4 h-4" />
+          <span>{currentLang === 'ru' ? 'Отзывы' : 'Reviews'}</span>
+        </button>
+        <button
           id="admin-tab-dialogs"
           onClick={() => { setActiveSubTab('dialogs'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
           className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
@@ -1959,6 +1973,11 @@ export default function AdminPanel({
         {/* Video feed and photo gallery under the catalog - loads its own data (GET /api/admin/media-feed). */}
         {activeSubTab === 'videos' && !isEditing && !isAdding && (
           <AdminMediaFeed currentLang={currentLang} token={token} />
+        )}
+
+        {/* Customer reviews carousel - loads its own data (GET /api/admin/reviews). */}
+        {activeSubTab === 'reviews' && !isEditing && !isAdding && (
+          <AdminReviews currentLang={currentLang} token={token} />
         )}
 
         {/* Telegram bot chats - polls its own data (GET /api/admin/dialogs) like the dashboard above. */}

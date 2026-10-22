@@ -14,3 +14,18 @@
   --color-nadeck-900: #053c61;
   --color-nadeck-950: #052439;
 }
+
+/* Reviews marquee: each lane holds its cards twice, so sliding by half loops without a seam. */
+@keyframes reviews-marquee { to { transform: translateX(calc(-50% - 7px)); } }
+.reviews-lane { animation: reviews-marquee var(--reviews-duration, 70s) linear infinite; }
+.reviews-lane-reverse { animation-direction: reverse; }
+.reviews-marquee:hover .reviews-lane,
+.reviews-marquee:focus-within .reviews-lane,
+.reviews-marquee[data-paused] .reviews-lane { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .reviews-lane { animation: none; }
+  .reviews-marquee { overflow-x: auto; }
+}
+@keyframes reviews-sheet-in { from { transform: translateY(24px); opacity: 0; } }
+.reviews-sheet { animation: reviews-sheet-in .25s ease-out; }
+@media (prefers-reduced-motion: reduce) { .reviews-sheet { animation: none; } }

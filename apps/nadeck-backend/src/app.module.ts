@@ -15,8 +15,9 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { DialogsModule } from './dialogs/dialogs.module';
 import { UsersModule } from './users/users.module';
 import { MediaFeedModule } from './media-feed/media-feed.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, ChatModule, MedicinesModule, CategoriesModule, OrdersModule, PromoCodesModule, DeliveryCountriesModule, NotificationsModule, TranslateModule, NewsletterModule, UploadModule, AnalyticsModule, DialogsModule, UsersModule, MediaFeedModule],
+  imports: [DatabaseModule, AuthModule, ChatModule, MedicinesModule, CategoriesModule, OrdersModule, PromoCodesModule, DeliveryCountriesModule, NotificationsModule, TranslateModule, NewsletterModule, UploadModule, AnalyticsModule, DialogsModule, UsersModule, MediaFeedModule, ReviewsModule],
 })
 export class AppModule {}

@@ -244,3 +244,18 @@ model MediaItem {
 
   @@index([kind, sortOrder])
 }
+
+// A customer review in the carousel under the photo gallery, entered from the admin panel.
+model Review {
+  id         String   @id @default(cuid())
+  author     String
+  text       String // shown as written, whatever the site language
+  rating     Int      @default(5) // 1-5 stars
+  date       String // YYYY-MM-DD the review was left; the site shows it as "1 year ago"
+  isVerified Boolean  @default(true) // the "verified buyer" badge next to the name
+  sortOrder  Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@index([sortOrder])
+}

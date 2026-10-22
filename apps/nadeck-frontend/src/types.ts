@@ -239,3 +239,15 @@ export interface MediaItem {
   sortOrder: number;
   isActive: boolean;
 }
+
+// A customer review in the carousel under the photo gallery (GET /api/reviews).
+export interface Review {
+  id: string;
+  author: string;
+  text: string;
+  rating: number;
+  date: string; // YYYY-MM-DD
+  isVerified: boolean;
+  sortOrder: number;
+  isActive: boolean;
+}
