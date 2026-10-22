@@ -229,3 +229,18 @@ model BotDialogMessage {
 
   @@index([dialogId, createdAt])
 }
+
+// A video in the feed or a photo in the gallery under the catalog, managed from the admin
+// panel's "Videos & photos" tab. One table: they share every field, `kind` tells them apart.
+model MediaItem {
+  id        String   @id @default(cuid())
+  kind      String   @default("video") // video | photo
+  title     Json // { ru, en }
+  src       String // <R2_PUBLIC_URL>/videos/<uuid>.mp4 or <R2_PUBLIC_URL>/gallery/<uuid>.jpg
+  poster    String? // videos only: optional cover shown before playback
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([kind, sortOrder])
+}

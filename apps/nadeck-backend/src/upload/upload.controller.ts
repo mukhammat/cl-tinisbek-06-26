@@ -14,6 +14,14 @@ export class UploadController {
     return this.uploadService.uploadImage(file, folder || 'misc');
   }
 
+  // A video for the feed under the catalog (admin panel's "Videos & photos" tab).
+  @UseGuards(AdminGuard)
+  @Post('video')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadVideo(@UploadedFile() file: Express.Multer.File) {
+    return this.uploadService.uploadVideo(file);
+  }
+
   // Backs the admin panel's "pick from storage" gallery. Omit `folder` to list the whole bucket.
   @UseGuards(AdminGuard)
   @Get('library')

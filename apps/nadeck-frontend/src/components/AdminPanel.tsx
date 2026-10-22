@@ -32,6 +32,7 @@ import {
   BarChart3,
   MessagesSquare,
   UsersRound,
+  Film,
 } from 'lucide-react';
 import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
 import { motion, AnimatePresence } from 'motion/react';
@@ -39,6 +40,7 @@ import MediaLibraryModal from './MediaLibraryModal';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import BotDialogs from './BotDialogs';
 import AdminUsers from './AdminUsers';
+import AdminMediaFeed from './AdminMediaFeed';
 
 // The product form's photo gallery field.
 type ProductImageField = 'images';
@@ -64,7 +66,7 @@ export default function AdminPanel({
   token
 }: AdminPanelProps) {
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo' | 'delivery' | 'analytics' | 'dialogs' | 'users'>('products');
+  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'orders' | 'promo' | 'delivery' | 'analytics' | 'videos' | 'dialogs' | 'users'>('products');
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
@@ -1151,6 +1153,18 @@ export default function AdminPanel({
           <span>{currentLang === 'ru' ? 'Аналитика' : 'Analytics'}</span>
         </button>
         <button
+          id="admin-tab-videos"
+          onClick={() => { setActiveSubTab('videos'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
+          className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
+            activeSubTab === 'videos' && !isEditing && !isAdding
+              ? 'border-nadeck-600 text-nadeck-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Film className="w-4 h-4" />
+          <span>{currentLang === 'ru' ? 'Видео и фото' : 'Videos & photos'}</span>
+        </button>
+        <button
           id="admin-tab-dialogs"
           onClick={() => { setActiveSubTab('dialogs'); setIsEditing(false); setIsAdding(false); setIsEditingCategory(false); setIsAddingCategory(false); }}
           className={`px-5 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap leading-none border-b-2 ${
@@ -1940,6 +1954,11 @@ export default function AdminPanel({
             it isn't part of the tab-driven loader above. */}
         {activeSubTab === 'analytics' && !isEditing && !isAdding && (
           <AnalyticsDashboard currentLang={currentLang} token={token} />
+        )}
+
+        {/* Video feed and photo gallery under the catalog - loads its own data (GET /api/admin/media-feed). */}
+        {activeSubTab === 'videos' && !isEditing && !isAdding && (
+          <AdminMediaFeed currentLang={currentLang} token={token} />
         )}
 
         {/* Telegram bot chats - polls its own data (GET /api/admin/dialogs) like the dashboard above. */}

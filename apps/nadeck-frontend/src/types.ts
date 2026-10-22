@@ -228,3 +228,14 @@ export interface AnalyticsSummary {
   languages: AnalyticsBreakdown[];
   countries: AnalyticsBreakdown[];
 }
+
+// A video in the feed or a photo in the gallery under the catalog (GET /api/media-feed).
+export interface MediaItem {
+  id: string;
+  kind: 'video' | 'photo';
+  title: Record<Language, string>;
+  src: string;
+  poster: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}

@@ -5,6 +5,9 @@ import { PrismaService } from '../database/prisma.service';
 
 const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/gif'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const VIDEO_MIME_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+// Cloudflare (in front of the origin) rejects request bodies over 100MB, so stay under that.
+const MAX_VIDEO_SIZE = 95 * 1024 * 1024;
 // Upper bound for the admin media library listing. Keys are UUIDs, so the bucket's own
 // (lexicographic) order is meaningless to a human - we pull up to this many and sort by
 // upload date instead. Well above the current bucket size; raise it if the bucket grows.
@@ -80,13 +83,49 @@ export class UploadService {
     return { url: `${this.publicUrl}/${key}` };
   }
 
+  // Videos for the feed under the catalog - same bucket and URL scheme as the images.
+  async uploadVideo(file: Express.Multer.File | undefined): Promise<{ url: string }> {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    if (!VIDEO_MIME_TYPES.includes(file.mimetype)) {
+      throw new BadRequestException('Unsupported video type. Use MP4, WEBM or MOV');
+    }
+    if (file.size > MAX_VIDEO_SIZE) {
+      throw new BadRequestException('Video is too large (max 95MB)');
+    }
+    if (!this.isConfigured) {
+      throw new InternalServerErrorException('R2 storage is not configured. Set R2_* env vars.');
+    }
+
+    const ext = (file.originalname.split('.').pop() || 'mp4').toLowerCase();
+    const key = `videos/${randomUUID()}.${ext}`;
+
+    try {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        }),
+      );
+    } catch (err) {
+      console.error('Error uploading video to R2:', err);
+      throw new InternalServerErrorException('Failed to upload video');
+    }
+
+    return { url: `${this.publicUrl}/${key}` };
+  }
+
   // Every image URL the catalog currently points at: every product photo plus every category
-  // icon. Deleting one of these would leave a broken picture on the live site, so it's what
+  // icon, plus every video/photo of the media feed. Deleting one of these would leave a broken picture on the live site, so it's what
   // listImages() flags and deleteImages() refuses.
   private async collectUsedUrls(): Promise<Set<string>> {
-    const [products, categories] = await Promise.all([
+    const [products, categories, mediaItems] = await Promise.all([
       this.prisma.product.findMany({ select: { images: true } }),
       this.prisma.category.findMany({ select: { icon: true } }),
+      this.prisma.mediaItem.findMany({ select: { src: true, poster: true } }),
     ]);
 
     const used = new Set<string>();
@@ -98,6 +137,10 @@ export class UploadService {
       for (const url of Array.isArray(product.images) ? product.images : []) add(url);
     }
     for (const category of categories) add(category.icon);
+    for (const item of mediaItems) {
+      add(item.src);
+      add(item.poster);
+    }
 
     return used;
   }
@@ -127,6 +170,8 @@ export class UploadService {
         for (const object of page.Contents || []) {
           // Skip the zero-byte "folder" placeholders some S3 clients create.
           if (!object.Key || object.Key.endsWith('/')) continue;
+          // Video files are not pickable images - the image library leaves them out.
+          if (!folder && object.Key.startsWith('videos/')) continue;
           const url = `${this.publicUrl}/${object.Key}`;
           images.push({
             key: object.Key,

@@ -9,10 +9,8 @@ import { Product, Language, CartItem, User } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume, unitLabel } from '../currency';
 import { renderRichText } from '../richText';
-import { Star, Check, Plus, ShoppingCart, HelpCircle, BellRing, BellOff, ChevronDown, ChevronLeft, ChevronRight, LayoutGrid } from 'lucide-react';
+import { Star, Check, Plus, HelpCircle, ExternalLink, BellRing, BellOff, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
-import defaultCategoryIcon from '../assets/nadeck-icon-red.png';
-import defaultCategoryIconActive from '../assets/nadeck-icon-blue.png';
 
 interface MedicineGridProps {
   currentLang: Language;
@@ -52,6 +50,9 @@ export default function MedicineGrid({
   const [selectedVolumes, setSelectedVolumes] = useState<Record<string, number>>({});
   // Which photo each card is currently showing - lets shoppers flip through a product's
   // gallery right from the catalog card, without opening the detail page.
+  // The product shown as the open card. undefined = the first one in the current list,
+  // null = the shopper closed it and every product is a compact tile.
+  const [expandedId, setExpandedId] = useState<string | null | undefined>(undefined);
   const [cardImageIndex, setCardImageIndex] = useState<Record<string, number>>({});
 
   // Swipe-to-flip on touch devices. A swipe should switch the photo instead of navigating
@@ -89,14 +90,16 @@ export default function MedicineGrid({
     return TRANSLATIONS[key]?.[currentLang] || key;
   };
 
-  const categories = [{ id: 'all', label: t('categoriesAll') }, ...categoryFilters];
+  // No "All" pill: one category is always selected (App defaults to the first by sortOrder).
+  const categories = categoryFilters;
 
   const activeMedicines = allMedicines && allMedicines.length > 0 ? allMedicines : MEDICINES_DATA;
 
-  // Filter medicines based on category AND search input
+  // Filter medicines by the selected category, or - while searching - across the whole
+  // catalog, since without an "All" pill a match in another category would stay hidden.
   const filteredMedicines = activeMedicines.filter((med) => {
-    const matchesCategory = selectedCategory === 'all' || med.category === selectedCategory;
-    
+    const matchesCategory = !!searchQuery || selectedCategory === 'all' || med.category === selectedCategory;
+
     const query = searchQuery.toLowerCase();
     const nameMatch = med.name[currentLang]?.toLowerCase().includes(query) || med.name['en']?.toLowerCase().includes(query);
     const descMatch = med.description[currentLang]?.toLowerCase().includes(query);
@@ -104,61 +107,46 @@ export default function MedicineGrid({
     return matchesCategory && (nameMatch || descMatch);
   });
 
+  const openId = expandedId === null
+    ? null
+    : filteredMedicines.some((med) => med.id === expandedId) ? expandedId : filteredMedicines[0]?.id;
+
 
   return (
-    <div className="space-y-8" id="catalog-section">
-      
-      {/* Categories Filter */}
+    <div className="space-y-4 scroll-mt-28" id="catalog-section">
+
+      {/* Categories Filter: a single scrollable row of pills */}
       <div
-        className="flex flex-wrap justify-start gap-1"
+        className="-mx-4 px-4 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]"
         id="category-filters-container"
       >
         {categories.map((cat) => {
           const isSelected = selectedCategory === cat.id;
-          const hasCustomIcon = cat.id !== 'all' && !!cat.icon;
-          const iconSrc = cat.id === 'all'
-            ? null
-            : hasCustomIcon
-            ? cat.icon
-            : (isSelected ? defaultCategoryIconActive : defaultCategoryIcon);
+          const iconSrc = cat.icon || null;
 
           return (
             <button
               key={cat.id}
               id={`filter-btn-${cat.id}`}
               onClick={() => onSelectCategory(cat.id)}
-              className="flex flex-col items-center gap-2 w-24 sm:w-28 shrink-0 px-1 py-2 rounded-2xl transition-colors"
+              className={`shrink-0 h-11 px-5 rounded-full flex items-center gap-2 text-[15px] whitespace-nowrap border transition-colors ${
+                isSelected
+                  ? 'bg-nadeck-800 border-nadeck-800 text-white'
+                  : 'bg-white/70 border-slate-300 text-slate-800 hover:bg-white'
+              }`}
             >
-              <span
-                className={`flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full transition-all ${
-                  isSelected ? (hasCustomIcon ? 'bg-nadeck-50 ring-2 ring-nadeck-500' : 'bg-nadeck-50') : ''
-                }`}
-              >
-                {iconSrc ? (
-                  <img src={iconSrc} alt="" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
-                ) : (
-                  <LayoutGrid
-                    className={`w-9 h-9 sm:w-10 sm:h-10 ${isSelected ? 'text-nadeck-600' : 'text-rose-400'}`}
-                    strokeWidth={1.5}
-                  />
-                )}
-              </span>
-              <span
-                className={`text-[11px] sm:text-xs font-semibold text-center leading-tight ${
-                  isSelected ? 'text-nadeck-700' : 'text-slate-500'
-                }`}
-              >
-                {cat.label}
-              </span>
+              {iconSrc && <img src={iconSrc} alt="" className="w-5 h-5 object-contain" />}
+              {cat.label}
             </button>
           );
         })}
       </div>
 
-      {/* Grid container */}
+      {/* Grid container: one product open as a full-width card, the rest as compact tiles
+          that open in place when tapped */}
       {filteredMedicines.length > 0 ? (
-        <div 
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8" 
+        <div
+          className="grid grid-cols-2 lg:grid-cols-4 grid-flow-row-dense gap-2 sm:gap-3"
           id="medicines-grid-layout"
         >
           {filteredMedicines.map((med, index) => {
@@ -176,6 +164,7 @@ export default function MedicineGrid({
             const currentVolumeInfo = availableVolumes.find((v) => v.mgPerUnit === currentVolume) || availableVolumes[0];
             const cartQty = cart.find(item => item.medicine.id === med.id && item.selectedStrength === currentVolumeInfo.mgPerUnit)?.quantity || 0;
             const inCart = cartQty > 0;
+            const categoryLabel = categoryLabelById[med.category] || med.category;
 
             const handleNotifyClick = () => {
               if (!user.isAuthenticated) {
@@ -185,192 +174,201 @@ export default function MedicineGrid({
               onSubscribeNotify(med.id);
             };
 
-            const categoryLabel = categoryLabelById[med.category] || med.category;
+            if (med.id !== openId) {
+              return (
+                <motion.button
+                  key={med.id}
+                  type="button"
+                  id={`medicine-card-${med.id}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, delay: Math.min(index, 12) * 0.03 }}
+                  onClick={() => setExpandedId(med.id)}
+                  aria-expanded={false}
+                  className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 bg-white rounded-2xl border border-slate-200/80 text-start hover:shadow-md transition-shadow"
+                >
+                  <span className="relative w-12 h-14 sm:w-14 sm:h-16 shrink-0 rounded-xl bg-slate-900 overflow-hidden">
+                    {images[0] && (
+                      <img src={images[0]} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                    )}
+                    {isOutOfStock && <span className="absolute inset-0 bg-slate-950/50" />}
+                  </span>
+                  <span className="flex-1 min-w-0 flex flex-col items-start gap-1">
+                    <span id={`title-${med.id}`} className="text-[15px] sm:text-base font-medium text-slate-900 leading-tight line-clamp-2">
+                      {med.name[currentLang]}
+                    </span>
+                    <span className="max-w-full px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold uppercase tracking-wide text-slate-600 truncate">
+                      {isOutOfStock ? t('outOfStock') : categoryLabel}
+                    </span>
+                  </span>
+                  <span className="w-7 h-7 shrink-0 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
+                    <ChevronDown className="w-4 h-4" />
+                  </span>
+                </motion.button>
+              );
+            }
 
             return (
-              <motion.div
+              <motion.article
                 key={med.id}
                 id={`medicine-card-${med.id}`}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="group flex flex-col bg-white rounded-3xl border border-slate-100/80 shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all duration-350 overflow-hidden"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.25 }}
+                className="col-span-2 lg:row-span-4 bg-white rounded-3xl border border-slate-200/80 p-4 sm:p-6 shadow-sm flex flex-col gap-4"
               >
-                
-                {/* Visual Thumbnail (product-shot style) */}
-                <div
-                  className="aspect-[4/3] w-full relative bg-slate-50 cursor-pointer overflow-hidden p-6"
-                  onClick={() => handleThumbClick(med)}
-                  onTouchStart={handleThumbTouchStart(med.id)}
-                  onTouchEnd={handleThumbTouchEnd(med.id, images, activeImageIndex)}
-                  id={`thumbnail-${med.id}`}
-                >
-                  <img
-                    src={images[activeImageIndex]}
-                    alt={med.name[currentLang]}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                  />
-                  {/* Category Badge overlay */}
-                  <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] uppercase font-bold rounded-full border text-nadeck-800 bg-nadeck-50/90 border-nadeck-100/50">
-                    {categoryLabel}
-                  </span>
-                  {/* Score */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 backdrop-blur-xs py-0.5 px-2 rounded-full border border-slate-100 text-amber-500 text-xs font-extrabold select-none">
-                    <Star className="w-3.5 h-3.5 fill-current" />
-                    <span className="text-slate-800 text-[10.5px]">{med.rating}</span>
-                  </div>
-                  {/* Photo gallery controls - flip through a product's photos right from the card */}
-                  {images.length > 1 && (
-                    <>
-                      <button
-                        id={`thumbnail-prev-${med.id}`}
-                        type="button"
-                        aria-label="Previous photo"
-                        onClick={(e) => { e.stopPropagation(); showPrevImage(); }}
-                        className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                <div className="flex gap-4 sm:gap-6">
+                  <div className="flex-1 min-w-0 flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3
+                        id={`title-${med.id}`}
+                        onClick={() => onSelectMedicine(med)}
+                        className="text-xl sm:text-2xl font-medium text-slate-900 leading-tight cursor-pointer hover:text-nadeck-600 transition-colors"
                       >
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                      </button>
+                        {med.name[currentLang]}
+                      </h3>
                       <button
-                        id={`thumbnail-next-${med.id}`}
                         type="button"
-                        aria-label="Next photo"
-                        onClick={(e) => { e.stopPropagation(); showNextImage(); }}
-                        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        aria-label={currentLang === 'ru' ? 'Свернуть' : 'Collapse'}
+                        aria-expanded={true}
+                        onClick={() => setExpandedId(null)}
+                        className="w-8 h-8 shrink-0 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700"
                       >
-                        <ChevronRight className="w-3.5 h-3.5" />
+                        <ChevronDown className="w-4 h-4 rotate-180" />
                       </button>
-                      <div className="absolute bottom-2.5 inset-x-0 flex items-center justify-center gap-1 z-10">
-                        {images.map((_, imgIdx) => (
-                          <button
-                            key={imgIdx}
-                            type="button"
-                            aria-label={`Photo ${imgIdx + 1}`}
-                            onClick={(e) => { e.stopPropagation(); setCardImageIndex((prev) => ({ ...prev, [med.id]: imgIdx })); }}
-                            className={`h-1.5 rounded-full transition-all ${
-                              imgIdx === activeImageIndex ? 'w-3.5 bg-nadeck-600' : 'w-1.5 bg-slate-300 hover:bg-slate-400'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  {/* Out of stock overlay */}
-                  {isOutOfStock && (
-                    <div className="absolute inset-0 bg-slate-950/55 flex items-center justify-center">
-                      <span className="px-3 py-1.5 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider">
-                        {t('outOfStock')}
-                      </span>
                     </div>
-                  )}
-                </div>
-
-                {/* Body details */}
-                <div className="p-5 flex-1 flex flex-col gap-4">
-                  <div className="space-y-2">
-                    {/* Medicine Name */}
-                    <h3
-                      className="text-lg font-extrabold text-slate-950 group-hover:text-nadeck-600 cursor-pointer transition-colors leading-snug line-clamp-1"
-                      onClick={() => onSelectMedicine(med)}
-                      id={`title-${med.id}`}
-                    >
-                      {med.name[currentLang]}
-                    </h3>
-
-                    {/* Brief desc */}
-                    <p className="text-xs text-slate-500 leading-relaxed font-normal min-h-[36px] line-clamp-2">
+                    <p className="text-sm sm:text-[15px] text-slate-600 leading-relaxed line-clamp-5">
                       {renderRichText(med.description[currentLang], `desc-${med.id}`)}
                     </p>
-                  </div>
-
-                  {/* Price and Volume selector */}
-                  <div className="flex items-end justify-between gap-3">
-                    <span id={`price-${med.id}`} className="text-xl font-black text-slate-900">
-                      {resolvePrice(currentVolumeInfo.price, currentVolumeInfo.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')}
-                    </span>
-                    <div className="space-y-1.5 w-28 shrink-0">
-                      <span className="block text-[10px] text-slate-400 font-medium text-right">{t('volumeLabel')}</span>
-                      <div className="relative">
-                        <select
-                          id={`volume-select-${med.id}`}
-                          value={currentVolume}
-                          onChange={(e) => setSelectedVolumes((prev) => ({ ...prev, [med.id]: Number(e.target.value) }))}
-                          className="w-full appearance-none px-3 py-2.5 pr-8 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-nadeck-100 focus:border-nadeck-300"
-                        >
-                          {availableVolumes.map((vol) => (
-                            <option key={vol.mgPerUnit} value={vol.mgPerUnit}>
-                              {vol.mgPerUnit} {volumeUnitLabel}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="px-3 py-1 rounded-full bg-slate-100 text-xs text-slate-700">{categoryLabel}</span>
+                      <span className="px-3 py-1 rounded-full bg-slate-100 text-xs text-slate-700 flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        {med.rating}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Actions Footer */}
-                  <div className="pt-4 mt-auto border-t border-slate-100/70 flex items-center gap-2">
-                    {/* More details */}
-                    <button
-                      id={`details-btn-${med.id}`}
-                      onClick={() => onSelectMedicine(med)}
-                      className="flex-1 px-4 py-2.5 rounded-2xl font-bold text-xs border border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 active:scale-95 transition-all duration-300"
-                    >
-                      {t('moreDetailsBtn')}
-                    </button>
-
-                    {/* Cart operations / Notify Me when unavailable */}
-                    {isOutOfStock ? (
-                      <button
-                        id={`notify-btn-${med.id}`}
-                        onClick={handleNotifyClick}
-                        disabled={isSubscribed}
-                        className={`flex-1 px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-300 ${
-                          isSubscribed
-                            ? 'bg-slate-50 text-slate-500 border border-slate-200 cursor-default'
-                            : 'bg-amber-500 text-white hover:bg-amber-600 active:scale-95 shadow-md shadow-amber-50'
-                        }`}
-                      >
-                        {isSubscribed ? (
-                          <>
-                            <BellOff className="w-3.5 h-3.5" />
-                            <span>{t('notifySubscribedBtn')}</span>
-                          </>
-                        ) : (
-                          <>
-                            <BellRing className="w-3.5 h-3.5" />
-                            <span>{t('notifyMeBtn')}</span>
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <button
-                        id={`add-to-cart-btn-${med.id}`}
-                        onClick={() => onAddToCart(med, 1, currentVolumeInfo.mgPerUnit, currentVolumeInfo.price, currentVolumeInfo.priceUsd)}
-                        className={`flex-1 px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-300 ${
-                          inCart
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100/60'
-                            : 'bg-nadeck-600 text-white hover:bg-nadeck-700 active:scale-95 shadow-md shadow-nadeck-50'
-                        }`}
-                      >
-                        {inCart ? (
-                          <>
-                            <Check className="w-3.5 h-3.5" />
-                            <span>{cartQty}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>{t('addToCart')}</span>
-                          </>
-                        )}
-                      </button>
+                  {/* Product photo on a dark plate, with the gallery controls */}
+                  <div
+                    className="group relative w-32 h-40 sm:w-48 sm:h-56 shrink-0 rounded-2xl bg-slate-900 overflow-hidden cursor-pointer"
+                    onClick={() => handleThumbClick(med)}
+                    onTouchStart={handleThumbTouchStart(med.id)}
+                    onTouchEnd={handleThumbTouchEnd(med.id, images, activeImageIndex)}
+                    id={`thumbnail-${med.id}`}
+                  >
+                    {images[activeImageIndex] && (
+                      <img
+                        src={images[activeImageIndex]}
+                        alt={med.name[currentLang]}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    {images.length > 1 && (
+                      <>
+                        <button
+                          id={`thumbnail-prev-${med.id}`}
+                          type="button"
+                          aria-label="Previous photo"
+                          onClick={(e) => { e.stopPropagation(); showPrevImage(); }}
+                          className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          id={`thumbnail-next-${med.id}`}
+                          type="button"
+                          aria-label="Next photo"
+                          onClick={(e) => { e.stopPropagation(); showNextImage(); }}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="absolute bottom-2 inset-x-0 flex items-center justify-center gap-1 z-10">
+                          {images.map((_, imgIdx) => (
+                            <button
+                              key={imgIdx}
+                              type="button"
+                              aria-label={`Photo ${imgIdx + 1}`}
+                              onClick={(e) => { e.stopPropagation(); setCardImageIndex((prev) => ({ ...prev, [med.id]: imgIdx })); }}
+                              className={`h-1.5 rounded-full transition-all ${
+                                imgIdx === activeImageIndex ? 'w-3.5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    {isOutOfStock && (
+                      <div className="absolute inset-0 bg-slate-950/55 flex items-center justify-center">
+                        <span className="px-3 py-1.5 rounded-full bg-rose-600 text-white text-[10px] font-bold uppercase tracking-wider">
+                          {t('outOfStock')}
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
 
-              </motion.div>
+                {/* Price and pack size */}
+                <div className="flex items-center justify-between gap-3">
+                  <span id={`price-${med.id}`} className="text-2xl font-medium text-slate-900">
+                    {resolvePrice(currentVolumeInfo.price, currentVolumeInfo.priceUsd, currentLang).toLocaleString()} {t('currencySymbol')}
+                  </span>
+                  <div className="relative w-32 shrink-0">
+                    <select
+                      id={`volume-select-${med.id}`}
+                      aria-label={t('volumeLabel')}
+                      value={currentVolume}
+                      onChange={(e) => setSelectedVolumes((prev) => ({ ...prev, [med.id]: Number(e.target.value) }))}
+                      className="w-full appearance-none h-11 px-4 pr-9 rounded-full border border-slate-300 bg-white text-sm font-medium text-slate-800 cursor-pointer focus:outline-none focus:border-nadeck-500"
+                    >
+                      {availableVolumes.map((vol) => (
+                        <option key={vol.mgPerUnit} value={vol.mgPerUnit}>
+                          {vol.mgPerUnit} {volumeUnitLabel}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  {isOutOfStock ? (
+                    <button
+                      id={`notify-btn-${med.id}`}
+                      onClick={handleNotifyClick}
+                      disabled={isSubscribed}
+                      className={`h-12 rounded-xl text-[15px] font-medium flex items-center justify-center gap-2 transition-colors ${
+                        isSubscribed ? 'bg-slate-100 text-slate-500 cursor-default' : 'bg-nadeck-800 text-white hover:bg-nadeck-900'
+                      }`}
+                    >
+                      {isSubscribed ? <BellOff className="w-4 h-4" /> : <BellRing className="w-4 h-4" />}
+                      {isSubscribed ? t('notifySubscribedBtn') : t('notifyMeBtn')}
+                    </button>
+                  ) : (
+                    <button
+                      id={`add-to-cart-btn-${med.id}`}
+                      onClick={() => onAddToCart(med, 1, currentVolumeInfo.mgPerUnit, currentVolumeInfo.price, currentVolumeInfo.priceUsd)}
+                      className={`h-12 rounded-xl text-[15px] font-medium flex items-center justify-center gap-2 transition-colors ${
+                        inCart ? 'bg-nadeck-100 text-nadeck-800 hover:bg-nadeck-200' : 'bg-nadeck-800 text-white hover:bg-nadeck-900'
+                      }`}
+                    >
+                      {inCart ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      {inCart ? `${t('addToCart')} · ${cartQty}` : t('addToCart')}
+                    </button>
+                  )}
+                  <button
+                    id={`details-btn-${med.id}`}
+                    onClick={() => onSelectMedicine(med)}
+                    className="h-12 rounded-xl border border-slate-300 text-[15px] font-medium text-slate-800 hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    {t('moreDetailsBtn')}
+                  </button>
+                </div>
+              </motion.article>
             );
           })}
         </div>

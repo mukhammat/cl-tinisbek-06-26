@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, FormEvent } from 'react';
-import { Language, Product, CartItem, User, Order, AppNotification, Category, LANGUAGE_NAME_TRANSLATIONS, SUPPORTED_LANGUAGES } from './types';
+import { Language, Product, CartItem, User, Order, AppNotification, Category, MediaItem, LANGUAGE_NAME_TRANSLATIONS, SUPPORTED_LANGUAGES } from './types';
 import { MEDICINES_DATA, TRANSLATIONS } from './data';
 import { trackView } from './analytics';
 import Navbar from './components/Navbar';
@@ -17,6 +17,8 @@ import AuthModal from './components/AuthModal';
 import ResearchDisclaimerModal from './components/ResearchDisclaimerModal';
 import AIPeptideAdvisor from './components/AIPeptideAdvisor';
 import AdminPanel from './components/AdminPanel';
+import VideoFeed from './components/VideoFeed';
+import PhotoGallery from './components/PhotoGallery';
 import { ShoppingCart, Calculator, MapPin, Heart, Clock, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import nadeckIconWhite from './assets/nadeck-icon-white.png';
@@ -86,9 +88,16 @@ export default function App() {
     });
   };
 
+  // Videos and photos shown under the catalog. Optional - both blocks just stay hidden if this fails.
+  const [mediaFeed, setMediaFeed] = useState<MediaItem[]>([]);
+
   useEffect(() => {
     fetchMedicinesList();
     fetchCategoriesList();
+    fetch('/api/media-feed')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => Array.isArray(data) && setMediaFeed(data))
+      .catch(() => {});
   }, []);
 
   // Search input query
@@ -333,6 +342,12 @@ export default function App() {
     .filter((category) => category.isActive !== false)
     .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || categoryLabelById[left.id].localeCompare(categoryLabelById[right.id]));
 
+  // The catalog always has one category selected - there is no "All" - starting with the first
+  // by sortOrder. 'all' remains only for a catalog without categories.
+  const catalogCategory = activeCategories.some((category) => category.id === selectedCatalogCategory)
+    ? selectedCatalogCategory
+    : activeCategories[0]?.id ?? 'all';
+
   const categoryFilters = activeCategories.map((category) => ({ id: category.id, label: categoryLabelById[category.id], icon: category.icon }));
   const categoryIconById: Record<string, string | null | undefined> = Object.fromEntries(
     allCategories.map((category) => [category.id, category.icon])
@@ -536,9 +551,15 @@ export default function App() {
                       categoryFilters={categoryFilters}
                       categoryLabelById={categoryLabelById}
                       categoryIconById={categoryIconById}
-                      selectedCategory={selectedCatalogCategory}
+                      selectedCategory={catalogCategory}
                       onSelectCategory={setSelectedCatalogCategory}
                     />
+                    {!searchQuery && (
+                      <>
+                        <VideoFeed currentLang={currentLang} videos={mediaFeed.filter((item) => item.kind === 'video')} />
+                        <PhotoGallery currentLang={currentLang} photos={mediaFeed.filter((item) => item.kind === 'photo')} />
+                      </>
+                    )}
                   </div>
                 )
               )}
