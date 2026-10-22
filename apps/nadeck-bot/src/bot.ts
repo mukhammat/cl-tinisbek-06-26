@@ -22,7 +22,13 @@ interface ChatMessage {
   text: string;
 }
 
-const chatHistories = new Map<number, ChatMessage[]>();
+// Keyed by chat, except in a channel's direct messages: that is one chat holding a separate
+// conversation (topic) per customer.
+const chatHistories = new Map<string, ChatMessage[]>();
+
+// Where a message came from decides how the advisor answers (see answerQuestion).
+// "channelDm" is the "Сообщения каналу" chat of a channel the bot administers.
+type ChatKind = "private" | "group" | "channelDm";
 
 const LOGS_DIR = join(import.meta.dirname, "..", "data", "logs");
 mkdirSync(LOGS_DIR, { recursive: true });
@@ -108,6 +114,14 @@ bot.on("message:text", async (ctx) => {
   // staff talking shop, not customers asking a question.
   if (ctx.from?.is_bot) return;
 
+  if (ctx.chat.type === "supergroup" && ctx.chat.is_direct_messages) {
+    // Messages sent on behalf of the channel are its admins answering the customer themselves.
+    if (ctx.message.sender_chat) return;
+    const question = ctx.message.text.trim();
+    if (question) await answerQuestion(ctx, question, "channelDm");
+    return;
+  }
+
   const isGroup = ctx.chat.type === "group" || ctx.chat.type === "supergroup";
   if (isGroup) {
     // Fallback for groups the bot already belonged to before this feature existed, where no
@@ -119,7 +133,7 @@ bot.on("message:text", async (ctx) => {
   const question = isGroup ? stripSelfMention(ctx) : ctx.message.text.trim();
   if (!question) return;
 
-  await answerQuestion(ctx, question, isGroup);
+  await answerQuestion(ctx, question, isGroup ? "group" : "private");
 });
 
 // Voice messages are understood only in private chats: in a group they're usually people
@@ -160,14 +174,19 @@ bot.on(["message:voice", "message:audio"], async (ctx) => {
     return;
   }
 
-  await answerQuestion(ctx, question, false);
+  await answerQuestion(ctx, question, "private");
 });
 
-async function answerQuestion(ctx: Context, question: string, isGroup: boolean) {
-  const chatId = ctx.chat!.id;
-  const history = chatHistories.get(chatId) ?? [];
+// Groups and a channel's direct messages get plain Q&A plus a link into the private chat for
+// ordering: the advisor sells (collects contacts, places orders) only in a private chat, the one
+// place a manager's reply from the admin panel can reach the customer.
+async function answerQuestion(ctx: Context, question: string, kind: ChatKind) {
+  const isGroup = kind === "group";
+  const historyKey = kind === "channelDm" ? `${ctx.chat!.id}:${ctx.msg?.direct_messages_topic?.topic_id}` : String(ctx.chat!.id);
+  const history = chatHistories.get(historyKey) ?? [];
 
-  await ctx.replyWithChatAction("typing");
+  // Telegram refuses chat actions in a channel's direct messages.
+  if (kind !== "channelDm") await ctx.replyWithChatAction("typing");
 
   try {
     const res = await fetch(`${BACKEND_URL}/api/chat`, {
@@ -175,7 +194,7 @@ async function answerQuestion(ctx: Context, question: string, isGroup: boolean) 
       headers: { "Content-Type": "application/json" },
       // In a private chat the advisor also sells: it can place the order itself (sales mode).
       body: JSON.stringify(
-        isGroup
+        kind !== "private"
           ? { message: question, history }
           : {
               message: question,
@@ -224,7 +243,7 @@ async function answerQuestion(ctx: Context, question: string, isGroup: boolean) 
       logInteraction({ userId: ctx.from?.id, username: ctx.from?.username, orderId: data.order.id });
     } else {
       // A failed catalog lookup must not swallow the answer itself.
-      const button = isGroup ? await groupOrderButton(answer, ctx.me.username).catch(() => undefined) : undefined;
+      const button = kind !== "private" ? await groupOrderButton(answer, ctx.me.username).catch(() => undefined) : undefined;
       await ctx.reply(answer, { reply_markup: button });
     }
 
@@ -233,7 +252,7 @@ async function answerQuestion(ctx: Context, question: string, isGroup: boolean) 
       { role: "user" as const, text: question },
       { role: "assistant" as const, text: answer },
     ].slice(-HISTORY_LIMIT * 2);
-    chatHistories.set(chatId, updatedHistory);
+    chatHistories.set(historyKey, updatedHistory);
 
     logInteraction({
       userId: ctx.from?.id,
