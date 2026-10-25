@@ -243,7 +243,7 @@ async function answerQuestion(ctx: Context, question: string, kind: ChatKind) {
       logInteraction({ userId: ctx.from?.id, username: ctx.from?.username, orderId: data.order.id });
     } else {
       // A failed catalog lookup must not swallow the answer itself.
-      const button = kind !== "private" ? await groupOrderButton(answer, ctx.me.username).catch(() => undefined) : undefined;
+      const button = kind !== "private" ? await groupOrderButton(answer).catch(() => undefined) : undefined;
       await ctx.reply(answer, { reply_markup: button });
     }
 

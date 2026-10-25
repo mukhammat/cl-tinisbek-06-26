@@ -68,9 +68,11 @@ export async function notifyManagers(api: Api, order: PlacedOrder, userId: numbe
     .catch((err) => console.error("Failed to notify manager chat", err));
 }
 
-// --- groups ----------------------------------------------------------------------------------
-// Contacts and addresses shouldn't be typed in front of a whole group, so when an answer there
-// talks about something we sell, one link button invites the customer into the private chat.
+// --- groups and channel DMs ---------------------------------------------------------------------
+// Contacts and addresses aren't collected there, so when an answer talks about something we
+// sell, one link button sends the customer to the website to pick a product and order it.
+
+const SITE_URL = (process.env.SITE_URL || "https://nadeck.net").replace(/\/+$/, "");
 
 let aliasCache: { aliases: string[]; fetchedAt: number } = { aliases: [], fetchedAt: 0 };
 
@@ -98,9 +100,9 @@ async function productAliases(): Promise<string[]> {
   return aliasCache.aliases;
 }
 
-export async function groupOrderButton(answer: string, botUsername: string): Promise<InlineKeyboard | undefined> {
+export async function groupOrderButton(answer: string): Promise<InlineKeyboard | undefined> {
   const lower = answer.toLowerCase();
   const aliases = await productAliases();
   if (!aliases.some((a) => lower.includes(a))) return undefined;
-  return new InlineKeyboard().url("🛒 Подобрать и заказать в личке", `https://t.me/${botUsername}?start=shop`);
+  return new InlineKeyboard().url("🛒 Подобрать и заказать на сайте", SITE_URL);
 }
