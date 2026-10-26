@@ -679,10 +679,10 @@ export default function CartView({
             id="btn-confirm-checkout"
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-nadeck-500 hover:bg-nadeck-400 text-slate-950 font-black text-sm tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-2 transition duration-200 disabled:opacity-50"
+            className="w-full py-4 bg-nadeck-500 hover:bg-nadeck-400 text-white font-black text-sm tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-2 transition duration-200 disabled:opacity-50"
           >
             {loading ? (
-              <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
                 <span>{t('placeOrderBtn')}</span>

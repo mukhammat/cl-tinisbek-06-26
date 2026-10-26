@@ -671,7 +671,7 @@ export default function App() {
                   id="newsletter-submit-btn"
                   type="submit"
                   disabled={newsletterStatus === 'loading'}
-                  className="px-5 py-2.5 rounded-xl bg-nadeck-500 hover:bg-nadeck-400 text-slate-950 font-extrabold text-xs sm:text-sm tracking-wide transition disabled:opacity-60 whitespace-nowrap"
+                  className="px-5 py-2.5 rounded-xl bg-nadeck-500 hover:bg-nadeck-400 text-white font-extrabold text-xs sm:text-sm tracking-wide transition disabled:opacity-60 whitespace-nowrap"
                 >
                   {newsletterStatus === 'loading' ? '...' : t('newsletterSubscribeBtn')}
                 </button>
