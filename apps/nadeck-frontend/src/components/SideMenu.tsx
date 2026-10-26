@@ -189,7 +189,7 @@ export default function SideMenu({
                     type="button"
                     onClick={() => setLang(lang.code)}
                     className={`h-10 px-4 rounded-full text-sm border ${
-                      currentLang === lang.code ? 'bg-nadeck-800 border-nadeck-800 text-white' : 'border-slate-300 text-slate-800'
+                      currentLang === lang.code ? 'bg-nadeck-600 border-nadeck-600 text-white' : 'border-slate-300 text-slate-800'
                     }`}
                   >
                     {lang.code.toUpperCase()}
@@ -203,7 +203,7 @@ export default function SideMenu({
                 href={`https://wa.me/${WHATSAPP_NUMBER}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="h-12 rounded-xl bg-nadeck-800 hover:bg-nadeck-900 text-white flex items-center justify-center text-[15px] font-medium"
+                className="h-12 rounded-xl bg-nadeck-600 hover:bg-nadeck-700 text-white flex items-center justify-center text-[15px] font-medium"
               >
                 {ru ? 'Написать консультанту' : 'Message a consultant'}
               </a>

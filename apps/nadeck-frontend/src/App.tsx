@@ -553,6 +553,7 @@ export default function App() {
                       onSelectMedicine={setSelectedMedicine}
                       cart={cart}
                       onAddToCart={handleAddToCart}
+                      onOpenCart={() => { setCartOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                       searchQuery={searchQuery}
                       allMedicines={medicinesList}
                       user={user}

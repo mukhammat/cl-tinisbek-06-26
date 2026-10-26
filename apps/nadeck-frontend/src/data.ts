@@ -426,6 +426,10 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     ru: 'В корзину',
     en: 'Add to Cart'
   },
+  buyNowBtn: {
+    ru: 'Купить',
+    en: 'Buy now'
+  },
   moreDetailsBtn: {
     ru: 'Подробнее',
     en: 'Details'

@@ -9,7 +9,7 @@ import { Product, Language, CartItem, User } from '../types';
 import { MEDICINES_DATA, TRANSLATIONS } from '../data';
 import { resolvePrice, getPrimaryVolume, unitLabel } from '../currency';
 import { renderRichText } from '../richText';
-import { Star, Check, Plus, HelpCircle, ExternalLink, BellRing, BellOff, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, Check, Plus, ShoppingCart, HelpCircle, ExternalLink, BellRing, BellOff, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface MedicineGridProps {
@@ -17,6 +17,8 @@ interface MedicineGridProps {
   onSelectMedicine: (medicine: Product) => void;
   cart: CartItem[];
   onAddToCart: (medicine: Product, quantity?: number, selectedVolume?: number, unitPrice?: number, unitPriceUsd?: number) => void;
+  // Opens the cart (checkout) - "Buy now" adds the chosen pack first if it isn't there yet.
+  onOpenCart: () => void;
   searchQuery: string;
   allMedicines?: Product[];
   user: User;
@@ -35,6 +37,7 @@ export default function MedicineGrid({
   onSelectMedicine,
   cart,
   onAddToCart,
+  onOpenCart,
   searchQuery,
   allMedicines,
   user,
@@ -131,7 +134,7 @@ export default function MedicineGrid({
               onClick={() => onSelectCategory(cat.id)}
               className={`shrink-0 h-11 px-5 rounded-full flex items-center gap-2 text-[15px] whitespace-nowrap border transition-colors ${
                 isSelected
-                  ? 'bg-nadeck-800 border-nadeck-800 text-white'
+                  ? 'bg-nadeck-600 border-nadeck-600 text-white'
                   : 'bg-white/70 border-slate-300 text-slate-800 hover:bg-white'
               }`}
             >
@@ -334,6 +337,19 @@ export default function MedicineGrid({
                 </div>
 
                 {/* Actions */}
+                {!isOutOfStock && (
+                  <button
+                    id={`buy-now-btn-${med.id}`}
+                    onClick={() => {
+                      if (!inCart) onAddToCart(med, 1, currentVolumeInfo.mgPerUnit, currentVolumeInfo.price, currentVolumeInfo.priceUsd);
+                      onOpenCart();
+                    }}
+                    className="w-full h-12 -mb-1.5 rounded-xl bg-nadeck-600 hover:bg-nadeck-700 text-white text-[15px] font-semibold flex items-center justify-center gap-2 shadow-lg shadow-nadeck-500/20 transition-colors"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    {t('buyNowBtn')}
+                  </button>
+                )}
                 <div className="grid grid-cols-2 gap-2.5">
                   {isOutOfStock ? (
                     <button
@@ -341,7 +357,7 @@ export default function MedicineGrid({
                       onClick={handleNotifyClick}
                       disabled={isSubscribed}
                       className={`h-12 rounded-xl text-[15px] font-medium flex items-center justify-center gap-2 transition-colors ${
-                        isSubscribed ? 'bg-slate-100 text-slate-500 cursor-default' : 'bg-nadeck-800 text-white hover:bg-nadeck-900'
+                        isSubscribed ? 'bg-slate-100 text-slate-500 cursor-default' : 'bg-nadeck-600 text-white hover:bg-nadeck-700'
                       }`}
                     >
                       {isSubscribed ? <BellOff className="w-4 h-4" /> : <BellRing className="w-4 h-4" />}
@@ -352,7 +368,7 @@ export default function MedicineGrid({
                       id={`add-to-cart-btn-${med.id}`}
                       onClick={() => onAddToCart(med, 1, currentVolumeInfo.mgPerUnit, currentVolumeInfo.price, currentVolumeInfo.priceUsd)}
                       className={`h-12 rounded-xl text-[15px] font-medium flex items-center justify-center gap-2 transition-colors ${
-                        inCart ? 'bg-nadeck-100 text-nadeck-800 hover:bg-nadeck-200' : 'bg-nadeck-800 text-white hover:bg-nadeck-900'
+                        inCart ? 'bg-nadeck-100 text-nadeck-800 hover:bg-nadeck-200' : 'border border-nadeck-600 text-nadeck-700 hover:bg-nadeck-50'
                       }`}
                     >
                       {inCart ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
